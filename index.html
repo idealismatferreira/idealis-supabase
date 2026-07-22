@@ -530,7 +530,9 @@ function RestTimerOverlay({timer}){
 function App({auth}){
   const [db,setDb]=useState(loadDB);          // começa do cache local (instantâneo)
   const [carga,setCarga]=useState({estado:'inicial', quando:loadCacheMeta()});
-  const [view,setView]=useState({name:'students'});
+  const ehAluno = !!(auth && auth.perfil && auth.perfil.papel==='aluno');
+  const meuAlunoId = ehAluno ? auth.perfil.aluno_id : null;
+  const [view,setView]=useState(ehAluno?{name:'student',studentId:meuAlunoId}:{name:'students'});
   const [toast,setToast]=useState(null);
   const timer=useRestTimer();
   const prevStructRef=React.useRef(null);
@@ -589,9 +591,9 @@ function App({auth}){
 
   let screen;
   if(view.name==='students') screen=<Students db={db} setDb={setDb} nav={nav}/>;
-  else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash}/>;
-  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash}/>;
-  else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash}/>;
+  else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash} ehAluno={ehAluno}/>;
+  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno}/>;
+  else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={ehAluno}/>;
   return (<React.Fragment>
     {!LS_OK && <div className="warnbar">⚠️ Modo temporário: os dados somem ao fechar. Abra pelo link do GitHub Pages para salvar.</div>}
     {auth && <div className="rolebar">
@@ -747,7 +749,7 @@ function Students({db,setDb,nav}){
       onClose={()=>setMenu(null)}/>}
   </React.Fragment>);
 }
-function StudentDetail({db,setDb,nav,studentId,flash}){
+function StudentDetail({db,setDb,nav,studentId,flash,ehAluno}){
   const s=db.students.find(x=>x.id===studentId);
   const [adding,setAdding]=useState(false);
   const [nome,setNome]=useState('');
@@ -771,23 +773,23 @@ function StudentDetail({db,setDb,nav,studentId,flash}){
     setNome('');setAdding(false);
   };
   return (<React.Fragment>
-    <TopBar title={s.name} sub="Treinos fixos" onBack={()=>nav({name:'students'})}/>
+    <TopBar title={ehAluno?'Meus treinos':s.name} sub={ehAluno?'Escolha o treino de hoje':'Treinos fixos'} onBack={ehAluno?null:()=>nav({name:'students'})}/>
     <div className="screen">
       {treinos.length===0 && <div className="empty"><div className="big">📋</div>
-        <p>Nenhum treino ainda. Crie o <b>Treino A</b> e adicione os exercícios — ele fica fixo pelas próximas semanas.</p></div>}
+        <p>{ehAluno?'Nenhum treino montado ainda. Fale com seu treinador.':'Nenhum treino ainda. Crie o '}{!ehAluno && <b>Treino A</b>}{!ehAluno && ' e adicione os exercícios — ele fica fixo pelas próximas semanas.'}</p></div>}
       {treinos.map(t=>{
         const letra=(t.nome.match(/\b([A-Z])\b/)||[])[1] || t.nome.slice(0,1).toUpperCase();
         return (<div key={t.id} className="treino" onClick={()=>nav({name:'treino',studentId,treinoId:t.id})}>
           <div className="tag">{letra}</div>
           <div className="meta"><div className="name">{t.nome}</div>
             <div className="desc">{(t.exercises||[]).length} {(t.exercises||[]).length===1?'exercício':'exercícios'}</div></div>
-          <button className="menudot" onClick={e=>{e.stopPropagation();setMenu(t);}}>⋯</button>
+          {!ehAluno && <button className="menudot" onClick={e=>{e.stopPropagation();setMenu(t);}}>⋯</button>}
           <div className="chev" style={{color:'var(--muted)',fontSize:20}}>›</div>
         </div>);
       })}
     </div>
-    <button className="fab" onClick={()=>setAdding(true)}>＋ Treino</button>
-    {adding && <div className="backdrop" onClick={()=>setAdding(false)}>
+    {!ehAluno && <button className="fab" onClick={()=>setAdding(true)}>＋ Treino</button>}
+    {adding && !ehAluno && <div className="backdrop" onClick={()=>setAdding(false)}>
       <div className="sheet" onClick={e=>e.stopPropagation()}>
         <h2>Novo treino</h2><div className="h2sub">Ex: Treino A, Treino B, Membros Inferiores…</div>
         <div className="field"><label>Nome do treino</label>
@@ -796,7 +798,7 @@ function StudentDetail({db,setDb,nav,studentId,flash}){
           <button className="btn ghost" onClick={()=>setAdding(false)}>Cancelar</button>
           <button className="btn" onClick={addTreino}>Criar</button></div>
       </div></div>}
-    {menu && <RowMenu label="treino" currentName={menu.nome}
+    {menu && !ehAluno && <RowMenu label="treino" currentName={menu.nome}
       onRename={(novo)=>renameTreino(menu.id,novo)} onDelete={()=>deleteTreino(menu.id)}
       onClose={()=>setMenu(null)}/>}
   </React.Fragment>);
@@ -976,7 +978,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose}){
         <button className="btn" onClick={save}>{isEdit?'Salvar alterações':'Salvar registro'}</button></div>
     </div></div>);
 }
-function TreinoView({db,setDb,nav,studentId,treinoId,flash}){
+function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno}){
   const s=db.students.find(x=>x.id===studentId);
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
   const [editingEx,setEditingEx]=useState(null);
@@ -1038,17 +1040,17 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash}){
     <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId})}/>
     <div className="screen">
       {(t.exercises||[]).length===0 && <div className="empty"><div className="big">＋</div>
-        <p>Treino vazio. Toque em “+ Exercício” para montar. Depois, a cada aula, você só registra a carga.</p></div>}
+        <p>{ehAluno?'Este treino ainda não tem exercícios. Fale com seu treinador.':'Treino vazio. Toque em “+ Exercício” para montar. Depois, a cada aula, você só registra a carga.'}</p></div>}
       {(t.exercises||[]).map((ex,idx)=>{
         const last=lastLogOfExercise(s,ex.name,ex.exerciseId);
         const total=(t.exercises||[]).length;
         const done = ex.doneDate===todayISO();
         return (<div key={ex.id} className={'exrow'+(done?' done':'')}>
           <div className="exhead">
-            <div className="reorder">
+            {!ehAluno && <div className="reorder">
               <button disabled={idx===0} onClick={()=>moveEx(idx,-1)} aria-label="Subir">▲</button>
               <button disabled={idx===total-1} onClick={()=>moveEx(idx,1)} aria-label="Descer">▼</button>
-            </div>
+            </div>}
             <div className="exinfo">
               <div className="exname">{ex.name}</div>
               {ex.series && <div className="exseries">{ex.series}</div>}
@@ -1070,14 +1072,14 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash}){
           <div className="exactions">
             <button className="reg" onClick={()=>setRegistering(ex)}>Registrar hoje</button>
             <button className="evo" onClick={()=>nav({name:'evolution',studentId,exName:ex.name,exId:ex.exerciseId,back:{name:'treino',studentId,treinoId}})}>Evolução</button>
-            <button className="mini" onClick={()=>setEditingEx(ex)}>✎</button>
-            <button className="mini" onClick={()=>delEx(ex.id)}>🗑</button>
+            {!ehAluno && <button className="mini" onClick={()=>setEditingEx(ex)}>✎</button>}
+            {!ehAluno && <button className="mini" onClick={()=>delEx(ex.id)}>🗑</button>}
           </div>
         </div>);
       })}
     </div>
-    <button className="fab" onClick={()=>setEditingEx('new')}>＋ Exercício</button>
-    {editingEx && <ExerciseSheet initial={editingEx==='new'?null:editingEx} onSave={saveEx} onClose={()=>setEditingEx(null)}/>}
+    {!ehAluno && <button className="fab" onClick={()=>setEditingEx('new')}>＋ Exercício</button>}
+    {editingEx && !ehAluno && <ExerciseSheet initial={editingEx==='new'?null:editingEx} onSave={saveEx} onClose={()=>setEditingEx(null)}/>}
     {registering && <RegisterSheet exName={registering.name} lastLog={lastLogOfExercise(s,registering.name,registering.exerciseId)} onSave={saveLog} onClose={()=>setRegistering(null)}/>}
   </React.Fragment>);
 }
