@@ -79,6 +79,13 @@
   .treino .meta .desc{font-size:13px;color:var(--muted);margin-top:2px}
   .exrow{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;transition:.15s}
   .exrow.done{background:rgba(221,255,0,.07);border-color:rgba(221,255,0,.5)}
+  .vidthumb{position:relative;display:block;width:100%;margin-top:12px;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg);cursor:pointer;-webkit-tap-highlight-color:transparent;line-height:0}
+  .vidthumb img{width:100%;height:auto;display:block;opacity:.85;transition:.15s}
+  .vidthumb:active img{opacity:1;transform:scale(1.01)}
+  .vidplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:52px;height:52px;border-radius:50%;background:rgba(11,15,16,.75);border:2px solid var(--cyan);color:var(--cyan);font-size:19px;display:flex;align-items:center;justify-content:center;padding-left:4px;line-height:1}
+  .vidwrap{position:relative;margin-top:12px;border-radius:12px;overflow:hidden;border:1px solid var(--cyan);background:#000;aspect-ratio:16/9}
+  .vidwrap iframe{width:100%;height:100%;display:block;border:0}
+  .vidclose{position:absolute;top:6px;right:6px;z-index:2;width:30px;height:30px;border-radius:50%;background:rgba(11,15,16,.8);border:1px solid var(--line);color:var(--text);font-size:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
   .exrow .exname{font-weight:600;font-size:16px;line-height:1.3}
   .exrow .exseries{display:inline-block;font-size:15px;color:var(--cyan-2);margin-top:6px;font-weight:600;letter-spacing:.2px;background:rgba(0,201,204,.10);border:1px solid rgba(0,201,204,.28);padding:3px 10px;border-radius:10px}
   .exrow .exlast{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
@@ -390,6 +397,33 @@ async function fetchDbFromSupabase(){
   }
 }
 
+/* ===== VÍDEO (YouTube) ===== */
+function ytId(url){
+  const u=String(url||'').trim();
+  if(!u) return null;
+  let m=u.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/);        if(m) return m[1];
+  m=u.match(/[?&]v=([A-Za-z0-9_-]{6,})/);                 if(m) return m[1];
+  m=u.match(/youtube\.com\/(?:embed|shorts)\/([A-Za-z0-9_-]{6,})/); if(m) return m[1];
+  return null;
+}
+function VideoExercicio({url}){
+  const [tocando,setTocando]=useState(false);
+  const id=ytId(url);
+  if(!id) return null;
+  if(!tocando){
+    return (<button className="vidthumb" onClick={()=>setTocando(true)} aria-label="Ver vídeo">
+      <img src={'https://img.youtube.com/vi/'+id+'/mqdefault.jpg'} alt="" loading="lazy"/>
+      <span className="vidplay">▶</span>
+    </button>);
+  }
+  return (<div className="vidwrap">
+    <iframe src={'https://www.youtube.com/embed/'+id+'?rel=0&playsinline=1&autoplay=1'}
+      title="Vídeo do exercício" frameBorder="0" allowFullScreen
+      allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"></iframe>
+    <button className="vidclose" onClick={()=>setTocando(false)} aria-label="Fechar vídeo">✕</button>
+  </div>);
+}
+
 /* ===== CATÁLOGO (Cardápio WTDN — leitura com cache offline) ===== */
 const CARDAPIO_URL = 'https://script.google.com/macros/s/AKfycbyi183noK7vugBRyh5AMMcgey2Ksz2oqQvKGAfZ8Q-ZcJU0ag4TxzuiAS6oDP0u3BI7/exec';
 const CATALOGO_KEY = 'idealis_presencial_catalogo_v1';
@@ -404,7 +438,7 @@ async function fetchCatalogo(){
     const resp=await fetch(CARDAPIO_URL,{method:'GET'});
     const out=await resp.json();
     if(out && out.ok && Array.isArray(out.exercicios)){
-      const lista=out.exercicios.map(e=>({id:e.id, nome:e.exercicio, grupo:e.grupo||''}))
+      const lista=out.exercicios.map(e=>({id:e.id, nome:e.exercicio, grupo:e.grupo||'', video:e.video_url||''}))
         .filter(e=>e.id!=null && e.nome);
       saveCatalogo(lista);
       return {ok:true, total:lista.length};
@@ -1036,9 +1070,12 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno}){
     }});
     flash('Carga registrada ✓'); setRegistering(null);
   };
+  // mapa cardapio_id -> url de vídeo (do cache do Cardápio)
+  const videoPorId=React.useMemo(()=>{
+    const m={}; loadCatalogo().forEach(c=>{ if(c.video) m[String(c.id)]=c.video; }); return m;
+  },[]);
   return (<React.Fragment>
-    <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId})}/>
-    <div className="screen">
+    <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId})}/>    <div className="screen">
       {(t.exercises||[]).length===0 && <div className="empty"><div className="big">＋</div>
         <p>{ehAluno?'Este treino ainda não tem exercícios. Fale com seu treinador.':'Treino vazio. Toque em “+ Exercício” para montar. Depois, a cada aula, você só registra a carga.'}</p></div>}
       {(t.exercises||[]).map((ex,idx)=>{
@@ -1060,6 +1097,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno}){
               <span className="dclabel">Feito</span>
             </button>
           </div>
+          {ex.exerciseId!=null && videoPorId[String(ex.exerciseId)] && <VideoExercicio url={videoPorId[String(ex.exerciseId)]}/>}
           <div className="exlast">
             {last ? <React.Fragment>
               <span className="lastnote">Última carga · {fmtDate(last.date)}</span>
