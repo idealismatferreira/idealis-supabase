@@ -272,7 +272,14 @@ try{ const t='__it__'; window.localStorage.setItem(t,'1'); window.localStorage.r
 let memDB = {students:[]};
 function loadDB(){ if(!LS_OK) return memDB; try{const r=window.localStorage.getItem(DB_KEY);return r?JSON.parse(r):{students:[]};}catch(e){return {students:[]};} }
 function saveDB(db){ memDB=db; if(!LS_OK)return; try{window.localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(e){} }
-const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const uid = ()=>{
+  // UUID v4 — compatível com as colunas uuid do Supabase
+  if(window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{
+    const r=Math.random()*16|0, v=c==='x'?r:((r&0x3)|0x8);
+    return v.toString(16);
+  });
+};
 const todayISO = ()=>new Date().toISOString().slice(0,10);
 function fmtDate(iso){const p=iso.split('-');return p[2]+'/'+p[1]+'/'+p[0].slice(2);}
 const norm = (t)=>(t||'').trim().toLowerCase();
@@ -290,6 +297,49 @@ function allLogsOfExercise(student, exName, exId){
   return out.sort((a,b)=>a.date.localeCompare(b.date));
 }
 function lastLogOfExercise(student, exName, exId){ const logs=allLogsOfExercise(student,exName,exId); return logs.length?logs[logs.length-1]:null; }
+
+/* ===== CAMADA 3: ESCRITA NO SUPABASE (fila offline) =====
+   Cada operação vira um item da fila. A tela já foi atualizada
+   otimisticamente; a fila garante que o banco receba, mesmo offline. */
+const OPQ_KEY = 'idealis_presencial_opfila_v1';
+function loadOpQueue(){ if(!LS_OK) return []; try{const r=window.localStorage.getItem(OPQ_KEY);return r?JSON.parse(r):[];}catch(e){return [];} }
+function saveOpQueue(q){ if(!LS_OK)return; try{window.localStorage.setItem(OPQ_KEY,JSON.stringify(q));}catch(e){} }
+function enqueueOp(op){
+  const q=loadOpQueue();
+  q.push({...op, _ts:Date.now()});
+  saveOpQueue(q);
+  if(window.__flushOps) window.__flushOps();
+}
+/* executa uma operação no Supabase */
+async function execOp(op){
+  if(!sb) throw new Error('sem cliente');
+  const T=op.tabela, D=op.dados;
+  if(op.tipo==='insert'){
+    const {error}=await sb.from(T).insert(D);
+    if(error) throw new Error(error.message);
+  }else if(op.tipo==='update'){
+    const {error}=await sb.from(T).update(D).eq('id', op.id);
+    if(error) throw new Error(error.message);
+  }else if(op.tipo==='delete'){
+    const {error}=await sb.from(T).delete().eq('id', op.id);
+    if(error) throw new Error(error.message);
+  }
+}
+/* esvazia a fila em ordem; para no primeiro erro pra não furar dependência */
+async function flushOpQueue(){
+  const q=loadOpQueue();
+  if(!q.length) return {ok:true, enviados:0, vazia:true};
+  if(!navigator.onLine) return {ok:false, offline:true, pend:q.length};
+  let i=0;
+  try{
+    for(; i<q.length; i++){ await execOp(q[i]); }
+    saveOpQueue(loadOpQueue().slice(i)); // remove os que subiram
+    return {ok:true, enviados:i};
+  }catch(err){
+    saveOpQueue(loadOpQueue().slice(i)); // preserva o que falhou em diante
+    return {ok:false, erro:String(err.message||err), enviados:i, pend:loadOpQueue().length};
+  }
+}
 
 /* ===== CAMADA 2: LEITURA DO SUPABASE =====
    Busca tudo do banco e monta o MESMO formato que a UI já usa.
@@ -482,13 +532,14 @@ function App({auth}){
   const [carga,setCarga]=useState({estado:'inicial', quando:loadCacheMeta()});
   const [view,setView]=useState({name:'students'});
   const [toast,setToast]=useState(null);
-  const [sync,setSync]=useState({state:'idle', pend:loadQueue().length, last:loadSyncMeta().last});
   const timer=useRestTimer();
   const prevStructRef=React.useRef(null);
 
   // CAMADA 2: busca do Supabase e atualiza o cache. Offline usa o cache.
   const recarregar=React.useCallback(async ()=>{
     if(!navigator.onLine){ setCarga(c=>({...c, estado:'offline'})); return; }
+    // não sobrescreve a tela se ainda há mudanças locais na fila
+    if(loadOpQueue().length>0){ return; }
     setCarga(c=>({...c, estado:'carregando'}));
     const r=await fetchDbFromSupabase();
     if(r.ok){
@@ -502,39 +553,39 @@ function App({auth}){
     }
   },[]);
   useEffect(()=>{ recarregar(); },[recarregar]);
+  // motor da fila de escrita: sobe operações pendentes quando dá
+  const [fila,setFila]=useState({pend:loadOpQueue().length, estado:'idle'});
+  const flushOps=React.useCallback(async ()=>{
+    const pend=loadOpQueue().length;
+    if(pend===0){ setFila({pend:0, estado:'idle'}); return; }
+    if(!navigator.onLine){ setFila({pend, estado:'offline'}); return; }
+    setFila({pend, estado:'enviando'});
+    const r=await flushOpQueue();
+    const restante=loadOpQueue().length;
+    if(r.ok) setFila({pend:restante, estado:restante?'idle':'ok'});
+    else setFila({pend:restante, estado:r.offline?'offline':'erro', erro:r.erro});
+  },[]);
   useEffect(()=>{
-    const onOnline=()=>recarregar();
+    window.__flushOps=()=>{ setFila(f=>({...f,pend:loadOpQueue().length})); flushOps(); };
+    flushOps();
+    const iv=setInterval(()=>{ if(loadOpQueue().length>0) flushOps(); },30000);
+    return ()=>{ clearInterval(iv); delete window.__flushOps; };
+  },[flushOps]);
+  useEffect(()=>{
+    const onOnline=()=>{ flushOps(); recarregar(); };
     window.addEventListener('online',onOnline);
     return ()=>window.removeEventListener('online',onOnline);
-  },[recarregar]);
+  },[recarregar,flushOps]);
   useEffect(()=>{
     saveDB(db); // mantém o cache local atualizado (uso offline)
   },[db]);
   const flash=(m)=>{setToast(m);setTimeout(()=>setToast(null),1600);};
   const nav=(v)=>setView(v);
 
-  // motor de sincronização (backup só-ida)
-  const doSync=React.useCallback(async ()=>{
-    const pend=loadQueue().length;
-    const suja=window.localStorage.getItem(ESTRUTURA_DIRTY_KEY)==='1';
-    if(pend===0 && !suja){ setSync(s=>({...s,state:'idle',pend:0,last:loadSyncMeta().last})); return; }
-    if(!navigator.onLine){ setSync(s=>({...s,state:'offline',pend})); return; }
-    setSync(s=>({...s,state:'sending',pend}));
-    const r=await flushQueue(buildEstruturaSnapshot(loadDB()));
-    if(r.ok){ setSync({state:'ok', pend:loadQueue().length, last:loadSyncMeta().last}); }
-    else if(r.offline){ setSync(s=>({...s,state:'offline',pend:loadQueue().length})); }
-    else { setSync(s=>({...s,state:'error',pend:loadQueue().length})); }
-  },[]);
   useEffect(()=>{
-    window.__triggerSync=()=>{ setSync(s=>({...s,pend:loadQueue().length})); doSync(); };
-    doSync(); // tenta esvaziar fila ao abrir
-    // baixa o catálogo do Cardápio na 1ª vez (cache offline); atualiza silencioso se online
+    // baixa o catálogo do Cardápio na 1ª vez (cache offline)
     if(loadCatalogo().length===0){ fetchCatalogo(); }
-    const onOnline=()=>doSync();
-    window.addEventListener('online',onOnline);
-    const iv=setInterval(()=>{ if(loadQueue().length>0 || window.localStorage.getItem(ESTRUTURA_DIRTY_KEY)==='1') doSync(); },60000); // reforço a cada 60s
-    return ()=>{ window.removeEventListener('online',onOnline); clearInterval(iv); delete window.__triggerSync; };
-  },[doSync]);
+  },[]);
 
   let screen;
   if(view.name==='students') screen=<Students db={db} setDb={setDb} nav={nav}/>;
@@ -551,23 +602,26 @@ function App({auth}){
       </div>
     </div>}
     {screen}
-    <NuvemBadge carga={carga} onRetry={recarregar}/>
+    <NuvemBadge carga={carga} fila={fila} onRetry={()=>{flushOps();recarregar();}}/>
     <RestTimerOverlay timer={timer}/>
     {toast && <div className="toast">{toast}</div>}
   </React.Fragment>);
 }
-function NuvemBadge({carga,onRetry}){
+function NuvemBadge({carga,fila,onRetry}){
   const {estado,quando}=carga;
-  if(estado==='ok'||estado==='inicial') return null; // tudo certo: não polui
-  let txt,cls;
-  if(estado==='carregando'){ txt='Carregando…'; cls='sending'; }
-  else if(estado==='offline'){
-    txt = quando ? ('Offline · dados de '+_hhmm(quando)) : 'Offline · sem dados salvos';
-    cls='off';
+  const pend=fila?fila.pend:0;
+  // prioridade: mostrar o que está pendente de subir
+  if(fila && fila.estado==='enviando') return <button className="syncbadge sending" onClick={onRetry}>Salvando…</button>;
+  if(pend>0){
+    const txt = (fila.estado==='offline') ? (pend+' p/ salvar (offline)')
+              : (fila.estado==='erro') ? (pend+' p/ salvar · tocar p/ tentar')
+              : (pend+' p/ salvar');
+    return <button className={'syncbadge '+(fila.estado==='erro'?'err':'off')} onClick={onRetry}>{txt}</button>;
   }
-  else if(estado==='erro'){ txt='Erro ao carregar · tocar p/ tentar'; cls='err'; }
-  else return null;
-  return <button className={'syncbadge '+cls} onClick={onRetry}>{txt}</button>;
+  if(estado==='carregando') return <button className="syncbadge sending" onClick={onRetry}>Carregando…</button>;
+  if(estado==='offline') return <button className="syncbadge off" onClick={onRetry}>{quando?('Offline · dados de '+_hhmm(quando)):'Offline'}</button>;
+  if(estado==='erro') return <button className="syncbadge err" onClick={onRetry}>Erro ao carregar · tocar p/ tentar</button>;
+  return null; // tudo certo: não polui
 }
 function _hhmm(iso){
   try{ const d=new Date(iso); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
@@ -639,9 +693,21 @@ function Students({db,setDb,nav}){
     setTimeout(()=>setCatStatus(''),4000);
   };
   const list=db.students.filter(s=>s.name.toLowerCase().includes(q.toLowerCase()));
-  const add=()=>{ if(!name.trim())return; setDb({...db,students:[...db.students,{id:uid(),name:name.trim(),treinos:[]}]}); setName('');setAdding(false); };
-  const renameStudent=(id,novo)=>setDb({...db,students:db.students.map(x=>x.id===id?{...x,name:novo}:x)});
-  const deleteStudent=(id)=>setDb({...db,students:db.students.filter(x=>x.id!==id)});
+  const add=()=>{
+    if(!name.trim())return;
+    const novo={id:uid(),name:name.trim(),treinos:[]};
+    setDb({...db,students:[...db.students,novo]});
+    enqueueOp({tipo:'insert',tabela:'alunos',dados:{id:novo.id,nome:novo.name}});
+    setName('');setAdding(false);
+  };
+  const renameStudent=(id,novo)=>{
+    setDb({...db,students:db.students.map(x=>x.id===id?{...x,name:novo}:x)});
+    enqueueOp({tipo:'update',tabela:'alunos',id,dados:{nome:novo}});
+  };
+  const deleteStudent=(id)=>{
+    setDb({...db,students:db.students.filter(x=>x.id!==id)});
+    enqueueOp({tipo:'delete',tabela:'alunos',id});
+  };
   return (<React.Fragment>
     <TopBar title="Idealis Presencial" sub="Seus alunos"/>
     <div className="screen">
@@ -689,10 +755,21 @@ function StudentDetail({db,setDb,nav,studentId,flash}){
   if(!s) return null;
   const treinos=s.treinos||[];
   const updStudent=(patch)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,...patch}:x)});
-  const renameTreino=(id,novo)=>updStudent({treinos:treinos.map(t=>t.id===id?{...t,nome:novo}:t)});
-  const deleteTreino=(id)=>updStudent({treinos:treinos.filter(t=>t.id!==id)});
+  const renameTreino=(id,novo)=>{
+    updStudent({treinos:treinos.map(t=>t.id===id?{...t,nome:novo}:t)});
+    enqueueOp({tipo:'update',tabela:'treinos',id,dados:{nome:novo}});
+  };
+  const deleteTreino=(id)=>{
+    updStudent({treinos:treinos.filter(t=>t.id!==id)});
+    enqueueOp({tipo:'delete',tabela:'treinos',id});
+  };
   const sugestaoNome='Treino '+String.fromCharCode(65+treinos.length);
-  const addTreino=()=>{ updStudent({treinos:[...treinos,{id:uid(),nome:(nome.trim()||sugestaoNome),exercises:[]}]}); setNome('');setAdding(false); };
+  const addTreino=()=>{
+    const novo={id:uid(),nome:(nome.trim()||sugestaoNome),exercises:[]};
+    updStudent({treinos:[...treinos,novo]});
+    enqueueOp({tipo:'insert',tabela:'treinos',dados:{id:novo.id,aluno_id:studentId,nome:novo.nome,ordem:treinos.length}});
+    setNome('');setAdding(false);
+  };
   return (<React.Fragment>
     <TopBar title={s.name} sub="Treinos fixos" onBack={()=>nav({name:'students'})}/>
     <div className="screen">
@@ -908,34 +985,53 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash}){
   const updExercises=(exs)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,treinos:x.treinos.map(tt=>tt.id===treinoId?{...tt,exercises:exs}:tt)}:x)});
   const saveEx=(data)=>{
     if(editingEx==='new'){
-      updExercises([...(t.exercises||[]),{id:uid(),name:data.name,series:data.series,exerciseId:data.exerciseId,logs:[]}]);
+      const novo={id:uid(),name:data.name,series:data.series,exerciseId:data.exerciseId,logs:[]};
+      updExercises([...(t.exercises||[]),novo]);
+      enqueueOp({tipo:'insert',tabela:'exercicios',dados:{
+        id:novo.id, treino_id:treinoId, nome:novo.name, series:novo.series||null,
+        cardapio_id:novo.exerciseId!=null?novo.exerciseId:null, ordem:(t.exercises||[]).length
+      }});
       const herda=lastLogOfExercise(s,data.name,data.exerciseId);
       flash(herda?('Adicionado — última carga '+herda.carga+' disponível ✓'):'Exercício adicionado ✓');
     }else{
       updExercises(t.exercises.map(e=>e.id===editingEx.id?{...e,name:data.name,series:data.series,exerciseId:data.exerciseId}:e));
+      enqueueOp({tipo:'update',tabela:'exercicios',id:editingEx.id,dados:{
+        nome:data.name, series:data.series||null,
+        cardapio_id:data.exerciseId!=null?data.exerciseId:null
+      }});
       flash('Atualizado ✓');
     }
     setEditingEx(null);
   };
-  const delEx=(id)=>updExercises(t.exercises.filter(e=>e.id!==id));
-  const toggleDone=(id)=>updExercises(t.exercises.map(e=>{
-    if(e.id!==id) return e;
-    const isToday = e.doneDate===todayISO();
-    return {...e, doneDate: isToday ? null : todayISO()};
-  }));
+  const delEx=(id)=>{
+    updExercises(t.exercises.filter(e=>e.id!==id));
+    enqueueOp({tipo:'delete',tabela:'exercicios',id});
+  };
+  const toggleDone=(id)=>{
+    const alvo=(t.exercises||[]).find(e=>e.id===id);
+    const novaData = (alvo && alvo.doneDate===todayISO()) ? null : todayISO();
+    updExercises(t.exercises.map(e=>e.id===id?{...e,doneDate:novaData}:e));
+    enqueueOp({tipo:'update',tabela:'exercicios',id,dados:{done_date:novaData}});
+  };
   const moveEx=(idx,dir)=>{
     const arr=[...t.exercises];
     const alvo=idx+dir;
     if(alvo<0||alvo>=arr.length) return;
     const tmp=arr[idx]; arr[idx]=arr[alvo]; arr[alvo]=tmp;
     updExercises(arr);
+    // persiste a nova ordem dos dois que trocaram
+    enqueueOp({tipo:'update',tabela:'exercicios',id:arr[idx].id,dados:{ordem:idx}});
+    enqueueOp({tipo:'update',tabela:'exercicios',id:arr[alvo].id,dados:{ordem:alvo}});
   };
   const saveLog=(data)=>{
     const ex=registering;
     const log={id:uid(),date:todayISO(),...data};
     updExercises(t.exercises.map(e=>e.id===ex.id?{...e,logs:[...(e.logs||[]),log]}:e));
-    enqueueLog({log, alunoNome:s.name, treinoNome:t.nome, exNome:ex.name});
-    if(window.__triggerSync) window.__triggerSync();
+    enqueueOp({tipo:'insert',tabela:'logs',dados:{
+      id:log.id, exercicio_id:ex.id, data:log.date,
+      carga:log.carga||null, reps:log.reps||null,
+      intensidade:log.intensidade, dor:log.dor
+    }});
     flash('Carga registrada ✓'); setRegistering(null);
   };
   return (<React.Fragment>
@@ -999,16 +1095,15 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
   }).filter(d=>d.carga!=null);
   const delLog=(logId)=>{
     setDb({...db,students:db.students.map(st=>st.id!==studentId?st:{...st,treinos:st.treinos.map(t=>({...t,exercises:t.exercises.map(ex=>norm(ex.name)===norm(exName)?{...ex,logs:(ex.logs||[]).filter(l=>l.id!==logId)}:ex)}))})});
+    enqueueOp({tipo:'delete',tabela:'logs',id:logId});
     flash('Registro excluído');
   };
   const editLogSave=(logId,data)=>{
     setDb({...db,students:db.students.map(st=>st.id!==studentId?st:{...st,treinos:st.treinos.map(t=>({...t,exercises:t.exercises.map(ex=>norm(ex.name)===norm(exName)?{...ex,logs:(ex.logs||[]).map(l=>l.id===logId?{...l,...data}:l)}:ex)}))})});
-    // acha o treino que contém esse exercício, pra montar o registro de backup
-    let treinoNome='';
-    (s.treinos||[]).forEach(t=>(t.exercises||[]).forEach(ex=>{ if(norm(ex.name)===norm(exName)) treinoNome=t.nome; }));
-    const orig=(entries||[]).find(l=>l.id===logId)||{};
-    enqueueLog({log:{id:logId, date:orig.date||todayISO(), ...data}, alunoNome:s.name, treinoNome, exNome:exName});
-    if(window.__triggerSync) window.__triggerSync();
+    enqueueOp({tipo:'update',tabela:'logs',id:logId,dados:{
+      carga:data.carga||null, reps:data.reps||null,
+      intensidade:data.intensidade, dor:data.dor
+    }});
     flash('Registro atualizado ✓'); setEditing(null);
   };
   let chart;
