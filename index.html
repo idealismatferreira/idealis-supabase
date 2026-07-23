@@ -239,11 +239,25 @@
   .rtrunning.inicial{border-bottom-color:var(--cyan)}
   .rtrunning.liberado{border-bottom-color:#ddff00}
   .rtrunning.fim{border-bottom-color:var(--line)}
-  .rtrunning .rtcontent{display:flex;flex-direction:column;align-items:center;gap:2px;padding-bottom:9px}
-  .rtrunning .rtclock{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--cyan-2);transition:color .3s}
+  .rtrunning .rtcontent{display:flex;flex-direction:column;align-items:center;gap:1px;padding-bottom:9px}
+  .rtrunning .rtfrase{font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--muted);text-transform:none;line-height:1.1}
+  .rtrunning .rtclock{display:flex;align-items:baseline;gap:1px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--cyan-2);transition:color .3s;line-height:1}
+  .rtrunning .rtnum{font-size:46px;font-weight:700;letter-spacing:-.02em}
+  .rtrunning .rtseg{font-size:18px;font-weight:600;opacity:.75}
+  .rtrunning.liberado .rtfrase{color:#ddff00;opacity:.85}
   .rtrunning.liberado .rtclock{color:#ddff00}
   .rtrunning.fim .rtclock{color:var(--muted)}
   .rtrunning .rtcancel{font-size:11px;font-weight:500;color:var(--muted)}
+  .fimcard{margin:18px 4px 90px;padding:22px 18px;border-radius:18px;background:linear-gradient(160deg,rgba(0,201,204,.14),rgba(0,201,204,.04));border:1px solid var(--cyan);text-align:center;animation:fcup .35s ease}
+  @keyframes fcup{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .fimcard .fctit{font-size:19px;font-weight:700;color:var(--text);line-height:1.25;margin-bottom:6px}
+  .fimcard .fcsub{font-size:13px;color:var(--muted);line-height:1.4;margin-bottom:16px}
+  .fimcard .fcbtn{width:100%;padding:15px;border-radius:13px;border:none;background:var(--cyan);color:#04191a;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer}
+  .fimcard .fcskip{margin-top:10px;background:none;border:none;color:var(--muted);font-size:13px;font-family:inherit;cursor:pointer;text-decoration:underline;padding:6px}
+  .fimdone{margin:18px 4px 90px;padding:16px;border-radius:16px;background:rgba(0,201,204,.07);border:1px solid rgba(0,201,204,.35);text-align:center}
+  .fimdone .fdtit{font-size:15px;font-weight:700;color:var(--cyan-2)}
+  .fimdone .fdsub{font-size:12px;color:var(--muted);margin-top:3px}
+  .fimdone .fdundo{margin-top:9px;background:none;border:none;color:var(--muted);font-size:12px;font-family:inherit;cursor:pointer;text-decoration:underline}
   .rtrunning .rttrack{position:relative;display:flex;height:6px;width:100%;overflow:hidden}
   .rtrunning .rtzona{height:100%}
   .rtrunning .rtzona.zmin{background:var(--cyan)}
@@ -393,7 +407,7 @@ async function fetchDbFromSupabase(){
     // o RLS já filtra: treinador vê tudo, aluno vê só o dele
     const [rAlunos, rTreinos, rEx, rLogs] = await Promise.all([
       sb.from('alunos').select('id,nome').order('nome'),
-      sb.from('treinos').select('id,aluno_id,nome,ordem').order('ordem'),
+      sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data').order('ordem'),
       sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso').order('ordem'),
       sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor').order('data')
     ]);
@@ -418,7 +432,7 @@ async function fetchDbFromSupabase(){
     const treinosPorAluno={};
     (rTreinos.data||[]).forEach(t=>{
       (treinosPorAluno[t.aluno_id]=treinosPorAluno[t.aluno_id]||[]).push({
-        id:t.id, nome:t.nome, exercises: exPorTreino[t.id]||[]
+        id:t.id, nome:t.nome, concluidoData:t.concluido_data, exercises: exPorTreino[t.id]||[]
       });
     });
     const students=(rAlunos.data||[]).map(a=>({
@@ -625,14 +639,15 @@ function RestTimerOverlay({timer}){
   const pct = max>0 ? (restante/max)*100 : 0;
   // proporção fixa das zonas: quanto da barra é "até o mínimo"
   const pctZonaMin = max>0 ? (min/max)*100 : 100;
-  let texto;
-  if(!passouMin) texto = 'Descanso mínimo em '+(min-elapsed)+'s';
-  else if(!passouMax) texto = 'Descanso máximo em '+(max-elapsed)+'s';
-  else texto = 'Descanso completo · +'+(elapsed-max)+'s';
+  let frase, numero, sufixo;
+  if(!passouMin){ frase='Descanso mínimo acaba em'; numero=(min-elapsed); sufixo='s'; }
+  else if(!passouMax){ frase='Descanso máximo acaba em'; numero=(max-elapsed); sufixo='s'; }
+  else { frase='Descanso completo'; numero='+'+(elapsed-max); sufixo='s'; }
   const cls = passouMax ? 'fim' : (passouMin ? 'liberado' : 'inicial');
   return (<div className={'rtrunning '+cls} onClick={cancel}>
     <div className="rtcontent">
-      <span className="rtclock">{texto}</span>
+      <span className="rtfrase">{frase}</span>
+      <span className="rtclock"><span className="rtnum">{numero}</span><span className="rtseg">{sufixo}</span></span>
       <span className="rtcancel">{exNome?exNome+' · ':''}tocar p/ parar</span>
     </div>
     <div className="rttrack">
@@ -1099,7 +1114,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose}){
       </div>
       <div className="field"><label>Intensidade (esforço percebido nessa carga)</label>
         <Scale value={intensidade} onChange={setInt} leftLabel="Leve" rightLabel="Máxima"/></div>
-      <div className="field"><label>Dor</label>
+      <div className="field"><label>Dor Articular</label>
         <Scale value={dor} onChange={setDor} leftLabel="Sem dor" rightLabel="Dor forte"/></div>
       {erro && <div style={{color:'var(--danger)',fontSize:13,marginBottom:12}}>{erro}</div>}
       <div className="sheetactions">
@@ -1112,6 +1127,27 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
   const [editingEx,setEditingEx]=useState(null);
   const [registering,setRegistering]=useState(null);
+  // --- conclusão de treino: gatilho por scroll + tempo mínimo na tela ---
+  const ESPERA_MS = 5*60*1000; // 5 minutos
+  const abertoEmRef = React.useRef(Date.now());
+  const [noFim,setNoFim]=useState(false);
+  const [tempoOk,setTempoOk]=useState(false);
+  useEffect(()=>{
+    abertoEmRef.current=Date.now();
+    setNoFim(false); setTempoOk(false);
+    const id=setTimeout(()=>setTempoOk(true), ESPERA_MS);
+    return ()=>clearTimeout(id);
+  },[treinoId]);
+  useEffect(()=>{
+    const onScroll=()=>{
+      const perto = (window.innerHeight+window.scrollY) >= (document.body.offsetHeight-120);
+      setNoFim(perto);
+      if(perto && !tempoOk && (Date.now()-abertoEmRef.current)>=ESPERA_MS) setTempoOk(true);
+    };
+    window.addEventListener('scroll',onScroll,{passive:true});
+    onScroll();
+    return ()=>window.removeEventListener('scroll',onScroll);
+  },[tempoOk]);
   if(!t) return null;
   const updExercises=(exs)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,treinos:x.treinos.map(tt=>tt.id===treinoId?{...tt,exercises:exs}:tt)}:x)});
   const saveEx=(data)=>{
@@ -1139,6 +1175,20 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   const delEx=(id)=>{
     updExercises(t.exercises.filter(e=>e.id!==id));
     enqueueOp({tipo:'delete',tabela:'exercicios',id});
+  };
+  const treinoConcluidoHoje = t.concluidoData===todayISO();
+  const updTreino=(patch)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,treinos:x.treinos.map(tt=>tt.id===treinoId?{...tt,...patch}:tt)}:x)});
+  const concluirTreino=()=>{
+    const d=todayISO();
+    updTreino({concluidoData:d});
+    enqueueOp({tipo:'update',tabela:'treinos',id:treinoId,dados:{concluido_data:d}});
+    if(navigator.vibrate) navigator.vibrate([180,80,180]);
+    flash('Treino concluído ✓');
+  };
+  const desfazerConclusao=()=>{
+    updTreino({concluidoData:null});
+    enqueueOp({tipo:'update',tabela:'treinos',id:treinoId,dados:{concluido_data:null}});
+    flash('Conclusão desfeita');
   };
   const toggleDone=(id)=>{
     const alvo=(t.exercises||[]).find(e=>e.id===id);
@@ -1224,7 +1274,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
               <span className="pill big"><span className="k">Carga</span>{last.carga||'—'}</span>
               {last.reps && <span className="pill big"><span className="k">Reps</span>{last.reps}</span>}
               {last.intensidade!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(last.intensidade)}}></span><span className="k">Int</span>{last.intensidade}</span>}
-              {last.dor!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(last.dor)}}></span><span className="k">Dor</span>{last.dor}</span>}
+              {last.dor!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(last.dor)}}></span><span className="k">Dor art.</span>{last.dor}</span>}
             </React.Fragment> : <span className="lastnote">Ainda sem registro — toque em “Registrar hoje”.</span>}
           </div>
           <div className="exactions">
@@ -1235,6 +1285,20 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
           </div>
         </div>);
       })}
+      {ehAluno && (t.exercises||[]).length>0 && (
+        treinoConcluidoHoje
+          ? <div className="fimdone">
+              <div className="fdtit">✓ Treino concluído hoje</div>
+              <div className="fdsub">Registrado em {fmtDate(t.concluidoData)}</div>
+              <button className="fdundo" onClick={desfazerConclusao}>desfazer</button>
+            </div>
+          : (noFim && tempoOk && <div className="fimcard">
+              <div className="fctit">Você está finalizando o treino?</div>
+              <div className="fcsub">Toque aqui para já deixar concluído e não esquecer depois.</div>
+              <button className="fcbtn" onClick={concluirTreino}>✓ Concluir treino de hoje</button>
+              <button className="fcskip" onClick={()=>{setNoFim(false);window.scrollBy(0,-140);}}>ainda não terminei</button>
+            </div>)
+      )}
     </div>
     {!ehAluno && <button className="fab" onClick={()=>setEditingEx('new')}>＋ Exercício</button>}
     {editingEx && !ehAluno && <ExerciseSheet initial={editingEx==='new'?null:editingEx} onSave={saveEx} onClose={()=>setEditingEx(null)}/>}
@@ -1274,7 +1338,7 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
       {k:'carga',label:'Carga (kg)',color:'#00c9cc',domain:['auto','auto'],width:3},
       {k:'volume',label:'Volume (kg×reps)',color:'#9b7cff',domain:['auto','auto'],width:2},
       {k:'intensidade',label:'Intensidade',color:'#f1d94a',domain:[0,10],ticks:[0,5,10],width:2},
-      {k:'dor',label:'Dor',color:'#ff5c6c',domain:[0,10],ticks:[0,5,10],width:2},
+      {k:'dor',label:'Dor articular',color:'#ff5c6c',domain:[0,10],ticks:[0,5,10],width:2},
     ];
     const active=M.filter(m=>metrics[m.k]);
     chart=(<div className="chartwrap">
@@ -1304,7 +1368,7 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
         </div>
       ))}
       {metrics.carga && <div className="legend">
-        <span className="lgtitle">Bolinha da carga = Dor:</span>
+        <span className="lgtitle">Bolinha da carga = Dor articular:</span>
         <span><span className="d" style={{background:'var(--green)'}}></span>0-3</span>
         <span><span className="d" style={{background:'var(--yellow)'}}></span>4-6</span>
         <span><span className="d" style={{background:'var(--orange)'}}></span>7-8</span>
@@ -1328,7 +1392,7 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
             {e.carga && <span className="pill"><span className="k">Carga</span>{e.carga}</span>}
             {e.reps && <span className="pill"><span className="k">Reps</span>{e.reps}</span>}
             {e.intensidade!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(e.intensidade)}}></span>{e.intensidade}</span>}
-            {e.dor!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(e.dor)}}></span>Dor {e.dor}</span>}
+            {e.dor!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(e.dor)}}></span>Dor art. {e.dor}</span>}
           </div>
           <button className="hedit" onClick={()=>setEditing(e)}>✎</button>
           <button className="hdel" onClick={()=>delLog(e.id)}>🗑</button>
