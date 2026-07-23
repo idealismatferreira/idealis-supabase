@@ -248,12 +248,22 @@
   .rtrunning.liberado .rtclock{color:#ddff00}
   .rtrunning.fim .rtclock{color:var(--muted)}
   .rtrunning .rtcancel{font-size:11px;font-weight:500;color:var(--muted)}
+  .filmtoggle{display:flex;align-items:center;gap:12px;width:100%;padding:13px 14px;border-radius:13px;border:1px solid var(--line);background:var(--surface-2);font-family:inherit;cursor:pointer;text-align:left;transition:border-color .18s,background .18s}
+  .filmtoggle.on{border-color:var(--cyan);background:rgba(0,201,204,.09)}
+  .filmtoggle .ftbox{flex:0 0 24px;width:24px;height:24px;border-radius:7px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#04191a;transition:.18s}
+  .filmtoggle.on .ftbox{background:var(--cyan);border-color:var(--cyan)}
+  .filmtoggle .fttxt{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .filmtoggle .ftlab{font-size:14px;font-weight:600;color:var(--text)}
+  .filmtoggle.on .ftlab{color:var(--cyan-2)}
+  .filmtoggle .fthint{font-size:11px;color:var(--muted);line-height:1.3}
+  .exfilm{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;letter-spacing:.01em;color:var(--cyan-2);background:rgba(0,201,204,.13);border:1px solid rgba(0,201,204,.4);border-radius:999px;padding:3px 9px;white-space:nowrap}
   .fimcard{margin:18px 4px 90px;padding:22px 18px;border-radius:18px;background:linear-gradient(160deg,rgba(0,201,204,.14),rgba(0,201,204,.04));border:1px solid var(--cyan);text-align:center;animation:fcup .35s ease}
   @keyframes fcup{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
   .fimcard .fctit{font-size:19px;font-weight:700;color:var(--text);line-height:1.25;margin-bottom:6px}
   .fimcard .fcsub{font-size:13px;color:var(--muted);line-height:1.4;margin-bottom:16px}
   .fimcard .fcbtn{width:100%;padding:15px;border-radius:13px;border:none;background:var(--cyan);color:#04191a;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer}
   .fimcard .fcskip{margin-top:10px;background:none;border:none;color:var(--muted);font-size:13px;font-family:inherit;cursor:pointer;text-decoration:underline;padding:6px}
+  .fimmini{display:block;width:100%;margin:18px 4px 90px;padding:13px;border-radius:13px;border:1px solid var(--cyan);background:rgba(0,201,204,.08);color:var(--cyan-2);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer}
   .fimdone{margin:18px 4px 90px;padding:16px;border-radius:16px;background:rgba(0,201,204,.07);border:1px solid rgba(0,201,204,.35);text-align:center}
   .fimdone .fdtit{font-size:15px;font-weight:700;color:var(--cyan-2)}
   .fimdone .fdsub{font-size:12px;color:var(--muted);margin-top:3px}
@@ -408,7 +418,7 @@ async function fetchDbFromSupabase(){
     const [rAlunos, rTreinos, rEx, rLogs] = await Promise.all([
       sb.from('alunos').select('id,nome').order('nome'),
       sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data').order('ordem'),
-      sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso').order('ordem'),
+      sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar').order('ordem'),
       sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor').order('data')
     ]);
     const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error;
@@ -425,7 +435,7 @@ async function fetchDbFromSupabase(){
     (rEx.data||[]).forEach(e=>{
       (exPorTreino[e.treino_id]=exPorTreino[e.treino_id]||[]).push({
         id:e.id, name:e.nome, series:e.series||'',
-        exerciseId:e.cardapio_id, doneDate:e.done_date, descanso:e.descanso||'',
+        exerciseId:e.cardapio_id, doneDate:e.done_date, descanso:e.descanso||'', filmar:!!e.filmar,
         logs: logsPorEx[e.id]||[]
       });
     });
@@ -505,6 +515,14 @@ const CATALOGO_KEY = 'idealis_presencial_catalogo_v1';
 const CATALOGO_META_KEY = 'idealis_presencial_catalogo_meta_v1';
 function loadCatalogo(){ if(!LS_OK) return []; try{const r=window.localStorage.getItem(CATALOGO_KEY);return r?JSON.parse(r):[];}catch(e){return [];} }
 function saveCatalogo(lista){ if(!LS_OK)return; try{window.localStorage.setItem(CATALOGO_KEY,JSON.stringify(lista));window.localStorage.setItem(CATALOGO_META_KEY,JSON.stringify({atualizado:new Date().toISOString(),total:lista.length}));}catch(e){} }
+const CATALOGO_MAX_IDADE_MS = 8*60*60*1000; // revalida o catálogo a cada 8h
+function catalogoVencido(){
+  const meta=loadCatalogoMeta();
+  if(!meta || !meta.atualizado) return true;
+  const t=Date.parse(meta.atualizado);
+  if(isNaN(t)) return true;
+  return (Date.now()-t) >= CATALOGO_MAX_IDADE_MS;
+}
 function loadCatalogoMeta(){ if(!LS_OK) return null; try{const r=window.localStorage.getItem(CATALOGO_META_KEY);return r?JSON.parse(r):null;}catch(e){return null;} }
 /* baixa a lista do Cardápio e cacheia. Retorna {ok, total} ou {ok:false, erro} */
 async function fetchCatalogo(){
@@ -538,6 +556,7 @@ function buildEstruturaSnapshot(db){
         id:t.id, nome:t.nome,
         exercises:(t.exercises||[]).map(ex=>({
           id:ex.id, name:ex.name, series:ex.series,
+          filmar:!!ex.filmar,
           logs:(ex.logs||[]).map(l=>({id:l.id,date:l.date,carga:l.carga,reps:l.reps,intensidade:l.intensidade,dor:l.dor}))
           // doneDate propositalmente omitido (efêmero do dia)
         }))
@@ -666,6 +685,7 @@ function App({auth}){
   const [toast,setToast]=useState(null);
   const timer=useRestTimer();
   const [seriesFeitas,setSeriesFeitas]=useState({}); // progresso de séries da sessão
+  const [catalogoVer,setCatalogoVer]=useState(0); // muda quando o catálogo é rebaixado
   const prevStructRef=React.useRef(null);
 
   // CAMADA 2: busca do Supabase e atualiza o cache. Offline usa o cache.
@@ -716,14 +736,28 @@ function App({auth}){
   const nav=(v)=>setView(v);
 
   useEffect(()=>{
-    // baixa o catálogo do Cardápio na 1ª vez (cache offline)
-    if(loadCatalogo().length===0){ fetchCatalogo(); }
+    // baixa o catálogo do Cardápio na 1ª vez e revalida a cada 8h (cache offline)
+    const precisa = loadCatalogo().length===0 || catalogoVencido();
+    if(precisa){
+      fetchCatalogo().then(r=>{
+        // se veio lista nova, força re-render pra thumbs/vídeos aparecerem sem F5
+        if(r && r.ok) setCatalogoVer(v=>v+1);
+      });
+    }
+    // revalida também ao voltar pro app depois de horas em segundo plano
+    const onVis=()=>{
+      if(document.visibilityState==='visible' && catalogoVencido()){
+        fetchCatalogo().then(r=>{ if(r && r.ok) setCatalogoVer(v=>v+1); });
+      }
+    };
+    document.addEventListener('visibilitychange',onVis);
+    return ()=>document.removeEventListener('visibilitychange',onVis);
   },[]);
 
   let screen;
   if(view.name==='students') screen=<Students db={db} setDb={setDb} nav={nav}/>;
   else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash} ehAluno={ehAluno}/>;
-  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas}/>;
+  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer}/>;
   else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={ehAluno}/>;
   return (<React.Fragment>
     {!LS_OK && <div className="warnbar">⚠️ Modo temporário: os dados somem ao fechar. Abra pelo link do GitHub Pages para salvar.</div>}
@@ -964,6 +998,7 @@ function ExerciseSheet({initial,onSave,onClose}){
   const descOpts=['30~45','45~60','60~90','90~120','120~180'];
   const [descanso,setDescanso]=useState(initial&&initial.descanso?initial.descanso:'');
   const [descManual,setDescManual]=useState(false);
+  const [filmar,setFilmar]=useState(initial?!!initial.filmar:false);
   // busca no catálogo real (cache do Cardápio); fallback pro exemplo se cache vazio
   const fonte = catalogo.length>0 ? catalogo.map(c=>({id:c.id,nome:c.nome,grupo:c.grupo})) : CATALOGO_EXEMPLO.map(n=>({id:null,nome:n,grupo:''}));
   // quebra o texto em palavras e casa TODAS elas em qualquer ordem (ignora acento)
@@ -986,7 +1021,7 @@ function ExerciseSheet({initial,onSave,onClose}){
   const save=()=>{
     if(!name.trim())return;
     const combined = (sets.trim()&&reps.trim()) ? `${sets.trim()} × ${reps.trim()}` : (sets.trim()||reps.trim()||'');
-    onSave({name:name.trim(), series:combined, exerciseId, descanso:descanso.trim()});
+    onSave({name:name.trim(), series:combined, exerciseId, descanso:descanso.trim(), filmar});
   };
   return (<div className="backdrop" onClick={onClose}>
     <div className="sheet" onClick={e=>e.stopPropagation()}>
@@ -1033,6 +1068,15 @@ function ExerciseSheet({initial,onSave,onClose}){
               ))}
               <button type="button" className="pcell more" onClick={()=>setDescManual(true)}>⌨ digitar</button>
             </div>}
+      </div>
+      <div className="field">
+        <button type="button" className={'filmtoggle'+(filmar?' on':'')} onClick={()=>setFilmar(f=>!f)}>
+          <span className="ftbox">{filmar?'✓':''}</span>
+          <span className="fttxt">
+            <span className="ftlab">🎥 Recomendado filmar?</span>
+            <span className="fthint">O aluno vê um aviso neste exercício</span>
+          </span>
+        </button>
       </div>
       <div className="sheetactions">
         <button className="btn ghost" onClick={onClose}>Cancelar</button>
@@ -1122,7 +1166,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose}){
         <button className="btn" onClick={save}>{isEdit?'Salvar alterações':'Salvar registro'}</button></div>
     </div></div>);
 }
-function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesFeitas,setSeriesFeitas}){
+function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesFeitas,setSeriesFeitas,catalogoVer}){
   const s=db.students.find(x=>x.id===studentId);
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
   const [editingEx,setEditingEx]=useState(null);
@@ -1130,43 +1174,58 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   // --- conclusão de treino: gatilho por scroll + tempo mínimo na tela ---
   const ESPERA_MS = 5*60*1000; // 5 minutos
   const abertoEmRef = React.useRef(Date.now());
-  const [noFim,setNoFim]=useState(false);
-  const [tempoOk,setTempoOk]=useState(false);
+  const sentinelaRef = React.useRef(null);
+  // "armado" = já bateu no fim depois do tempo mínimo. Uma vez true, NÃO volta a false
+  // sozinho (evita o loop: card aparece -> página cresce -> sai do fim -> card some...).
+  const [armado,setArmado]=useState(false);
+  const [dispensado,setDispensado]=useState(false);
   useEffect(()=>{
     abertoEmRef.current=Date.now();
-    setNoFim(false); setTempoOk(false);
-    const id=setTimeout(()=>setTempoOk(true), ESPERA_MS);
-    return ()=>clearTimeout(id);
+    setArmado(false); setDispensado(false);
   },[treinoId]);
   useEffect(()=>{
-    const onScroll=()=>{
-      const perto = (window.innerHeight+window.scrollY) >= (document.body.offsetHeight-120);
-      setNoFim(perto);
-      if(perto && !tempoOk && (Date.now()-abertoEmRef.current)>=ESPERA_MS) setTempoOk(true);
-    };
-    window.addEventListener('scroll',onScroll,{passive:true});
-    onScroll();
-    return ()=>window.removeEventListener('scroll',onScroll);
-  },[tempoOk]);
+    if(!ehAluno || armado) return;
+    const el=sentinelaRef.current;
+    if(!el || typeof IntersectionObserver==='undefined') return;
+    const io=new IntersectionObserver((entries)=>{
+      const visivel=entries.some(e=>e.isIntersecting);
+      if(visivel && (Date.now()-abertoEmRef.current)>=ESPERA_MS) setArmado(true);
+    },{root:null, rootMargin:'0px 0px -40px 0px', threshold:0});
+    io.observe(el);
+    return ()=>io.disconnect();
+  },[ehAluno,armado,treinoId,dispensado]);
+  // se o aluno chegar ao fim antes dos 5min e ficar parado ali, arma quando o tempo completar
+  useEffect(()=>{
+    if(!ehAluno || armado) return;
+    const falta=ESPERA_MS-(Date.now()-abertoEmRef.current);
+    if(falta<=0) return;
+    const id=setTimeout(()=>{
+      const el=sentinelaRef.current;
+      if(!el) return;
+      const r=el.getBoundingClientRect();
+      if(r.top<=window.innerHeight) setArmado(true);
+    }, falta+200);
+    return ()=>clearTimeout(id);
+  },[ehAluno,armado,treinoId]);
   if(!t) return null;
   const updExercises=(exs)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,treinos:x.treinos.map(tt=>tt.id===treinoId?{...tt,exercises:exs}:tt)}:x)});
   const saveEx=(data)=>{
     if(editingEx==='new'){
-      const novo={id:uid(),name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,logs:[]};
+      const novo={id:uid(),name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,logs:[]};
       updExercises([...(t.exercises||[]),novo]);
       enqueueOp({tipo:'insert',tabela:'exercicios',dados:{
         id:novo.id, treino_id:treinoId, nome:novo.name, series:novo.series||null,
         cardapio_id:novo.exerciseId!=null?novo.exerciseId:null, ordem:(t.exercises||[]).length,
-        descanso:novo.descanso||null
+        descanso:novo.descanso||null, filmar:!!novo.filmar
       }});
       const herda=lastLogOfExercise(s,data.name,data.exerciseId);
       flash(herda?('Adicionado — última carga '+herda.carga+' disponível ✓'):'Exercício adicionado ✓');
     }else{
-      updExercises(t.exercises.map(e=>e.id===editingEx.id?{...e,name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso}:e));
+      updExercises(t.exercises.map(e=>e.id===editingEx.id?{...e,name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar}:e));
       enqueueOp({tipo:'update',tabela:'exercicios',id:editingEx.id,dados:{
         nome:data.name, series:data.series||null,
         cardapio_id:data.exerciseId!=null?data.exerciseId:null,
-        descanso:data.descanso||null
+        descanso:data.descanso||null, filmar:!!data.filmar
       }});
       flash('Atualizado ✓');
     }
@@ -1233,7 +1292,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   // mapa cardapio_id -> url de vídeo (do cache do Cardápio)
   const videoPorId=React.useMemo(()=>{
     const m={}; loadCatalogo().forEach(c=>{ if(c.video) m[String(c.id)]=c.video; }); return m;
-  },[]);
+  },[catalogoVer]);
   return (<React.Fragment>
     <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId})}/>    <div className="screen">
       {(t.exercises||[]).length===0 && <div className="empty"><div className="big">＋</div>
@@ -1254,6 +1313,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
               <div className="exname">{ex.name}</div>
               <div className="exmeta">
                 {ex.series && <span className="exseries">{ex.series}</span>}
+                {ex.filmar && <span className="exfilm">🎥 Filmar</span>}
                 {parseDescanso(ex.descanso) && <button className="exrest" onClick={()=>timer.start(parseDescanso(ex.descanso), ex.name)}>
                   🕐 Descansar <span className="exresth">{ex.descanso.replace('~','–')}s</span>
                 </button>}
@@ -1285,6 +1345,8 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
           </div>
         </div>);
       })}
+      {/* sentinela: marca o fim da lista de exercícios */}
+      <div ref={sentinelaRef} style={{height:1}} aria-hidden="true"></div>
       {ehAluno && (t.exercises||[]).length>0 && (
         treinoConcluidoHoje
           ? <div className="fimdone">
@@ -1292,12 +1354,14 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
               <div className="fdsub">Registrado em {fmtDate(t.concluidoData)}</div>
               <button className="fdundo" onClick={desfazerConclusao}>desfazer</button>
             </div>
-          : (noFim && tempoOk && <div className="fimcard">
-              <div className="fctit">Você está finalizando o treino?</div>
-              <div className="fcsub">Toque aqui para já deixar concluído e não esquecer depois.</div>
-              <button className="fcbtn" onClick={concluirTreino}>✓ Concluir treino de hoje</button>
-              <button className="fcskip" onClick={()=>{setNoFim(false);window.scrollBy(0,-140);}}>ainda não terminei</button>
-            </div>)
+          : (armado && (dispensado
+              ? <button className="fimmini" onClick={concluirTreino}>✓ Concluir treino de hoje</button>
+              : <div className="fimcard">
+                  <div className="fctit">Você está finalizando o treino?</div>
+                  <div className="fcsub">Toque aqui para já deixar concluído e não esquecer depois.</div>
+                  <button className="fcbtn" onClick={concluirTreino}>✓ Concluir treino de hoje</button>
+                  <button className="fcskip" onClick={()=>setDispensado(true)}>ainda não terminei</button>
+                </div>))
       )}
     </div>
     {!ehAluno && <button className="fab" onClick={()=>setEditingEx('new')}>＋ Exercício</button>}
