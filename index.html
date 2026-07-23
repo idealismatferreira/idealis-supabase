@@ -87,7 +87,7 @@
   .vidwrap iframe{width:100%;height:100%;display:block;border:0}
   .vidclose{position:absolute;top:6px;right:6px;z-index:2;width:30px;height:30px;border-radius:50%;background:rgba(11,15,16,.8);border:1px solid var(--line);color:var(--text);font-size:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
   .exrow .exname{font-weight:600;font-size:16px;line-height:1.3}
-  .exrow .exseries{display:inline-block;font-size:15px;color:var(--cyan-2);margin-top:6px;font-weight:600;letter-spacing:.2px;background:rgba(0,201,204,.10);border:1px solid rgba(0,201,204,.28);padding:3px 10px;border-radius:10px}
+  .exrow .exseries{display:inline-block;font-size:15px;color:var(--cyan-2);font-weight:600;letter-spacing:.2px;background:rgba(0,201,204,.10);border:1px solid rgba(0,201,204,.28);padding:3px 10px;border-radius:10px}
   .exrow .exlast{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
   .pill{font-size:13px;padding:5px 11px;border-radius:20px;background:var(--surface-2);border:1px solid var(--line);color:var(--text)}
   .pill .k{color:var(--muted);margin-right:4px}
@@ -216,10 +216,24 @@
   .syncbadge.off{color:var(--muted)}
   .syncbadge.err{color:#ff9ba3;border-color:rgba(255,92,108,.4)}
   .rttrigger:active{transform:scale(.95)}
-  .rtrunning{position:fixed;top:0;left:0;right:0;z-index:70;display:flex;align-items:center;justify-content:center;gap:12px;overflow:hidden;background:var(--surface-2);border-bottom:1px solid var(--cyan);padding:10px 16px;cursor:pointer}
-  .rtrunning .rtbar{position:absolute;left:0;top:0;bottom:0;background:rgba(0,201,204,.16);transition:width 1s linear;z-index:0}
-  .rtrunning .rtclock{position:relative;z-index:1;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--cyan-2)}
-  .rtrunning .rtcancel{position:relative;z-index:1;font-size:11px;font-weight:500;color:var(--muted)}
+  .rtrunning{position:fixed;top:0;left:0;right:0;z-index:70;overflow:hidden;background:var(--surface-2);border-bottom:1px solid var(--line);padding:11px 16px;cursor:pointer;transition:border-color .3s}
+  .rtrunning.inicial{border-bottom-color:var(--cyan)}
+  .rtrunning.liberado{border-bottom-color:#ddff00}
+  .rtrunning.fim{border-bottom-color:var(--line)}
+  .rtrunning .rtbar{position:absolute;left:0;top:0;bottom:0;z-index:0;transition:width 1s linear,background .3s}
+  .rtrunning.inicial .rtbar{background:rgba(0,201,204,.20)}
+  .rtrunning.liberado .rtbar{background:rgba(221,255,0,.18)}
+  .rtrunning.fim .rtbar{background:transparent}
+  .rtrunning .rtmark{position:absolute;top:0;bottom:0;width:2px;background:rgba(221,255,0,.75);z-index:1}
+  .rtrunning .rtcontent{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:2px}
+  .rtrunning .rtclock{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--cyan-2);transition:color .3s}
+  .rtrunning.liberado .rtclock{color:#ddff00}
+  .rtrunning.fim .rtclock{color:var(--muted)}
+  .rtrunning .rtcancel{font-size:11px;font-weight:500;color:var(--muted)}
+  .exmeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
+  .exrest{display:inline-flex;align-items:center;gap:5px;font-family:inherit;font-size:13px;font-weight:600;color:var(--cyan);background:rgba(0,201,204,.10);border:1px solid rgba(0,201,204,.30);border-radius:10px;padding:4px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .exrest:active{transform:scale(.95)}
+  .exrest .exresth{color:var(--muted);font-weight:500;font-size:12px}
   .rtsheet-backdrop{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.5);display:flex;align-items:flex-end}
   .rtsheet{width:100%;background:var(--surface);border-top:1px solid var(--line);border-radius:20px 20px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
   .rtsheet-title{font-size:15px;font-weight:600;color:var(--muted);margin-bottom:14px;text-align:center}
@@ -361,7 +375,7 @@ async function fetchDbFromSupabase(){
     const [rAlunos, rTreinos, rEx, rLogs] = await Promise.all([
       sb.from('alunos').select('id,nome').order('nome'),
       sb.from('treinos').select('id,aluno_id,nome,ordem').order('ordem'),
-      sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date').order('ordem'),
+      sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso').order('ordem'),
       sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor').order('data')
     ]);
     const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error;
@@ -378,7 +392,7 @@ async function fetchDbFromSupabase(){
     (rEx.data||[]).forEach(e=>{
       (exPorTreino[e.treino_id]=exPorTreino[e.treino_id]||[]).push({
         id:e.id, name:e.nome, series:e.series||'',
-        exerciseId:e.cardapio_id, doneDate:e.done_date,
+        exerciseId:e.cardapio_id, doneDate:e.done_date, descanso:e.descanso||'',
         logs: logsPorEx[e.id]||[]
       });
     });
@@ -514,24 +528,39 @@ async function flushQueue(estruturaSnapshot){
 }
 
 
+/* parseia "45~60" -> {min:45,max:60}; "60" -> {min:60,max:60} */
+function parseDescanso(txt){
+  const s=String(txt||'').trim();
+  if(!s) return null;
+  const m=s.match(/^(\d+)\s*[~\-–a]\s*(\d+)$/);
+  if(m) return {min:parseInt(m[1],10), max:parseInt(m[2],10)};
+  const u=s.match(/^(\d+)$/);
+  if(u) return {min:parseInt(u[1],10), max:parseInt(u[1],10)};
+  return null;
+}
 function useRestTimer(){
   const [open,setOpen]=useState(false);
   const [running,setRunning]=useState(false);
-  const [remaining,setRemaining]=useState(0);
-  const [total,setTotal]=useState(0);
+  const [elapsed,setElapsed]=useState(0);   // segundos decorridos
+  const [faixa,setFaixa]=useState(null);    // {min,max}
+  const [exNome,setExNome]=useState('');
+  const avisouRef=React.useRef(false);
   useEffect(()=>{
-    if(!running) return;
-    if(remaining<=0){
-      setRunning(false);
-      if(navigator.vibrate) navigator.vibrate([300,120,300]);
-      return;
+    if(!running || !faixa) return;
+    // vibra ao cruzar o mínimo (uma vez)
+    if(!avisouRef.current && elapsed>=faixa.min){
+      avisouRef.current=true;
+      if(navigator.vibrate) navigator.vibrate([260,110,260]);
     }
-    const id=setTimeout(()=>setRemaining(r=>r-1),1000);
+    const id=setTimeout(()=>setElapsed(e=>e+1),1000);
     return ()=>clearTimeout(id);
-  },[running,remaining]);
-  const start=(s)=>{ setTotal(s); setRemaining(s); setRunning(true); setOpen(false); };
-  const cancel=()=>{ setRunning(false); setRemaining(0); setTotal(0); };
-  return {open,setOpen,running,remaining,total,start,cancel};
+  },[running,elapsed,faixa]);
+  const start=(f,nome)=>{
+    avisouRef.current=false;
+    setFaixa(f); setElapsed(0); setExNome(nome||''); setRunning(true); setOpen(false);
+  };
+  const cancel=()=>{ setRunning(false); setElapsed(0); setFaixa(null); setExNome(''); };
+  return {open,setOpen,running,elapsed,faixa,exNome,start,cancel};
 }
 function RestTimerTrigger({timer}){
   return (<button className="rttrigger" onClick={()=>timer.setOpen(o=>!o)}>
@@ -539,27 +568,29 @@ function RestTimerTrigger({timer}){
   </button>);
 }
 function RestTimerOverlay({timer}){
-  const {open,setOpen,running,remaining,total,start,cancel}=timer;
-  const presets=[30,45,60,75,90];
-  const mmss=(s)=>{ const m=Math.floor(s/60), sec=s%60; return m>0?`${m}:${String(sec).padStart(2,'0')}`:`${sec}"`; };
-  const pct = total>0 ? (remaining/total)*100 : 0;
-  return (<React.Fragment>
-    {running && <div className="rtrunning" onClick={cancel}>
-      <div className="rtbar" style={{width:pct+'%'}}></div>
-      <span className="rtclock">⏱️ {mmss(remaining)}</span>
-      <span className="rtcancel">tocar p/ parar</span>
-    </div>}
-    {open && !running && <div className="rtsheet-backdrop" onClick={()=>setOpen(false)}>
-      <div className="rtsheet" onClick={e=>e.stopPropagation()}>
-        <div className="rtsheet-title">Tempo de descanso</div>
-        <div className="rtpresets">
-          {presets.map(s=>(
-            <button key={s} className="rtpreset" onClick={()=>start(s)}>{s}"</button>
-          ))}
-        </div>
-      </div>
-    </div>}
-  </React.Fragment>);
+  const {running,elapsed,faixa,exNome,cancel}=timer;
+  if(!running || !faixa) return null;
+  const {min,max}=faixa;
+  const passouMin = elapsed>=min;
+  const passouMax = elapsed>=max;
+  // barra: a largura total representa o máximo; esvazia conforme o tempo passa
+  const restante = Math.max(0, max-elapsed);
+  const pct = max>0 ? (restante/max)*100 : 0;
+  // limiar do mínimo dentro da barra (marca visual)
+  const pctMin = max>0 ? ((max-min)/max)*100 : 0;
+  let texto;
+  if(!passouMin) texto = 'Descanso mínimo em '+(min-elapsed)+'s';
+  else if(!passouMax) texto = 'Descanso máximo em '+(max-elapsed)+'s';
+  else texto = 'Descanso completo · +'+(elapsed-max)+'s';
+  const cls = passouMax ? 'fim' : (passouMin ? 'liberado' : 'inicial');
+  return (<div className={'rtrunning '+cls} onClick={cancel}>
+    <div className="rtbar" style={{width:pct+'%'}}></div>
+    {!passouMax && pctMin>0 && pctMin<100 && <div className="rtmark" style={{left:pctMin+'%'}}></div>}
+    <div className="rtcontent">
+      <span className="rtclock">{texto}</span>
+      <span className="rtcancel">{exNome?exNome+' · ':''}tocar p/ parar</span>
+    </div>
+  </div>);
 }
 function App({auth}){
   const [db,setDb]=useState(loadDB);          // começa do cache local (instantâneo)
@@ -626,14 +657,13 @@ function App({auth}){
   let screen;
   if(view.name==='students') screen=<Students db={db} setDb={setDb} nav={nav}/>;
   else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash} ehAluno={ehAluno}/>;
-  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno}/>;
+  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno} timer={timer}/>;
   else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={ehAluno}/>;
   return (<React.Fragment>
     {!LS_OK && <div className="warnbar">⚠️ Modo temporário: os dados somem ao fechar. Abra pelo link do GitHub Pages para salvar.</div>}
     {auth && <div className="rolebar">
       <span>👤 {auth.perfil.papel==='treinador'?'Treinador':'Aluno'}</span>
       <div className="rolebaracts">
-        <RestTimerTrigger timer={timer}/>
         <button onClick={auth.sair}>Sair</button>
       </div>
     </div>}
@@ -864,6 +894,10 @@ function ExerciseSheet({initial,onSave,onClose}){
   const [reps,setReps]=useState(init.reps);
   const [setsManual,setSetsManual]=useState(false);
   const [repsManual,setRepsManual]=useState(false);
+  // descanso: guardado como "45~60" (range) ou "60" (único)
+  const descOpts=['30~45','45~60','60~90','90~120','120~180'];
+  const [descanso,setDescanso]=useState(initial&&initial.descanso?initial.descanso:'');
+  const [descManual,setDescManual]=useState(false);
   // busca no catálogo real (cache do Cardápio); fallback pro exemplo se cache vazio
   const fonte = catalogo.length>0 ? catalogo.map(c=>({id:c.id,nome:c.nome,grupo:c.grupo})) : CATALOGO_EXEMPLO.map(n=>({id:null,nome:n,grupo:''}));
   // quebra o texto em palavras e casa TODAS elas em qualquer ordem (ignora acento)
@@ -886,7 +920,7 @@ function ExerciseSheet({initial,onSave,onClose}){
   const save=()=>{
     if(!name.trim())return;
     const combined = (sets.trim()&&reps.trim()) ? `${sets.trim()} × ${reps.trim()}` : (sets.trim()||reps.trim()||'');
-    onSave({name:name.trim(), series:combined, exerciseId});
+    onSave({name:name.trim(), series:combined, exerciseId, descanso:descanso.trim()});
   };
   return (<div className="backdrop" onClick={onClose}>
     <div className="sheet" onClick={e=>e.stopPropagation()}>
@@ -922,6 +956,16 @@ function ExerciseSheet({initial,onSave,onClose}){
                 <button type="button" key={r} className={'pcell'+(r===reps?' sel':'')} onClick={()=>setReps(r)}>{r}</button>
               ))}
               <button type="button" className="pcell more" onClick={()=>setRepsManual(true)}>⌨ digitar</button>
+            </div>}
+      </div>
+      <div className="field"><label>Descanso (segundos)</label>
+        {descManual
+          ? <input value={descanso} onChange={e=>setDescanso(e.target.value)} onBlur={()=>setDescManual(false)} placeholder="Ex: 45~60 ou 60" autoFocus/>
+          : <div className="pickgrid s3">
+              {descOpts.map(d=>(
+                <button type="button" key={d} className={'pcell'+(d===descanso?' sel':'')} onClick={()=>setDescanso(d)}>{d.replace('~','–')}</button>
+              ))}
+              <button type="button" className="pcell more" onClick={()=>setDescManual(true)}>⌨ digitar</button>
             </div>}
       </div>
       <div className="sheetactions">
@@ -1012,7 +1056,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose}){
         <button className="btn" onClick={save}>{isEdit?'Salvar alterações':'Salvar registro'}</button></div>
     </div></div>);
 }
-function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno}){
+function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer}){
   const s=db.students.find(x=>x.id===studentId);
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
   const [editingEx,setEditingEx]=useState(null);
@@ -1021,19 +1065,21 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno}){
   const updExercises=(exs)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,treinos:x.treinos.map(tt=>tt.id===treinoId?{...tt,exercises:exs}:tt)}:x)});
   const saveEx=(data)=>{
     if(editingEx==='new'){
-      const novo={id:uid(),name:data.name,series:data.series,exerciseId:data.exerciseId,logs:[]};
+      const novo={id:uid(),name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,logs:[]};
       updExercises([...(t.exercises||[]),novo]);
       enqueueOp({tipo:'insert',tabela:'exercicios',dados:{
         id:novo.id, treino_id:treinoId, nome:novo.name, series:novo.series||null,
-        cardapio_id:novo.exerciseId!=null?novo.exerciseId:null, ordem:(t.exercises||[]).length
+        cardapio_id:novo.exerciseId!=null?novo.exerciseId:null, ordem:(t.exercises||[]).length,
+        descanso:novo.descanso||null
       }});
       const herda=lastLogOfExercise(s,data.name,data.exerciseId);
       flash(herda?('Adicionado — última carga '+herda.carga+' disponível ✓'):'Exercício adicionado ✓');
     }else{
-      updExercises(t.exercises.map(e=>e.id===editingEx.id?{...e,name:data.name,series:data.series,exerciseId:data.exerciseId}:e));
+      updExercises(t.exercises.map(e=>e.id===editingEx.id?{...e,name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso}:e));
       enqueueOp({tipo:'update',tabela:'exercicios',id:editingEx.id,dados:{
         nome:data.name, series:data.series||null,
-        cardapio_id:data.exerciseId!=null?data.exerciseId:null
+        cardapio_id:data.exerciseId!=null?data.exerciseId:null,
+        descanso:data.descanso||null
       }});
       flash('Atualizado ✓');
     }
@@ -1090,7 +1136,12 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno}){
             </div>}
             <div className="exinfo">
               <div className="exname">{ex.name}</div>
-              {ex.series && <div className="exseries">{ex.series}</div>}
+              <div className="exmeta">
+                {ex.series && <span className="exseries">{ex.series}</span>}
+                {parseDescanso(ex.descanso) && <button className="exrest" onClick={()=>timer.start(parseDescanso(ex.descanso), ex.name)}>
+                  🕐 Descansar <span className="exresth">{ex.descanso.replace('~','–')}s</span>
+                </button>}
+              </div>
             </div>
             <button className={'donecheck'+(done?' on':'')} onClick={()=>toggleDone(ex.id)} aria-label={done?'Marcar como não feito':'Marcar como feito'}>
               <span className="dcicon">{done?'✓':''}</span>
