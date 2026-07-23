@@ -642,6 +642,7 @@ function App({auth}){
   const [view,setView]=useState(ehAluno?{name:'student',studentId:meuAlunoId}:{name:'students'});
   const [toast,setToast]=useState(null);
   const timer=useRestTimer();
+  const [seriesFeitas,setSeriesFeitas]=useState({}); // progresso de séries da sessão
   const prevStructRef=React.useRef(null);
 
   // CAMADA 2: busca do Supabase e atualiza o cache. Offline usa o cache.
@@ -699,7 +700,7 @@ function App({auth}){
   let screen;
   if(view.name==='students') screen=<Students db={db} setDb={setDb} nav={nav}/>;
   else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash} ehAluno={ehAluno}/>;
-  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno} timer={timer}/>;
+  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas}/>;
   else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={ehAluno}/>;
   return (<React.Fragment>
     {!LS_OK && <div className="warnbar">⚠️ Modo temporário: os dados somem ao fechar. Abra pelo link do GitHub Pages para salvar.</div>}
@@ -1098,7 +1099,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose}){
         <button className="btn" onClick={save}>{isEdit?'Salvar alterações':'Salvar registro'}</button></div>
     </div></div>);
 }
-function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer}){
+function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesFeitas,setSeriesFeitas}){
   const s=db.students.find(x=>x.id===studentId);
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
   const [editingEx,setEditingEx]=useState(null);
@@ -1158,8 +1159,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer}){
     }});
     flash('Carga registrada ✓'); setRegistering(null);
   };
-  // progresso de séries — só na sessão (não persiste)
-  const [seriesFeitas,setSeriesFeitas]=useState({});
+  // progresso de séries — vem do App (sobrevive à navegação)
   const avancarSerie=(ex)=>{
     const tot=numSeries(ex.series);
     setSeriesFeitas(m=>{
