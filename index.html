@@ -225,11 +225,11 @@
   .rtrunning.liberado .rtclock{color:#ddff00}
   .rtrunning.fim .rtclock{color:var(--muted)}
   .rtrunning .rtcancel{font-size:11px;font-weight:500;color:var(--muted)}
-  .rtrunning .rttrack{height:5px;width:100%;background:rgba(255,255,255,.06);border-radius:3px 3px 0 0;overflow:hidden}
-  .rtrunning .rtfill{height:100%;transition:width 1s linear,background .3s;border-radius:3px 3px 0 0}
-  .rtrunning.inicial .rtfill{background:var(--cyan)}
-  .rtrunning.liberado .rtfill{background:#ddff00}
-  .rtrunning.fim .rtfill{background:transparent}
+  .rtrunning .rttrack{position:relative;display:flex;height:6px;width:100%;overflow:hidden}
+  .rtrunning .rtzona{height:100%}
+  .rtrunning .rtzona.zmin{background:var(--cyan)}
+  .rtrunning .rtzona.zmax{background:#ddff00}
+  .rtrunning .rtconsumido{position:absolute;left:0;top:0;bottom:0;background:var(--surface-2);opacity:.82;transition:width 1s linear}
   .exmeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
   .exrest{display:inline-flex;align-items:center;gap:5px;font-family:inherit;font-size:13px;font-weight:600;color:var(--cyan);background:rgba(0,201,204,.10);border:1px solid rgba(0,201,204,.30);border-radius:10px;padding:4px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent}
   .exrest:active{transform:scale(.95)}
@@ -576,6 +576,8 @@ function RestTimerOverlay({timer}){
   // barra: a largura total representa o máximo; esvazia conforme o tempo passa
   const restante = Math.max(0, max-elapsed);
   const pct = max>0 ? (restante/max)*100 : 0;
+  // proporção fixa das zonas: quanto da barra é "até o mínimo"
+  const pctZonaMin = max>0 ? (min/max)*100 : 100;
   let texto;
   if(!passouMin) texto = 'Descanso mínimo em '+(min-elapsed)+'s';
   else if(!passouMax) texto = 'Descanso máximo em '+(max-elapsed)+'s';
@@ -586,7 +588,11 @@ function RestTimerOverlay({timer}){
       <span className="rtclock">{texto}</span>
       <span className="rtcancel">{exNome?exNome+' · ':''}tocar p/ parar</span>
     </div>
-    <div className="rttrack"><div className="rtfill" style={{width:pct+'%'}}></div></div>
+    <div className="rttrack">
+      <div className="rtzona zmin" style={{width:pctZonaMin+'%'}}></div>
+      <div className="rtzona zmax" style={{width:(100-pctZonaMin)+'%'}}></div>
+      <div className="rtconsumido" style={{width:(100-pct)+'%'}}></div>
+    </div>
   </div>);
 }
 function App({auth}){
