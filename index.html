@@ -62,13 +62,22 @@
   .avatar.avbusy{opacity:.55}
   .logoid{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:#ddff00}
   .logoid svg{width:100%;height:100%;display:block}
-  .perfilrow{display:flex;align-items:center;gap:14px;padding:2px 2px 18px;margin-bottom:2px}
-  .secaotit{display:flex;flex-direction:column;gap:2px;font-size:15px;font-weight:700;color:var(--text);
-    padding:14px 2px 12px;margin-top:2px;border-top:1px solid var(--line)}
-  .secaotit .secaosub{font-size:12px;font-weight:500;color:var(--muted)}
-  .perfilrow .avatar .avini{font-size:26px}
+  .tbmarca{justify-content:space-between;padding:12px 16px}
+  .tbmarca .tbside{flex:1;display:flex;align-items:center;min-width:56px}
+  .tbmarca .tbright{justify-content:flex-end}
+  .tbsair{padding:7px 14px;border-radius:10px;border:1px solid var(--line);background:transparent;
+    color:var(--muted);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
+  .tbsair:active{background:var(--surface-2);color:var(--text)}
+  .perfilrow{display:flex;align-items:center;gap:13px;padding:2px 2px 14px}
+  .saudacao{font-size:22px;font-weight:400;color:var(--muted);line-height:1.25;padding:2px 2px 4px;letter-spacing:-.01em}
+  .saudacao strong{display:inline-block;font-weight:700;color:var(--cyan-2);font-size:27px;letter-spacing:-.02em}
+  .secaotit{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:800;color:#ddff00;
+    padding:20px 2px 12px;margin-top:12px;border-top:1px solid var(--line);
+    text-transform:uppercase;letter-spacing:.09em}
+  .secaotit .secaosub{font-size:12px;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0}
+  .perfilrow .avatar .avini{font-size:21px}
   .perfilmeta{min-width:0;flex:1}
-  .perfilnome{font-size:19px;font-weight:700;color:var(--text);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .perfilnome{font-size:15px;font-weight:600;color:var(--text);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .perfilsub{font-size:12px;color:var(--muted);margin-top:3px}
   .rowcard .meta{flex:1;min-width:0}
   .rowcard .meta .name{font-weight:600;font-size:16px}
@@ -838,13 +847,13 @@ function App({auth}){
 
   let screen;
   if(view.name==='students') screen=<Students db={db} setDb={setDb} nav={nav}/>;
-  else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash} ehAluno={ehAluno}/>;
+  else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash} ehAluno={ehAluno} onSair={auth?auth.sair:null}/>;
   else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer}/>;
   else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={ehAluno}/>;
   return (<React.Fragment>
     {!LS_OK && <div className="warnbar">⚠️ Modo temporário: os dados somem ao fechar. Abra pelo link do GitHub Pages para salvar.</div>}
-    {auth && <div className="rolebar">
-      <span>👤 {auth.perfil.papel==='treinador'?'Treinador':'Aluno'}</span>
+    {auth && !ehAluno && <div className="rolebar">
+      <span>👤 Treinador</span>
       <div className="rolebaracts">
         <button onClick={auth.sair}>Sair</button>
       </div>
@@ -893,15 +902,23 @@ function LogoIdealis({size}){
   return (<span className="logoid" style={{width:size||30,height:size||30}}
     dangerouslySetInnerHTML={{__html: LOGO_SVG}}/>);
 }
+function primeiroNome(n){ return String(n||'').trim().split(/\s+/)[0] || ''; }
 function saudacao(){
   const h=new Date().getHours();
   if(h<12) return 'Bom dia';
   if(h<18) return 'Boa tarde';
   return 'Boa noite';
 }
-function TopBar({title,sub,onBack,logo}){
+function TopBar({title,sub,onBack,logo,onSair}){
+  if(logo) return (<div className="topbar tbmarca">
+    <span className="tbside"></span>
+    <LogoIdealis size={34}/>
+    <span className="tbside tbright">
+      {onSair && <button className="tbsair" onClick={onSair}>Sair</button>}
+    </span>
+  </div>);
   return (<div className="topbar">
-    {logo ? <LogoIdealis size={30}/> : <button className="iconbtn" onClick={onBack}>{onBack?'‹':'≡'}</button>}
+    <button className="iconbtn" onClick={onBack}>{onBack?'‹':'≡'}</button>
     <h1>{title}{sub && <React.Fragment><br/><span className="sub">{sub}</span></React.Fragment>}</h1>
   </div>);
 }
@@ -1037,7 +1054,7 @@ function Students({db,setDb,nav}){
       onClose={()=>setMenu(null)}/>}
   </React.Fragment>);
 }
-function StudentDetail({db,setDb,nav,studentId,flash,ehAluno}){
+function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
   const s=db.students.find(x=>x.id===studentId);
   const [adding,setAdding]=useState(false);
   const [nome,setNome]=useState('');
@@ -1071,17 +1088,18 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno}){
     setNome('');setAdding(false);
   };
   return (<React.Fragment>
-    <TopBar title={ehAluno?'Idealis':s.name} sub={ehAluno?'Presencial':'Treinos fixos'} onBack={ehAluno?null:()=>nav({name:'students'})} logo={ehAluno}/>
+    <TopBar title={ehAluno?'Idealis':s.name} sub={ehAluno?'Presencial':'Treinos fixos'} onBack={ehAluno?null:()=>nav({name:'students'})} logo={ehAluno} onSair={onSair}/>
     <div className="screen">
       {ehAluno && <React.Fragment>
         <div className="perfilrow">
-          <Avatar nome={s.name} foto={s.foto} size={64} onPick={trocarFotoAluno} busy={subindoFoto}/>
+          <Avatar nome={s.name} foto={s.foto} size={52} onPick={trocarFotoAluno} busy={subindoFoto}/>
           <div className="perfilmeta">
             <div className="perfilnome">{s.name}</div>
-            <div className="perfilsub">{saudacao()} · toque na foto para trocar</div>
+            <div className="perfilsub">toque na foto para trocar</div>
           </div>
         </div>
-        {treinos.length>0 && <div className="secaotit">Meus treinos
+        <div className="saudacao">{saudacao()},<br/><strong>{primeiroNome(s.name)}</strong></div>
+        {treinos.length>0 && <div className="secaotit">Seus treinos
           <span className="secaosub">Escolha o treino de hoje</span></div>}
       </React.Fragment>}
       {treinos.length===0 && <div className="empty"><div className="big">📋</div>
