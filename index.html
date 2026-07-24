@@ -52,8 +52,19 @@
   .search:focus{border-color:var(--cyan)}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px}
   .rowcard{display:flex;align-items:center;gap:14px}
-  .rowcard .avatar{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:grid;place-items:center;
-    font-weight:700;font-size:18px;background:linear-gradient(135deg,var(--cyan),var(--cyan-2));color:#04191a}
+  .avatar{position:relative;border-radius:14px;flex-shrink:0;display:grid;place-items:center;overflow:hidden;
+    background:linear-gradient(135deg,var(--cyan),var(--cyan-2));color:#04191a}
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+  .avatar .avini{font-weight:700;font-size:18px;line-height:1}
+  .avatar.avedit{cursor:pointer}
+  .avatar .avcam{position:absolute;right:-1px;bottom:-1px;width:20px;height:20px;border-radius:7px;
+    background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;font-size:10px;line-height:1}
+  .avatar.avbusy{opacity:.55}
+  .perfilrow{display:flex;align-items:center;gap:14px;padding:4px 2px 18px;margin-bottom:4px;border-bottom:1px solid var(--line)}
+  .perfilrow .avatar .avini{font-size:26px}
+  .perfilmeta{min-width:0;flex:1}
+  .perfilnome{font-size:19px;font-weight:700;color:var(--text);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .perfilsub{font-size:12px;color:var(--muted);margin-top:3px}
   .rowcard .meta{flex:1;min-width:0}
   .rowcard .meta .name{font-weight:600;font-size:16px}
   .rowcard .meta .desc{font-size:13px;color:var(--muted);margin-top:2px}
@@ -394,6 +405,47 @@ function enqueueOp(op){
   if(window.__flushOps) window.__flushOps();
 }
 /* executa uma operação no Supabase */
+/* Redimensiona a imagem para no máx 400px e comprime em JPEG (~20-40KB) */
+function comprimirImagem(file, maxLado, quality){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error('Falha ao ler o arquivo'));
+    reader.onload=()=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error('Arquivo não é uma imagem válida'));
+      img.onload=()=>{
+        let {width:w,height:h}=img;
+        const lado=Math.min(w,h); // corte quadrado central
+        const sx=(w-lado)/2, sy=(h-lado)/2;
+        const destino=Math.min(maxLado||400, lado);
+        const cv=document.createElement('canvas');
+        cv.width=destino; cv.height=destino;
+        const ctx=cv.getContext('2d');
+        ctx.drawImage(img, sx, sy, lado, lado, 0, 0, destino, destino);
+        cv.toBlob(b=>b?resolve(b):reject(new Error('Falha ao converter')), 'image/jpeg', quality||0.82);
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* Sobe a foto do aluno pro bucket e devolve a URL pública */
+async function uploadFotoAluno(alunoId, file){
+  if(!sb) return {ok:false, erro:'sem conexão com o servidor'};
+  if(!navigator.onLine) return {ok:false, erro:'você está offline'};
+  try{
+    const blob=await comprimirImagem(file, 400, 0.82);
+    const path=alunoId+'/perfil.jpg';
+    const {error}=await sb.storage.from('fotos-alunos')
+      .upload(path, blob, {upsert:true, contentType:'image/jpeg', cacheControl:'3600'});
+    if(error) return {ok:false, erro:error.message};
+    const {data}=sb.storage.from('fotos-alunos').getPublicUrl(path);
+    // ?v= força o navegador a buscar a versão nova quando troca a foto
+    return {ok:true, url:data.publicUrl+'?v='+Date.now()};
+  }catch(e){ return {ok:false, erro:String(e.message||e)}; }
+}
+
 async function execOp(op){
   if(!sb) throw new Error('sem cliente');
   const T=op.tabela, D=op.dados;
@@ -435,7 +487,7 @@ async function fetchDbFromSupabase(){
   try{
     // o RLS já filtra: treinador vê tudo, aluno vê só o dele
     const [rAlunos, rTreinos, rEx, rLogs, rSess] = await Promise.all([
-      sb.from('alunos').select('id,nome').order('nome'),
+      sb.from('alunos').select('id,nome,foto_url').order('nome'),
       sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data').order('ordem'),
       sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar').order('ordem'),
       sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor').order('data'),
@@ -471,7 +523,7 @@ async function fetchDbFromSupabase(){
       });
     });
     const students=(rAlunos.data||[]).map(a=>({
-      id:a.id, name:a.nome, treinos: treinosPorAluno[a.id]||[]
+      id:a.id, name:a.nome, foto: a.foto_url||'', treinos: treinosPorAluno[a.id]||[]
     }));
     return {ok:true, db:{students}};
   }catch(e){
@@ -868,13 +920,43 @@ function RowMenu({label,currentName,onRename,onDelete,onClose}){
   </div>);
 }
 
+/* Avatar: mostra a foto se existir, senão a inicial do nome */
+function Avatar({nome,foto,size,onPick,busy}){
+  const [erro,setErro]=useState(false);
+  const inputRef=React.useRef(null);
+  const px=size||44;
+  const inicial=(nome||'?').trim().slice(0,1).toUpperCase();
+  const temFoto=!!foto && !erro;
+  const conteudo = temFoto
+    ? <img src={foto} alt="" onError={()=>setErro(true)}/>
+    : <span className="avini">{inicial}</span>;
+  useEffect(()=>{ setErro(false); },[foto]);
+  if(!onPick) return <div className="avatar" style={{width:px,height:px}}>{conteudo}</div>;
+  return (<div className={'avatar avedit'+(busy?' avbusy':'')} style={{width:px,height:px}}
+      onClick={e=>{e.stopPropagation(); if(!busy && inputRef.current) inputRef.current.click();}}>
+    {conteudo}
+    <span className="avcam">{busy?'…':'📷'}</span>
+    <input ref={inputRef} type="file" accept="image/*" style={{display:'none'}}
+      onChange={e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=''; if(f) onPick(f); }}/>
+  </div>);
+}
+
 function Students({db,setDb,nav}){
   const [q,setQ]=useState('');
   const [adding,setAdding]=useState(false);
   const [name,setName]=useState('');
   const [menu,setMenu]=useState(null); // aluno em edição
   const [catStatus,setCatStatus]=useState('');
+  const [subindo,setSubindo]=useState(null); // id do aluno com upload em curso
   const catMeta=loadCatalogoMeta();
+  const trocarFoto=async (aluno,file)=>{
+    setSubindo(aluno.id);
+    const r=await uploadFotoAluno(aluno.id, file);
+    setSubindo(null);
+    if(!r.ok){ alert('Não deu para enviar a foto: '+r.erro); return; }
+    setDb(d=>({...d,students:d.students.map(x=>x.id===aluno.id?{...x,foto:r.url}:x)}));
+    enqueueOp({tipo:'update',tabela:'alunos',id:aluno.id,dados:{foto_url:r.url}});
+  };
   const atualizarCatalogo=async ()=>{
     setCatStatus('baixando');
     const r=await fetchCatalogo();
@@ -907,7 +989,7 @@ function Students({db,setDb,nav}){
         <p>{q?'Nenhum aluno com esse nome.':'Nenhum aluno ainda. Toque em “+ Aluno” para começar.'}</p></div>}
       {list.map(s=>(
         <div key={s.id} className="card rowcard" onClick={()=>nav({name:'student',studentId:s.id})}>
-          <div className="avatar">{s.name.slice(0,1).toUpperCase()}</div>
+          <Avatar nome={s.name} foto={s.foto} onPick={f=>trocarFoto(s,f)} busy={subindo===s.id}/>
           <div className="meta"><div className="name">{s.name}</div>
             <div className="desc">{(s.treinos||[]).length} {(s.treinos||[]).length===1?'treino':'treinos'}</div></div>
           <button className="menudot" onClick={e=>{e.stopPropagation();setMenu(s);}}>⋯</button>
@@ -943,7 +1025,17 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno}){
   const [adding,setAdding]=useState(false);
   const [nome,setNome]=useState('');
   const [menu,setMenu]=useState(null); // treino em edição
+  const [subindoFoto,setSubindoFoto]=useState(false);
   if(!s) return null;
+  const trocarFotoAluno=async (file)=>{
+    setSubindoFoto(true);
+    const r=await uploadFotoAluno(studentId, file);
+    setSubindoFoto(false);
+    if(!r.ok){ alert('Não deu para enviar a foto: '+r.erro); return; }
+    setDb(d=>({...d,students:d.students.map(x=>x.id===studentId?{...x,foto:r.url}:x)}));
+    enqueueOp({tipo:'update',tabela:'alunos',id:studentId,dados:{foto_url:r.url}});
+    flash('Foto atualizada ✓');
+  };
   const treinos=s.treinos||[];
   const updStudent=(patch)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,...patch}:x)});
   const renameTreino=(id,novo)=>{
@@ -964,6 +1056,13 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno}){
   return (<React.Fragment>
     <TopBar title={ehAluno?'Meus treinos':s.name} sub={ehAluno?'Escolha o treino de hoje':'Treinos fixos'} onBack={ehAluno?null:()=>nav({name:'students'})}/>
     <div className="screen">
+      {ehAluno && <div className="perfilrow">
+        <Avatar nome={s.name} foto={s.foto} size={64} onPick={trocarFotoAluno} busy={subindoFoto}/>
+        <div className="perfilmeta">
+          <div className="perfilnome">{s.name}</div>
+          <div className="perfilsub">{treinos.length} {treinos.length===1?'treino':'treinos'} · toque na foto para trocar</div>
+        </div>
+      </div>}
       {treinos.length===0 && <div className="empty"><div className="big">📋</div>
         <p>{ehAluno?'Nenhum treino montado ainda. Fale com seu treinador.':'Nenhum treino ainda. Crie o '}{!ehAluno && <b>Treino A</b>}{!ehAluno && ' e adicione os exercícios — ele fica fixo pelas próximas semanas.'}</p></div>}
       {treinos.map(t=>{
