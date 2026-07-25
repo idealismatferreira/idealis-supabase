@@ -36,12 +36,12 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
     font-family:'Sora',system-ui,sans-serif;overscroll-behavior-y:none}
-  #root{max-width:520px;margin:0 auto;min-height:100vh;position:relative}
+  #root{max-width:520px;margin:0 auto;min-height:100vh;min-height:100dvh;position:relative}
   button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
   input,textarea{font-family:inherit}
   ::placeholder{color:var(--muted)}
   .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;
-    padding:14px 16px;background:rgba(11,15,16,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+    padding:14px 16px;background:rgba(11,15,16,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
   .topbar h1{font-size:17px;font-weight:600;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .topbar .sub{font-size:12px;color:var(--muted);font-weight:400}
   .iconbtn{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;font-size:22px;color:var(--ctrl);flex-shrink:0}
@@ -253,7 +253,7 @@
     font-weight:500;animation:fade .3s ease;max-width:90%;text-align:center}
   @keyframes fade{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1}}
   .warnbar{background:#3a2a10;color:#f1d94a;font-size:12px;text-align:center;padding:7px 12px;line-height:1.4}
-  .loginwrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .loginwrap{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px}
   .loginbox{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:28px 22px}
   .loginhead{display:flex;flex-direction:column;align-items:center;gap:0;margin-bottom:26px}
   .loginhead .logoid{margin-bottom:16px}
@@ -517,7 +517,11 @@ const uid = ()=>{
     return v.toString(16);
   });
 };
-const todayISO = ()=>new Date().toISOString().slice(0,10);
+/* data local (não UTC): em Brasília, toISOString() vira o dia seguinte após 21h */
+const todayISO = ()=>{
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+};
 function fmtDate(iso){const p=iso.split('-');return p[2]+'/'+p[1]+'/'+p[0].slice(2);}
 const norm = (t)=>(t||'').trim().toLowerCase();
 const normAcc = (t)=>(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
@@ -1094,7 +1098,9 @@ function salvarVarPend(alunoId, exName, lista){
 }
 function varPadrao(academia){
   const a=String(academia||'').trim();
-  return a ? ('Máq. '+a) : 'Máq. Principal';
+  // numerado de propósito: "Máq 1" já indica que pode haver outras,
+  // então um 2º chip com nome de marca não conflita
+  return a ? ('Máq 1 · '+a) : 'Máq 1';
 }
 /* Lista de variantes já usadas no histórico daquele exercício */
 function variantesDoHistorico(logs, academia){
@@ -1822,7 +1828,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
           ))}
           {novaVar===null
             ? <button type="button" className="varchip varadd" onClick={()=>setNovaVar('')}>+</button>
-            : <input className="varinput" autoFocus value={novaVar} placeholder="Nome do equipamento"
+            : <input className="varinput" autoFocus value={novaVar} placeholder={'Ex: Máq '+(variantes.length+1)+' ou marca'}
                 onChange={e=>setNovaVar(e.target.value)}
                 onBlur={criarVariante}
                 onKeyDown={e=>{ if(e.key==='Enter')criarVariante(); if(e.key==='Escape')setNovaVar(null); }}/>}
