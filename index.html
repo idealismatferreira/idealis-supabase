@@ -753,7 +753,7 @@ const CATALOGO_KEY = 'idealis_presencial_catalogo_v1';
 const CATALOGO_META_KEY = 'idealis_presencial_catalogo_meta_v1';
 function loadCatalogo(){ if(!LS_OK) return []; try{const r=window.localStorage.getItem(CATALOGO_KEY);return r?JSON.parse(r):[];}catch(e){return [];} }
 function saveCatalogo(lista){ if(!LS_OK)return; try{window.localStorage.setItem(CATALOGO_KEY,JSON.stringify(lista));window.localStorage.setItem(CATALOGO_META_KEY,JSON.stringify({atualizado:new Date().toISOString(),total:lista.length}));}catch(e){} }
-const CATALOGO_MAX_IDADE_MS = 8*60*60*1000; // revalida o catálogo a cada 8h
+const CATALOGO_MAX_IDADE_MS = 2*60*60*1000; // revalida o catálogo a cada 2h
 function catalogoVencido(){
   const meta=loadCatalogoMeta();
   if(!meta || !meta.atualizado) return true;
@@ -981,7 +981,7 @@ function App({auth}){
   const nav=(v)=>setView(v);
 
   useEffect(()=>{
-    // baixa o catálogo do Cardápio na 1ª vez e revalida a cada 8h (cache offline)
+    // baixa o catálogo do Cardápio na 1ª vez e revalida a cada 2h (cache offline)
     const precisa = loadCatalogo().length===0 || catalogoVencido();
     if(precisa){
       fetchCatalogo().then(r=>{
