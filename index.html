@@ -71,6 +71,13 @@
   .perfilrow{display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px 2px 6px}
   .saudacao{text-align:center;font-size:19px;font-weight:400;color:var(--muted);line-height:1.3;letter-spacing:-.01em}
   .saudacao strong{display:block;font-weight:700;color:var(--cyan-2);font-size:28px;letter-spacing:-.02em;margin-top:2px}
+  .fdwrap{margin:14px auto 0;text-align:center}
+  /* mesmo estilo da saudação: peso 400, sem caixa alta, sem espaçamento expandido */
+  .fdlabel{font-size:11.5px;font-weight:400;letter-spacing:-.01em;color:var(--muted);
+    opacity:.8;margin-bottom:4px}
+  .frasedia{max-width:320px;margin:0 auto;text-align:center;font-size:14px;font-weight:500;
+    line-height:1.5;letter-spacing:-.01em;color:#a2feff;padding:0 4px;
+    text-wrap:balance;-webkit-hyphens:none;hyphens:none}
   .secaotit{display:block;font-size:15px;font-weight:800;color:#ddff00;
     padding:18px 2px 14px;margin-top:16px;border-top:1px solid var(--line);
     text-transform:uppercase;letter-spacing:.1em}
@@ -121,7 +128,7 @@
   .vidwrap iframe{width:100%;height:100%;display:block;border:0}
   .vidclose{position:absolute;top:6px;right:6px;z-index:2;width:30px;height:30px;border-radius:50%;background:rgba(11,15,16,.8);border:1px solid var(--line);color:var(--text);font-size:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
   .exrow .exname{font-weight:600;font-size:16px;line-height:1.3}
-  .exrow .exseries{display:inline-block;font-size:15px;color:var(--text);font-weight:600;letter-spacing:.2px;background:var(--ctrl-bg);border:1px solid var(--ctrl-line);padding:3px 10px;border-radius:10px}
+  .exrow .exseries{display:inline-block;font-size:15px;color:#a2feff;font-weight:600;letter-spacing:.2px;background:var(--ctrl-bg);border:1px solid var(--ctrl-line);padding:3px 10px;border-radius:10px}
   .exrow .exlast{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
   .pill{font-size:13px;padding:5px 11px;border-radius:20px;background:var(--surface-2);border:1px solid var(--line);color:var(--text)}
   .pill .k{color:var(--muted);margin-right:4px}
@@ -337,7 +344,7 @@
   .serieadd{width:100%;margin-top:9px;padding:10px;border-radius:11px;border:1px dashed var(--line);
     background:transparent;color:var(--muted);font-family:inherit;font-size:13px;cursor:pointer}
   /* --- plano do método (tela do aluno) --- */
-  .exrow .exseries.met{color:var(--text);border-color:var(--ctrl-line);background:var(--ctrl-bg);font-weight:600}
+  .exrow .exseries.met{color:#a2feff;border-color:var(--ctrl-line);background:var(--ctrl-bg);font-weight:600}
   /* prescrição concluída: mesma linguagem da série feita */
   .exrow .exseries.concl{opacity:.42;text-decoration:line-through;text-decoration-thickness:1px}
   .metplano{display:flex;flex-direction:column;gap:5px;margin:10px 0 2px;padding:10px;border-radius:12px;
@@ -348,11 +355,11 @@
   .mpserie.feita .mpnum{color:#6ee89a}
   .mpserie.feita .mpreps{text-decoration:line-through;text-decoration-thickness:1px}
   .mpserie.atual{border-color:var(--cyan);background:rgba(0,201,204,.09)}
-  .mpserie.atual .mpreps{color:var(--cyan-2)}
+  .mpserie.atual .mpreps{color:#a2feff;font-weight:700}
   .mpnum{flex:0 0 auto;min-width:24px;font-size:11.5px;font-weight:700;color:var(--cyan-2);padding-top:2px}
   .mpbody{flex:1;min-width:0}
   .mplinha{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-  .mpreps{font-size:15px;font-weight:600;letter-spacing:.2px;color:var(--text)}
+  .mpreps{font-size:15px;font-weight:600;letter-spacing:.2px;color:#a2feff}
   .mptag{font-size:10.5px;font-weight:600;color:var(--muted);background:var(--surface-2);
     border-radius:999px;padding:2px 8px}
   .mpblocos{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:5px}
@@ -361,6 +368,13 @@
   .mppausa{font-size:10.5px;color:#ddff00}
   .mpext{margin-top:5px;font-size:11.5px;font-weight:600;color:#ffc48a}
   .mpdesc{flex:0 0 auto;font-size:11px;font-weight:600;color:var(--muted);padding-top:3px}
+  .crono{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:10px;
+    background:var(--surface-2);border:1px solid var(--line);font-size:13px;font-weight:700;
+    font-variant-numeric:tabular-nums;color:var(--cyan-2);letter-spacing:.02em}
+  .crono .crico{font-size:11px;opacity:.7}
+  .crono.off{color:var(--muted);opacity:.7}
+  .cronohint{margin:0 2px 14px;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.4;
+    color:var(--muted);background:var(--surface-2);border:1px solid var(--line);text-align:center}
   .exobs{display:flex;gap:9px;align-items:flex-start;margin:10px 0 2px;padding:11px 13px;border-radius:11px;
     background:rgba(221,255,0,.06);border:1px solid rgba(221,255,0,.28);border-left:3px solid #ddff00}
   .exobs .eoico{flex:0 0 auto;font-size:13px;line-height:1.5}
@@ -1044,6 +1058,31 @@ function chaveVarBase(alunoId, exName){
   return 'idealis_var_base_'+String(alunoId||'')+'_'+norm(exName||'');
 }
 /* chips criados mas ainda sem log — persistidos por aluno+exercício */
+/* início da sessão de treino: persiste por treino+dia, sobrevive a reload */
+function chaveInicio(treinoId){ return 'idealis_inicio_'+String(treinoId||'')+'_'+todayISO(); }
+function lerInicio(treinoId){
+  try{
+    if(!LS_OK) return null;
+    const v=window.localStorage.getItem(chaveInicio(treinoId));
+    if(!v) return null;
+    const n=parseInt(v,10);
+    return isNaN(n)?null:n;
+  }catch(e){ return null; }
+}
+/* marca o início na 1ª série concluída; se já existe, mantém */
+function marcarInicio(treinoId){
+  const atual=lerInicio(treinoId);
+  if(atual!=null) return atual;
+  const agora=Date.now();
+  try{ if(LS_OK) window.localStorage.setItem(chaveInicio(treinoId), String(agora)); }catch(e){}
+  return agora;
+}
+function fmtCrono(ms){
+  const t=Math.max(0,Math.floor(ms/1000));
+  const h=Math.floor(t/3600), m=Math.floor((t%3600)/60), sg=t%60;
+  const p=(x)=>String(x).padStart(2,'0');
+  return h>0 ? (h+':'+p(m)+':'+p(sg)) : (p(m)+':'+p(sg));
+}
 function chaveVarPend(alunoId, exName){
   return 'idealis_var_pend_'+String(alunoId||'')+'_'+norm(exName||'');
 }
@@ -1068,6 +1107,48 @@ function variantesDoHistorico(logs, academia){
   if(!vistas.includes(base)) vistas.unshift(base);
   return vistas;
 }
+/* Frase do dia — uma por dia, determinística pela data + aluno.
+   Registro: prático e amigável, não motivacional. */
+const FRASES_DIA=[
+  "Prepare seu fone e sua melhor playlist 💪🏼",
+  "Garrafa d’água cheia? Então bora 💧",
+  "Aquece rapidinho antes da primeira série 🔄",
+  "Capricha na execução 🎯",
+  "Amplitude completa vale mais que peso extra 📏",
+  "Controla a descida, é lá que o músculo trabalha ⬇️",
+  "Se doer articulação, para e me avisa 🩺",
+  "Registra a carga, é assim que a gente evolui 📈",
+  "Qualquer dúvida em algum exercício, me chama 👋",
+  "Hoje é dia de fazer o simples bem feito 👌",
+  "Treino curto e bem feito rende mais que treino arrastado ⚡",
+  "Dormiu bem? Isso conta mais que qualquer suplemento 😴",
+  "Se alimentou bem antes? Faz diferença 🍌",
+  "Descanso entre séries é parte do treino, respeita ⏱️",
+  "Se tá muito cansado hoje, ajusta a carga sem culpa 🔧",
+  "Confere o descanso de cada série, tá tudo anotado 👀",
+  "Filma uma série se quiser feedback da execução 🎥",
+  "Foco no músculo alvo, não no espelho 🎯",
+  "Anotou a carga da última vez? Bora superar 📊",
+  "Execução antes de aumentar o peso 🙌🏼",
+  "Respira: solta o ar na hora de fazer a força 🌬️",
+  "Dúvida na execução? Filma e me manda ▶️",
+  "Bora fazer valer a hora que você reservou ⏰",
+  "Se a série tá fácil demais, sobe a carga 📶",
+  "Hidrata entre os exercícios 💧",
+  "Cada carga registrada me ajuda a ajustar seu plano 📋",
+  "Toalha, água e fone. Checklist pronto ✅",
+  "Você chegou até aqui, o resto é só executar 🎧",
+];
+function fraseDoDia(alunoId){
+  // rotação por dia com deslocamento por aluno: nenhuma repetição em 30 dias
+  const dias=Math.floor(Date.parse(todayISO()+'T00:00:00Z')/86400000);
+  let h=0; const a=String(alunoId||'');
+  for(let i=0;i<a.length;i++){ h=((h<<5)-h+a.charCodeAt(i))|0; }
+  const n=FRASES_DIA.length;
+  const f=FRASES_DIA[(((dias+h)%n)+n)%n];
+  // cola o último token (emoji) na palavra anterior: evita emoji órfão na quebra
+  return f.replace(/\s+(\S+)$/,'\u00A0$1');
+}
 function primeiroNome(n){ return String(n||'').trim().split(/\s+/)[0] || ''; }
 function saudacao(){
   const h=new Date().getHours();
@@ -1075,7 +1156,7 @@ function saudacao(){
   if(h<18) return 'Boa tarde';
   return 'Boa noite';
 }
-function TopBar({title,sub,onBack,logo,onSair}){
+function TopBar({title,sub,onBack,logo,onSair,right}){
   if(logo) return (<div className="topbar tbmarca">
     <span className="tbside"></span>
     <LogoIdealis size={34}/>
@@ -1086,6 +1167,7 @@ function TopBar({title,sub,onBack,logo,onSair}){
   return (<div className="topbar">
     <button className="iconbtn" onClick={onBack}>{onBack?'‹':'≡'}</button>
     <h1>{title}{sub && <React.Fragment><br/><span className="sub">{sub}</span></React.Fragment>}</h1>
+    {right}
   </div>);
 }
 /* menu reutilizável: editar nome + apagar (com confirmação) para aluno/treino/exercício */
@@ -1276,6 +1358,10 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
         <div className="perfilrow">
           <Avatar nome={s.name} foto={s.foto} size={92} onPick={trocarFotoAluno} busy={subindoFoto}/>
           <div className="saudacao">{saudacao()},<br/><strong>{primeiroNome(s.name)}</strong></div>
+          <div className="fdwrap">
+            <div className="fdlabel">Idealis hoje 👇</div>
+            <div className="frasedia">{fraseDoDia(studentId)}</div>
+          </div>
         </div>
         {treinos.length>0 && <div className="secaotit">Seus treinos</div>}
       </React.Fragment>}
@@ -1802,6 +1888,15 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   const [armado,setArmado]=useState(false);
   const [dispensado,setDispensado]=useState(false);
   const [dataRetro,setDataRetro]=useState(todayISO());
+  // cronômetro da sessão — conta desde a 1ª abertura do treino hoje
+  const [agora,setAgora]=useState(Date.now());
+  const [inicio,setInicio]=useState(()=>lerInicio(treinoId));
+  useEffect(()=>{ setInicio(lerInicio(treinoId)); setAgora(Date.now()); },[treinoId]);
+  useEffect(()=>{
+    if(inicio==null) return; // só roda depois da 1ª série
+    const id=setInterval(()=>setAgora(Date.now()),1000);
+    return ()=>clearInterval(id);
+  },[inicio]);
   useEffect(()=>{
     abertoEmRef.current=Date.now();
     setArmado(false); setDispensado(false);
@@ -1934,15 +2029,14 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   // progresso de séries — vem do App (sobrevive à navegação)
   const avancarSerie=(ex)=>{
     const tot=totalSeries(ex);
-    let feitaAgora=0;
-    setSeriesFeitas(m=>{
-      const atual=m[ex.id]||0;
-      const novo=Math.min(tot, atual+1);
-      feitaAgora=novo;
-      return {...m,[ex.id]:novo};
-    });
-    // descanso da série recém-concluída (com método, varia série a série)
-    const f=parseDescanso(descansoDaSerie(ex, Math.max(0,feitaAgora-1)));
+    // lê o valor atual de forma síncrona — o updater do setState roda só no re-render
+    const atual=seriesFeitas[ex.id]||0;
+    const novo=Math.min(tot, atual+1);
+    setSeriesFeitas(m=>({...m,[ex.id]:novo}));
+    // 1ª série do dia dispara o cronômetro da sessão
+    if(inicio==null){ setInicio(marcarInicio(treinoId)); setAgora(Date.now()); }
+    // descanso da série que ACABOU de ser feita (índice novo-1)
+    const f=parseDescanso(descansoDaSerie(ex, novo-1));
     if(f && timer) timer.start(f, ex.name);
   };
   const zerarSerie=(exId)=>setSeriesFeitas(m=>({...m,[exId]:0}));
@@ -1951,7 +2045,12 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     const m={}; loadCatalogo().forEach(c=>{ if(c.video) m[String(c.id)]=c.video; }); return m;
   },[catalogoVer]);
   return (<React.Fragment>
-    <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId})}/>    <div className="screen">
+    <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId})}
+      right={<span className={'crono'+(inicio==null?' off':'')}>
+        <span className="crico">⏱</span>{inicio==null?'--:--':fmtCrono(agora-inicio)}</span>}/>
+    <div className="screen">
+      {inicio==null && (t.exercises||[]).length>0 &&
+        <div className="cronohint">⏱ O tempo começa a contar a partir da primeira série 💪🏼</div>}
       {(t.exercises||[]).length===0 && <div className="empty"><div className="big">＋</div>
         <p>{ehAluno?'Este treino ainda não tem exercícios. Fale com seu treinador.':'Treino vazio. Toque em “+ Exercício” para montar. Depois, a cada aula, você só registra a carga.'}</p></div>}
       {(t.exercises||[]).map((ex,idx)=>{
