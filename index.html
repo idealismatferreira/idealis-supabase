@@ -296,8 +296,24 @@
   .metbtn{padding:10px 13px;border-radius:11px;border:1px solid var(--line);background:var(--bg);
     color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
   .metbtn.del{color:#ff9ba3;border-color:rgba(255,92,108,.35)}
-  .metlista{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:290px;overflow-y:auto;
+  .metlista{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:340px;overflow-y:auto;
     padding:10px;border-radius:12px;background:var(--bg);border:1px solid var(--line)}
+  .metbusca{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--text);font-family:inherit;font-size:13.5px;margin-bottom:2px}
+  .metbusca:focus{outline:none;border-color:var(--cyan)}
+  .metfam{display:flex;flex-direction:column;gap:5px}
+  .mfhead{display:flex;align-items:center;gap:8px;width:100%;padding:11px 12px;border-radius:10px;
+    border:1px solid var(--line);background:var(--surface-2);cursor:pointer;font-family:inherit}
+  .mfhead.on{border-color:var(--cyan);background:rgba(0,201,204,.08)}
+  .mfnome{flex:1;text-align:left;font-size:13.5px;font-weight:700;color:var(--text)}
+  .mfhead.on .mfnome{color:var(--cyan-2)}
+  .mfqtd{font-size:10.5px;font-weight:700;color:var(--muted);background:var(--bg);
+    border:1px solid var(--line);border-radius:999px;padding:1px 7px}
+  .mfseta{font-size:11px;color:var(--muted)}
+  .mffilhos{display:flex;flex-direction:column;gap:5px;padding-left:10px;
+    border-left:2px solid var(--line);margin-left:4px}
+  .mofam{font-weight:700;color:var(--cyan-2)}
+  .metvazio{font-size:12.5px;color:var(--muted);padding:14px 4px;text-align:center}
   .metopt{display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;padding:10px 12px;
     border-radius:10px;border:1px solid var(--line);background:var(--surface-2);cursor:pointer;font-family:inherit}
   .metopt:active{border-color:var(--cyan)}
@@ -1414,45 +1430,132 @@ function Scale({value,onChange,leftLabel,rightLabel}){
 const SERIE_VAZIA={reps:'',descanso:''};
 function serieRep(n,base){ const out=[]; for(let i=0;i<n;i++) out.push(Object.assign({},SERIE_VAZIA,base)); return out; }
 const METODOS_TEMPLATE=[
-  {nome:'Pirâmide Crescente', tipo:'porSerie', series:[
+  // ---- PIRÂMIDE ----
+  {fam:'Pirâmide', nome:'Pirâmide 4× 12-15/10-12/8-10/6-8', tipo:'porSerie', series:[
     {reps:'12 a 15',descanso:'60s'},{reps:'10 a 12',descanso:'90s'},
     {reps:'8 a 10',descanso:'90s'},{reps:'6 a 8',descanso:'120s',carga:'mais peso'}]},
-  {nome:'Pirâmide + 1 drop na última', tipo:'porSerie', series:[
+  {fam:'Pirâmide', nome:'Pirâmide 4× 10-12/8-10/6-8/4-6', tipo:'porSerie', series:[
+    {reps:'10 a 12',descanso:'60s'},{reps:'8 a 10',descanso:'90s'},
+    {reps:'6 a 8',descanso:'90s'},{reps:'4 a 6',descanso:'120s',carga:'mais peso'}]},
+  {fam:'Pirâmide', nome:'Pirâmide 3× 12-15/10-12/8-10', tipo:'porSerie', series:[
+    {reps:'12 a 15',descanso:'60s'},{reps:'10 a 12',descanso:'90s'},
+    {reps:'8 a 10',descanso:'90s',carga:'mais peso'}]},
+  {fam:'Pirâmide', nome:'Pirâmide decrescente 4× 6-8/8-10/10-12/12-15', tipo:'porSerie', series:[
+    {reps:'6 a 8',descanso:'120s',carga:'mais peso'},{reps:'8 a 10',descanso:'90s'},
+    {reps:'10 a 12',descanso:'90s'},{reps:'12 a 15',descanso:'60s'}]},
+  {fam:'Pirâmide', nome:'Pirâmide + 1 drop na última', tipo:'porSerie', series:[
     {reps:'12 a 15',descanso:'60s'},{reps:'10 a 12',descanso:'90s'},
     {reps:'8 a 10',descanso:'90s'},
     {reps:'6 a 8',descanso:'120s',carga:'mais peso',
      extensao:[{tipo:'drop',reducao:'20 a 30%',reps:'até fadigar'}]}]},
-  {nome:'Degrau Acima', tipo:'porSerie', series:[
-    {reps:'12 a 15',descanso:'60s',carga:'menos peso'},{reps:'12 a 15',descanso:'60s',carga:'menos peso'},
-    {reps:'6 a 8',descanso:'90s',carga:'mais peso'},{reps:'6 a 8',descanso:'90s',carga:'mais peso'}]},
-  {nome:'Degrau Sobe e Desce', tipo:'porSerie', series:[
-    {reps:'12 a 15',descanso:'60s',carga:'mais leve'},{reps:'6 a 10',descanso:'90s',carga:'mais peso'},
-    {reps:'6 a 10',descanso:'90s',carga:'mais peso'},{reps:'até a falha',descanso:'',carga:'mais leve',aberto:true}]},
-  {nome:'Intensidade Alternada', tipo:'porSerie', series:[
-    {reps:'6 a 8',descanso:'90s',carga:'mais peso'},{reps:'12 a 15',descanso:'60s',carga:'menos peso'},
-    {reps:'6 a 8',descanso:'90s',carga:'mais peso'},{reps:'12 a 15',descanso:'60s',carga:'menos peso'}]},
-  {nome:'Cluster 15" (8+8)', tipo:'uniforme', series:serieRep(3,
+  {fam:'Pirâmide', nome:'Pirâmide + 2 drops na última', tipo:'porSerie', series:[
+    {reps:'12 a 15',descanso:'60s'},{reps:'10 a 12',descanso:'90s'},
+    {reps:'8 a 10',descanso:'90s'},
+    {reps:'6',descanso:'120s',carga:'mais peso',extensao:[
+      {tipo:'drop',reducao:'20 a 30%',reps:'até fadigar'},
+      {tipo:'drop',reducao:'20 a 30%',reps:'até fadigar'}]}]},
+  // ---- CLUSTER ----
+  {fam:'Cluster', nome:'Cluster 4+4', tipo:'uniforme', series:serieRep(3,
+    {reps:'8 (4+4)',descanso:'60s',blocos:[{reps:'4',pausa:'15s'},{reps:'4'}]})},
+  {fam:'Cluster', nome:'Cluster 6+6', tipo:'uniforme', series:serieRep(3,
+    {reps:'12 (6+6)',descanso:'60s',blocos:[{reps:'6',pausa:'15s'},{reps:'6'}]})},
+  {fam:'Cluster', nome:'Cluster 8+6', tipo:'uniforme', series:serieRep(3,
+    {reps:'14 (8+6)',descanso:'60s',blocos:[{reps:'8',pausa:'15s'},{reps:'6'}]})},
+  {fam:'Cluster', nome:'Cluster 8+8', tipo:'uniforme', series:serieRep(3,
     {reps:'16 (8+8)',descanso:'60s',blocos:[{reps:'8',pausa:'15s'},{reps:'8'}]})},
-  {nome:'Cluster 10" (3 blocos)', tipo:'uniforme', series:serieRep(3,
+  {fam:'Cluster', nome:'Cluster 10+10', tipo:'uniforme', series:serieRep(3,
+    {reps:'20 (10+10)',descanso:'60s',blocos:[{reps:'10',pausa:'10s'},{reps:'10'}]})},
+  {fam:'Cluster', nome:'Cluster 5+5+5 (3 blocos)', tipo:'uniforme', series:serieRep(3,
     {reps:'15 (5+5+5)',descanso:'60 a 90s',blocos:[{reps:'5',pausa:'10s'},{reps:'5',pausa:'10s'},{reps:'5'}]})},
-  {nome:'Drop na última', tipo:'porSerie', series:[
+  {fam:'Cluster', nome:'Cluster 6+6+6 (3 blocos)', tipo:'uniforme', series:serieRep(3,
+    {reps:'18 (6+6+6)',descanso:'60s',blocos:[{reps:'6',pausa:'15s'},{reps:'6',pausa:'15s'},{reps:'6'}]})},
+  {fam:'Cluster', nome:'Cluster piramidal 8+8 / 6+6 / 4+4', tipo:'porSerie', series:[
+    {reps:'16 (8+8)',descanso:'90s',blocos:[{reps:'8',pausa:'10s'},{reps:'8'}]},
+    {reps:'12 (6+6)',descanso:'90s',carga:'mais peso',blocos:[{reps:'6',pausa:'10s'},{reps:'6'}]},
+    {reps:'8 (4+4)',descanso:'120s',carga:'mais peso',blocos:[{reps:'4',pausa:'10s'},{reps:'4'}]}]},
+  {fam:'Cluster', nome:'Cluster isométrico', tipo:'uniforme', series:serieRep(3,
+    {reps:'10 a 12 + iso',descanso:'75s',blocos:[{reps:'10 a 12',pausa:'15s'},{reps:'isometria até fadiga moderada'}]})},
+  // ---- DROP ----
+  {fam:'Drop', nome:'1 drop na última', tipo:'porSerie', series:[
     {reps:'8 a 12',descanso:'90s'},{reps:'8 a 12',descanso:'90s'},
     {reps:'8 a 12',descanso:'90s',extensao:[{tipo:'drop',reducao:'20 a 30%',reps:'até fadigar'}]}]},
-  {nome:'2 drops na última', tipo:'porSerie', series:[
+  {fam:'Drop', nome:'2 drops na última', tipo:'porSerie', series:[
     {reps:'8 a 12',descanso:'90s'},{reps:'8 a 12',descanso:'90s'},
     {reps:'8 a 12',descanso:'90s',extensao:[
       {tipo:'drop',reducao:'20 a 30%',reps:'até fadigar'},
       {tipo:'drop',reducao:'20 a 30%',reps:'até fadigar'}]}]},
-  {nome:'Backoff nas 2 últimas', tipo:'porSerie', series:[
+  {fam:'Drop', nome:'1 drop nas 2 últimas', tipo:'porSerie', series:[
     {reps:'8 a 12',descanso:'90s'},{reps:'8 a 12',descanso:'90s'},
-    {reps:'6 a 8',descanso:'90s',extensao:[{tipo:'backoff',reducao:'30%',reps:'8 a 12',pausa:'30 a 40s'}]},
-    {reps:'6 a 8',descanso:'90s',extensao:[{tipo:'backoff',reducao:'30%',reps:'8 a 12',pausa:'30 a 40s'}]}]},
-  {nome:'GVT (10x10)', tipo:'uniforme', series:serieRep(10,{reps:'10',descanso:'60s'})},
-  {nome:'FST-7', tipo:'uniforme', series:serieRep(7,{reps:'8 a 12',descanso:'30s'})},
-  {nome:'Super Slow', tipo:'uniforme', series:serieRep(3,{reps:'8 a 12',descanso:'90s',cadencia:'5s descida / 5s subida'})},
-  {nome:'2s/iso', tipo:'uniforme', series:serieRep(3,{reps:'10 a 12',descanso:'75s',cadencia:'segura 2s em contração'})},
-  {nome:'Explosão', tipo:'uniforme', series:serieRep(3,{reps:'12 a 15',descanso:'60s',cadencia:'1s descida / 1s subida'})},
-  {nome:'Série infinita (unilateral)', tipo:'uniforme', series:serieRep(3,
+    {reps:'8 a 12',descanso:'90s',extensao:[{tipo:'drop',reducao:'20 a 30%',reps:'até fadigar'}]},
+    {reps:'8 a 12',descanso:'90s',extensao:[{tipo:'drop',reducao:'20 a 30%',reps:'até fadigar'}]}]},
+  {fam:'Drop', nome:'1 drop em todas as séries', tipo:'uniforme', series:serieRep(3,
+    {reps:'8 a 12',descanso:'90s',extensao:[{tipo:'drop',reducao:'20 a 30%',reps:'até fadigar'}]})},
+  {fam:'Drop', nome:'Drop isométrico na última', tipo:'porSerie', series:[
+    {reps:'8 a 12',descanso:'90s'},{reps:'8 a 12',descanso:'90s'},
+    {reps:'8 a 12',descanso:'90s',extensao:[{tipo:'iso',reducao:'20 a 30%',reps:'isometria até fadiga'}]}]},
+  {fam:'Drop', nome:'Drops parciais nas 2 últimas', tipo:'porSerie', series:[
+    {reps:'8 a 12',descanso:'90s'},{reps:'8 a 12',descanso:'90s'},
+    {reps:'6',descanso:'90s',carga:'mais peso',extensao:[{tipo:'parciais',reducao:'30%',reps:'parciais até a falha'}]},
+    {reps:'6',descanso:'90s',carga:'mais peso',extensao:[{tipo:'parciais',reducao:'30%',reps:'parciais até a falha'}]}]},
+  // ---- DEGRAU ----
+  {fam:'Degrau', nome:'Degrau acima', tipo:'porSerie', series:[
+    {reps:'12 a 15',descanso:'60s',carga:'menos peso'},{reps:'12 a 15',descanso:'60s',carga:'menos peso'},
+    {reps:'6 a 8',descanso:'90s',carga:'mais peso'},{reps:'6 a 8',descanso:'90s',carga:'mais peso'}]},
+  {fam:'Degrau', nome:'Degrau abaixo', tipo:'porSerie', series:[
+    {reps:'6 a 8',descanso:'90s',carga:'mais peso'},
+    {reps:'10 a 12',descanso:'60s',carga:'menos peso',cadencia:'1s sobe / 1s desce'},
+    {reps:'10 a 12',descanso:'60s',carga:'menos peso',cadencia:'1s sobe / 1s desce'}]},
+  {fam:'Degrau', nome:'Degrau sobe e desce', tipo:'porSerie', series:[
+    {reps:'12 a 15',descanso:'60s',carga:'mais leve'},{reps:'6 a 10',descanso:'90s',carga:'mais peso'},
+    {reps:'6 a 10',descanso:'90s',carga:'mais peso'},
+    {reps:'até a falha',descanso:'',carga:'mais leve (como a 1ª)',aberto:true}]},
+  {fam:'Degrau', nome:'Degrau com drop nas 2 últimas', tipo:'porSerie', series:[
+    {reps:'12 a 15',descanso:'60s',carga:'menos peso'},{reps:'12 a 15',descanso:'60s',carga:'menos peso'},
+    {reps:'8 a 12',descanso:'90s',carga:'mais peso',extensao:[{tipo:'drop',reducao:'20 a 30%',reps:'até fadigar'}]},
+    {reps:'8 a 12',descanso:'90s',carga:'mais peso',extensao:[{tipo:'drop',reducao:'20 a 30%',reps:'até fadigar'}]}]},
+  // ---- BACK-OFF ----
+  {fam:'Back-off', nome:'Back-off nas 2 últimas', tipo:'porSerie', series:[
+    {reps:'8 a 12',descanso:'90s'},{reps:'8 a 12',descanso:'90s'},
+    {reps:'6 a 8',descanso:'90s',carga:'mais peso',extensao:[{tipo:'backoff',reducao:'30%',reps:'8 a 12',pausa:'30 a 40s'}]},
+    {reps:'6 a 8',descanso:'90s',carga:'mais peso',extensao:[{tipo:'backoff',reducao:'30%',reps:'8 a 12',pausa:'30 a 40s'}]}]},
+  {fam:'Back-off', nome:'Back-off em todas', tipo:'uniforme', series:serieRep(3,
+    {reps:'8',descanso:'90s',extensao:[{tipo:'backoff',reducao:'40%',reps:'até fadigar',pausa:'30s'}]})},
+  {fam:'Back-off', nome:'1 tradicional / 1 back-off', tipo:'porSerie', series:[
+    {reps:'6 a 8',descanso:'90s',carga:'mais peso'},
+    {reps:'10 a 12',descanso:'45s',carga:'20 a 25% menos'},
+    {reps:'6 a 8',descanso:'90s',carga:'mais peso'},
+    {reps:'10 a 12',descanso:'45s',carga:'20 a 25% menos'}]},
+  // ---- ALTERNADO ----
+  {fam:'Alternado', nome:'Intensidade alternada', tipo:'porSerie', series:[
+    {reps:'6 a 8',descanso:'90s',carga:'mais peso'},{reps:'12 a 15',descanso:'60s',carga:'menos peso'},
+    {reps:'6 a 8',descanso:'90s',carga:'mais peso'},{reps:'12 a 15',descanso:'60s',carga:'menos peso'}]},
+  {fam:'Alternado', nome:'Cadência alternada', tipo:'porSerie', series:[
+    {reps:'10 a 12',descanso:'75s',cadencia:'rápida'},{reps:'10 a 12',descanso:'75s',cadencia:'lenta'},
+    {reps:'10 a 12',descanso:'75s',cadencia:'rápida'},{reps:'10 a 12',descanso:'75s',cadencia:'lenta'}]},
+  {fam:'Alternado', nome:'Cluster alternado (1ª e 3ª)', tipo:'porSerie', series:[
+    {reps:'10 (5+5)',descanso:'90s',blocos:[{reps:'5',pausa:'10s'},{reps:'5'}]},
+    {reps:'10 a 12',descanso:'90s'},
+    {reps:'10 (5+5)',descanso:'90s',blocos:[{reps:'5',pausa:'10s'},{reps:'5'}]},
+    {reps:'10 a 12',descanso:'90s'}]},
+  // ---- CADÊNCIA ----
+  {fam:'Cadência', nome:'Super Slow', tipo:'uniforme', series:serieRep(3,
+    {reps:'8 a 12',descanso:'90s',cadencia:'5s descida / 5s subida'})},
+  {fam:'Cadência', nome:'2s/iso (pico de contração)', tipo:'uniforme', series:serieRep(3,
+    {reps:'10 a 12',descanso:'75s',cadencia:'segura 2s em contração'})},
+  {fam:'Cadência', nome:'Explosão', tipo:'uniforme', series:serieRep(3,
+    {reps:'12 a 15',descanso:'60s',cadencia:'1s descida / 1s subida'})},
+  {fam:'Cadência', nome:'Ênfase negativa', tipo:'uniforme', series:serieRep(3,
+    {reps:'8 a 12',descanso:'90s',cadencia:'4s descida / 1s subida'})},
+  {fam:'Cadência', nome:'1s/iso crescente', tipo:'porSerie', series:[
+    {reps:'10 a 12',descanso:'75s',cadencia:'segura 1s'},
+    {reps:'8 a 10',descanso:'75s',cadencia:'segura 2s'},
+    {reps:'6 a 8',descanso:'90s',cadencia:'segura 3s'}]},
+  // ---- VOLUME / DENSIDADE ----
+  {fam:'Volume', nome:'GVT (10×10)', tipo:'uniforme', series:serieRep(10,{reps:'10',descanso:'60s'})},
+  {fam:'Volume', nome:'FST-7', tipo:'uniforme', series:serieRep(7,
+    {reps:'8 a 12',descanso:'30s',cadencia:'alongar o grupo no descanso'})},
+  {fam:'Volume', nome:'Descanso curto (30s)', tipo:'uniforme', series:serieRep(4,{reps:'10 a 12',descanso:'30s'})},
+  {fam:'Volume', nome:'Série infinita (unilateral)', tipo:'uniforme', series:serieRep(3,
     {reps:'alterna os lados até a fadiga',descanso:'90s',aberto:true})},
 ];
 const EXT_LABEL={drop:'Drop',backoff:'Back-off',iso:'Iso',parciais:'Parciais'};
@@ -1490,11 +1593,26 @@ function ExerciseSheet({initial,onSave,onClose}){
   const [observacao,setObservacao]=useState(initial?(initial.observacao||''):'');
   const [metodo,setMetodo]=useState(initial&&initial.metodo?initial.metodo:null);
   const [escolhendoMet,setEscolhendoMet]=useState(false);
+  const [buscaMet,setBuscaMet]=useState('');
+  const [famAberta,setFamAberta]=useState(null);
+  // busca: todas as palavras em qualquer ordem, ignorando acento (mesmo padrão dos exercícios)
+  const termosMet = normAcc(buscaMet).split(/\s+/).filter(Boolean);
+  const metFiltrados = termosMet.length
+    ? METODOS_TEMPLATE.filter(t=>{
+        const alvo=normAcc(t.nome+' '+t.fam);
+        return termosMet.every(x=>alvo.includes(x));
+      })
+    : [];
+  const familias = METODOS_TEMPLATE.reduce((acc,t)=>{
+    (acc[t.fam]=acc[t.fam]||[]).push(t); return acc;
+  },{});
   const [expSerie,setExpSerie]=useState(null); // índice da série com detalhes abertos
   const metUniforme = metodo && metodo.tipo==='uniforme';
   const aplicarTemplate=(t)=>{
-    setMetodo(JSON.parse(JSON.stringify(t)));
-    setEscolhendoMet(false); setExpSerie(null);
+    const copia=JSON.parse(JSON.stringify(t));
+    delete copia.fam; // metadado de organização, não faz parte da prescrição
+    setMetodo(copia);
+    setEscolhendoMet(false); setExpSerie(null); setBuscaMet(''); setFamAberta(null);
   };
   const setSerie=(i,patch)=>setMetodo(m=>({...m,series:m.series.map((x,k)=>k===i?{...x,...patch}:x)}));
   const setTodasSeries=(patch)=>setMetodo(m=>({...m,series:m.series.map(x=>({...x,...patch}))}));
@@ -1565,18 +1683,38 @@ function ExerciseSheet({initial,onSave,onClose}){
               <button type="button" className="metbtn del" onClick={()=>{setMetodo(null);setExpSerie(null);}}>Remover</button>
             </div>}
         {escolhendoMet && <div className="metlista">
-          {METODOS_TEMPLATE.map(t=>(
-            <button type="button" key={t.nome} className="metopt" onClick={()=>aplicarTemplate(t)}>
-              <span className="monome">{t.nome}</span>
-              <span className="modesc">{t.series.length} séries · {t.tipo==='uniforme'?'iguais':'varia por série'}</span>
-            </button>
-          ))}
+          <input className="metbusca" autoFocus value={buscaMet} placeholder="🔍 Buscar método (ex: cluster 8, piramide drop)"
+            onChange={e=>setBuscaMet(e.target.value)}/>
+          {termosMet.length>0
+            ? (metFiltrados.length
+                ? metFiltrados.map(t=>(
+                    <button type="button" key={t.nome} className="metopt" onClick={()=>aplicarTemplate(t)}>
+                      <span className="monome">{t.nome}</span>
+                      <span className="modesc"><span className="mofam">{t.fam}</span> · {t.series.length} séries · {t.tipo==='uniforme'?'iguais':'varia'}</span>
+                    </button>))
+                : <div className="metvazio">Nenhum método encontrado para “{buscaMet}”.</div>)
+            : Object.keys(familias).map(f=>(
+                <div className="metfam" key={f}>
+                  <button type="button" className={'mfhead'+(famAberta===f?' on':'')}
+                    onClick={()=>setFamAberta(famAberta===f?null:f)}>
+                    <span className="mfnome">{f}</span>
+                    <span className="mfqtd">{familias[f].length}</span>
+                    <span className="mfseta">{famAberta===f?'▾':'▸'}</span>
+                  </button>
+                  {famAberta===f && <div className="mffilhos">
+                    {familias[f].map(t=>(
+                      <button type="button" key={t.nome} className="metopt" onClick={()=>aplicarTemplate(t)}>
+                        <span className="monome">{t.nome}</span>
+                        <span className="modesc">{t.series.length} séries · {t.tipo==='uniforme'?'iguais':'varia'}</span>
+                      </button>))}
+                  </div>}
+                </div>))}
           <button type="button" className="metopt novo" onClick={()=>aplicarTemplate(
             {nome:'Personalizado', tipo:'porSerie', series:serieRep(3,{reps:'8 a 12',descanso:'90s'})})}>
             <span className="monome">✎ Montar do zero</span>
             <span className="modesc">3 séries em branco para editar</span>
           </button>
-          <button type="button" className="metcancel" onClick={()=>setEscolhendoMet(false)}>cancelar</button>
+          <button type="button" className="metcancel" onClick={()=>{setEscolhendoMet(false);setBuscaMet('');}}>cancelar</button>
         </div>}
       </div>
       {metodo && <div className="field">
