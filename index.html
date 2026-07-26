@@ -425,7 +425,13 @@
   .varinfo:active{background:var(--surface);color:var(--text)}
   .varajuda{font-size:11.5px;line-height:1.45;color:var(--muted);background:var(--bg);border:1px solid var(--line);
     border-radius:10px;padding:9px 11px;margin-bottom:10px}
-  .varchips,.varfiltro{display:flex;flex-wrap:wrap;gap:7px}
+  .varchips,.varfiltro{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+  .varchipwrap{display:inline-flex;align-items:stretch;gap:0}
+  .varchipwrap.sel .varchip{border-top-right-radius:0;border-bottom-right-radius:0;border-right-color:transparent}
+  .varedit{padding:7px 10px;border-radius:0 999px 999px 0;border:1px solid var(--cyan);border-left:none;
+    background:rgba(0,201,204,.13);color:var(--cyan-2);font-family:inherit;font-size:12.5px;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .varedit:active{background:rgba(0,201,204,.28)}
   .varfiltro{margin:0 2px 14px}
   .varchip{padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--bg);
     color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;
@@ -2035,14 +2041,16 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
         </div>
         {ajuda && <div className="varajuda">
           Use quando o mesmo exercício é feito em máquinas diferentes (outra academia ou outro aparelho).
-          As cargas ficam guardadas separadamente para cada uma. Toque e segure um chip para renomear.
+          As cargas ficam guardadas separadamente para cada uma. Toque no ✎ do chip selecionado para renomear.
         </div>}
         <div className="varchips">
           {variantes.map(v=>(
-            <button type="button" key={v}
-              className={'varchip'+(variante===v?' sel':'')}
-              onClick={()=>escolherVariante(v)}
-              onContextMenu={e=>{e.preventDefault();setRenomeando({antigo:v,novo:v});}}>{v}</button>
+            <span key={v} className={'varchipwrap'+(variante===v?' sel':'')}>
+              <button type="button" className={'varchip'+(variante===v?' sel':'')}
+                onClick={()=>escolherVariante(v)}>{v}</button>
+              {variante===v && <button type="button" className="varedit" aria-label="Renomear equipamento"
+                onClick={e=>{e.stopPropagation();setRenomeando({antigo:v,novo:v});}}>✎</button>}
+            </span>
           ))}
           {novaVar===null
             ? <button type="button" className="varchip varadd" onClick={()=>setNovaVar('')}>+</button>
