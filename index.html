@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <meta name="theme-color" content="#0b0f10" />
 <title>Idealis Presencial</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%201920%201920%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20aria-hidden%3D%22true%22%3E%3Crect%20width%3D%221920%22%20height%3D%221920%22%20rx%3D%22420%22%20fill%3D%22%230b0f10%22%2F%3E%3Cg%20transform%3D%22translate%280%2C1920%29%20scale%280.1%2C-0.1%29%22%20fill%3D%22%23ddff00%22%3E%3Cpath%20d%3D%22M9155%2019019%20c-1338%20-64%20-2627%20-404%20-3810%20-1004%20-1587%20-805%20-2919%20-2044%20-3831%20-3565%20-1023%20-1705%20-1477%20-3667%20-1308%20-5655%20216%20-2544%201447%20-4874%203434%20-6500%201265%20-1036%202787%20-1726%204398%20-1994%202550%20-425%205147%20204%207202%201744%201979%201482%203301%203672%203674%206085%20151%20979%20153%201931%205%202910%20-367%202424%20-1692%204627%20-3679%206115%20-908%20681%20-1919%201183%20-3035%201508%20-957%20280%20-2035%20405%20-3050%20356z%20m925%20-1004%20c968%20-52%201917%20-273%202810%20-652%202215%20-941%203936%20-2797%204699%20-5068%20498%20-1484%20576%20-3070%20225%20-4595%20-638%20-2770%20-2650%20-5045%20-5324%20-6020%20-1155%20-421%20-2348%20-579%20-3620%20-480%20-357%2028%20-943%20125%20-1300%20215%20-1753%20441%20-3316%201424%20-4464%202810%20-557%20672%20-1021%201454%20-1343%202265%20-1021%202569%20-710%205499%20825%207790%20832%201240%201949%202220%203282%202879%20848%20419%201730%20685%202670%20805%20500%2063%201002%2080%201540%2051z%20M10017%2014913%20c-758%20-1027%20-1374%20-1869%20-1369%20-1871%207%20-2%202971%20945%202980%20953%205%205%20-223%202785%20-228%202785%20-3%200%20-625%20-840%20-1383%20-1867z%20M9365%2012571%20l-1480%20-488%20-41%20-54%20c-23%20-30%20-574%20-781%20-1224%20-1669%20-651%20-888%20-1188%20-1618%20-1194%20-1622%20-6%20-4%20891%20-8%201994%20-9%201103%200%202015%20-4%202026%20-7%2019%20-6%20-22%20-67%20-404%20-587%20-233%20-319%20-1046%20-1428%20-1805%20-2465%20-758%20-1037%20-1390%20-1895%20-1404%20-1907%20l-24%20-23%202525%200%202526%200%201123%20616%20c617%20338%201128%20621%201135%20628%2022%2021%20-552%2025%20-2418%2019%20l-1705%20-6%2026%2034%20c14%2019%20637%20860%201384%201869%201535%202074%201467%201983%201958%202610%20l364%20465%20-291%206%20c-160%203%20-1087%204%20-2060%201%20-1307%20-4%20-1768%20-2%20-1765%206%202%206%20488%20665%201079%201463%20591%20799%201101%201488%201133%201531%2043%2058%2053%2078%2040%2077%20-10%200%20-684%20-220%20-1498%20-488z%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E"/>
+<link rel="apple-touch-icon" href="icon-180.png"/>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#0b0f10"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Idealis"/>
+<meta name="mobile-web-app-capable" content="yes"/>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -2155,12 +2163,12 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
                 {!isEdit && <span className="sfpresc">{prescricaoDe(i)}</span>}
               </div>
               {aberta===i && <div className="sfbumps">
-                <button type="button" className="bump minus" onClick={()=>bumpSerie(i,-5)}>−5</button>
+                <button type="button" className="bump minus" onClick={()=>bumpSerie(i,-10)}>−10</button>
                 <button type="button" className="bump minus" onClick={()=>bumpSerie(i,-2.5)}>−2,5</button>
                 <button type="button" className="bump minus" onClick={()=>bumpSerie(i,-1)}>−1</button>
                 <button type="button" className="bump plus" onClick={()=>bumpSerie(i,1)}>+1</button>
                 <button type="button" className="bump plus" onClick={()=>bumpSerie(i,2.5)}>+2,5</button>
-                <button type="button" className="bump plus" onClick={()=>bumpSerie(i,5)}>+5</button>
+                <button type="button" className="bump plus" onClick={()=>bumpSerie(i,10)}>+10</button>
                 <button type="button" className="bump minus rp" onClick={()=>bumpRepsSerie(i,-1)}>−1 rep</button>
                 <button type="button" className="bump plus rp" onClick={()=>bumpRepsSerie(i,1)}>+1 rep</button>
               </div>}
