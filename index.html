@@ -470,10 +470,8 @@
   .hserie:last-child{margin-bottom:0}
   .hserie .hsn{flex:0 0 24px;font-size:11px;font-weight:800;color:var(--cyan-2)}
   .hserie .hsv{flex:1;font-size:13.5px;font-weight:600;color:var(--text)}
-  .serielegend{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:6px;
-    font-size:11.5px;color:var(--muted)}
-  .slitem{display:inline-flex;align-items:center;gap:5px}
-  .sldot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .varfiltro.sgf{align-items:center;margin-bottom:10px}
+  .sgflab{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-right:2px}
   /* --- cardio: editor --- */
   .cdlista{display:flex;flex-direction:column;gap:6px}
   .cdrow{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:11px;
@@ -523,6 +521,21 @@
   .cdtira span.feito{opacity:.6}
   .cdtira span.agora{opacity:1}
   .cdrodape{flex:0 0 auto;text-align:center;font-size:12.5px;color:var(--muted)}
+  .serietabs{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 10px}
+  .stab{position:relative;display:inline-flex;align-items:center;gap:5px;padding:9px 15px;border-radius:999px;
+    border:1px solid var(--line);background:var(--surface-2);color:var(--muted);font-family:inherit;
+    font-size:13.5px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .stab.ok{border-color:rgba(110,232,154,.5);color:#6ee89a}
+  .stab.sel{border-color:var(--cyan);background:rgba(0,201,204,.14);color:var(--cyan-2)}
+  .stab.sel.ok{border-color:var(--cyan)}
+  .stok{font-size:11px;font-weight:900}
+  .serieresumo{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+  .srchip{font-size:11px;font-weight:600;color:var(--muted);background:var(--bg);
+    border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+  .srchip.sel{border-color:var(--cyan);color:var(--cyan-2)}
+  .srchip.vazia{opacity:.5}
+  .btnprox{width:100%;margin:2px 0 14px;padding:13px;border-radius:12px;border:1px solid var(--cyan);
+    background:rgba(0,201,204,.1);color:var(--cyan-2);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
   .serieform{display:flex;flex-direction:column;gap:7px}
   .sfrow{padding:8px 9px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);transition:border-color .15s}
   .sfrow.on{border-color:var(--cyan)}
@@ -1779,25 +1792,25 @@ function fmtMin(seg){
 }
 const CARDIO_TEMPLATES=[
   {fam:'HIIT', nome:"HIIT 1'/1' (6 a 8×)", repetir:7, blocos:[
-    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'1min',rotulo:'Forte',nivel:'forte'}]},
+    {tempo:'1min',rotulo:'',nivel:'leve'},{tempo:'1min',rotulo:'',nivel:'forte'}]},
   {fam:'HIIT', nome:'HIIT 60"/30" (6 a 10×)', repetir:8, blocos:[
-    {tempo:'60s',rotulo:'Leve',nivel:'leve'},{tempo:'30s',rotulo:'Forte',nivel:'forte'}]},
+    {tempo:'60s',rotulo:'',nivel:'leve'},{tempo:'30s',rotulo:'',nivel:'forte'}]},
   {fam:'HIIT', nome:'HIIT 90"/30"', repetir:6, blocos:[
-    {tempo:'90s',rotulo:'Leve',nivel:'leve'},{tempo:'30s',rotulo:'Forte',nivel:'forte'}]},
+    {tempo:'90s',rotulo:'',nivel:'leve'},{tempo:'30s',rotulo:'',nivel:'forte'}]},
   {fam:'HIIT', nome:"HIIT crescente (14min)", repetir:1, blocos:[
-    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'1min',rotulo:'Forte',nivel:'forte'},
-    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'2min',rotulo:'Forte',nivel:'forte'},
-    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'3min',rotulo:'Forte',nivel:'forte'},
-    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'4min',rotulo:'Forte',nivel:'forte'}]},
+    {tempo:'1min',rotulo:'',nivel:'leve'},{tempo:'1min',rotulo:'',nivel:'forte'},
+    {tempo:'1min',rotulo:'',nivel:'leve'},{tempo:'2min',rotulo:'',nivel:'forte'},
+    {tempo:'1min',rotulo:'',nivel:'leve'},{tempo:'3min',rotulo:'',nivel:'forte'},
+    {tempo:'1min',rotulo:'',nivel:'leve'},{tempo:'4min',rotulo:'',nivel:'forte'}]},
   {fam:'HIIT', nome:'HIIT crescente/decrescente (28min)', repetir:1, blocos:[
-    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'1min',rotulo:'Forte',nivel:'forte'},
-    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'2min',rotulo:'Forte',nivel:'forte'},
-    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'3min',rotulo:'Forte',nivel:'forte'},
-    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'4min',rotulo:'Forte',nivel:'forte'},
-    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'4min',rotulo:'Forte',nivel:'forte'},
-    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'3min',rotulo:'Forte',nivel:'forte'},
-    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'2min',rotulo:'Forte',nivel:'forte'},
-    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'1min',rotulo:'Forte',nivel:'forte'}]},
+    {tempo:'1min',rotulo:'',nivel:'leve'},{tempo:'1min',rotulo:'',nivel:'forte'},
+    {tempo:'1min',rotulo:'',nivel:'leve'},{tempo:'2min',rotulo:'',nivel:'forte'},
+    {tempo:'1min',rotulo:'',nivel:'leve'},{tempo:'3min',rotulo:'',nivel:'forte'},
+    {tempo:'1min',rotulo:'',nivel:'leve'},{tempo:'4min',rotulo:'',nivel:'forte'},
+    {tempo:'1min',rotulo:'',nivel:'leve'},{tempo:'4min',rotulo:'',nivel:'forte'},
+    {tempo:'1min',rotulo:'',nivel:'leve'},{tempo:'3min',rotulo:'',nivel:'forte'},
+    {tempo:'1min',rotulo:'',nivel:'leve'},{tempo:'2min',rotulo:'',nivel:'forte'},
+    {tempo:'1min',rotulo:'',nivel:'leve'},{tempo:'1min',rotulo:'',nivel:'forte'}]},
   {fam:'HIIT + SIT', nome:'HIIT + SIT esteira (14min)', repetir:1, blocos:[
     {tempo:'1min',rotulo:'Caminhada',nivel:'leve'},{tempo:'1min',rotulo:'Trote',nivel:'forte'},
     {tempo:'1min',rotulo:'Caminhada',nivel:'leve'},{tempo:'1min',rotulo:'Trote',nivel:'forte'},
@@ -1806,15 +1819,15 @@ const CARDIO_TEMPLATES=[
     {tempo:'2min',rotulo:'Caminhada',nivel:'leve'},{tempo:'30s',rotulo:'Sprint',nivel:'maximo'},
     {tempo:'2min',rotulo:'Caminhada',nivel:'leve'},{tempo:'30s',rotulo:'Sprint',nivel:'maximo'}]},
   {fam:'HIIT + SIT', nome:'HIIT + SIT bike (12min)', repetir:1, blocos:[
-    {tempo:'1min',rotulo:'Moderado',nivel:'moderado'},{tempo:'1min',rotulo:'Pesado',nivel:'forte'},
-    {tempo:'1min',rotulo:'Moderado',nivel:'moderado'},{tempo:'1min',rotulo:'Pesado',nivel:'forte'},
-    {tempo:'45s',rotulo:'Leve',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'},
-    {tempo:'45s',rotulo:'Leve',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'},
-    {tempo:'45s',rotulo:'Leve',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'},
-    {tempo:'45s',rotulo:'Leve',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'},
-    {tempo:'45s',rotulo:'Leve',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'}]},
+    {tempo:'1min',rotulo:'',nivel:'moderado'},{tempo:'1min',rotulo:'Pesado',nivel:'forte'},
+    {tempo:'1min',rotulo:'',nivel:'moderado'},{tempo:'1min',rotulo:'Pesado',nivel:'forte'},
+    {tempo:'45s',rotulo:'',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'},
+    {tempo:'45s',rotulo:'',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'},
+    {tempo:'45s',rotulo:'',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'},
+    {tempo:'45s',rotulo:'',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'},
+    {tempo:'45s',rotulo:'',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'}]},
   {fam:'SIT', nome:'SIT 45"/15" (8×)', repetir:8, blocos:[
-    {tempo:'45s',rotulo:'Leve',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'}]},
+    {tempo:'45s',rotulo:'',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'}]},
   {fam:'SIT', nome:'Spinning em pé 60"/30" (10×)', repetir:10, blocos:[
     {tempo:'60s',rotulo:'Sentado rápido',nivel:'moderado'},{tempo:'30s',rotulo:'Em pé, pesado',nivel:'forte'}]},
   {fam:'Contínuo', nome:'Contínuo 20min', repetir:1, blocos:[
@@ -1991,6 +2004,7 @@ function ExerciseSheet({initial,onSave,onClose}){
   const [observacao,setObservacao]=useState(initial?(initial.observacao||''):'');
   const [metodo,setMetodo]=useState(initial&&initial.metodo?initial.metodo:null);
   const [cardio,setCardio]=useState(initial&&initial.cardio?initial.cardio:null);
+  const [erroEx,setErroEx]=useState('');
   const [escolhendoCard,setEscolhendoCard]=useState(false);
   const [buscaCard,setBuscaCard]=useState('');
   const [famCard,setFamCard]=useState(null);
@@ -2004,6 +2018,13 @@ function ExerciseSheet({initial,onSave,onClose}){
     setCardio(c); setEscolhendoCard(false); setBuscaCard(''); setFamCard(null); setMetodo(null);
   };
   const setBlocoC=(i,patch)=>setCardio(c=>({...c,blocos:c.blocos.map((b,k)=>k===i?{...b,...patch}:b)}));
+  /* trocar o nível replica o rótulo, a menos que você tenha escrito algo próprio */
+  const setNivelC=(i,nivel)=>setCardio(c=>({...c,blocos:c.blocos.map((b,k)=>{
+    if(k!==i) return b;
+    const atual=String(b.rotulo||'').trim();
+    const automatico = atual==='' || NIVEIS.some(n=>n.label.toLowerCase()===atual.toLowerCase());
+    return automatico ? {...b, nivel, rotulo:''} : {...b, nivel};
+  })}));
   const addBlocoC=()=>setCardio(c=>({...c,blocos:[...c.blocos,{tempo:'1min',rotulo:'Leve',nivel:'leve'}]}));
   const delBlocoC=(i)=>setCardio(c=>c.blocos.length<=1?c:{...c,blocos:c.blocos.filter((b,k)=>k!==i)});
   const [escolhendoMet,setEscolhendoMet]=useState(false);
@@ -2085,7 +2106,12 @@ function ExerciseSheet({initial,onSave,onClose}){
   const catVazio = catalogo.length===0;
   const escolher=(op)=>{ setName(op.nome); setExerciseId(op.id); setShowAuto(false); };
   const save=()=>{
-    if(!name.trim())return;
+    if(!name.trim()){ setErroEx('Dê um nome ao exercício.'); return; }
+    if(cardio){
+      const bl=expandirCardio(cardio);
+      if(!bl.length){ setErroEx('Preencha o tempo dos blocos do cardio (ex: 1min, 45s).'); return; }
+    }
+    setErroEx('');
     const combined = (sets.trim()&&reps.trim()) ? `${sets.trim()} × ${reps.trim()}` : (sets.trim()||reps.trim()||'');
     onSave({name:name.trim(), series:combined, exerciseId, descanso:descanso.trim(), filmar, observacao:observacao.trim(), metodo, cardio});
   };
@@ -2158,9 +2184,9 @@ function ExerciseSheet({initial,onSave,onClose}){
               <span className="cdnivelbar" style={{background:nivelInfo(b.nivel).cor}}></span>
               <input className="cdtempo" value={b.tempo} placeholder="1min"
                 onChange={e=>setBlocoC(i,{tempo:e.target.value})}/>
-              <input className="cdrotulo" value={b.rotulo||''} placeholder="rótulo (ex: Trote)"
+              <input className="cdrotulo" value={b.rotulo||''} placeholder={nivelInfo(b.nivel).label+' (ou escreva)'}
                 onChange={e=>setBlocoC(i,{rotulo:e.target.value})}/>
-              <select className="cdnivel" value={b.nivel||'moderado'} onChange={e=>setBlocoC(i,{nivel:e.target.value})}>
+              <select className="cdnivel" value={b.nivel||'moderado'} onChange={e=>setNivelC(i,e.target.value)}>
                 {NIVEIS.map(n=><option key={n.k} value={n.k}>{n.label}</option>)}
               </select>
               {cardio.blocos.length>1 && <button type="button" className="cddel" onClick={()=>delBlocoC(i)}>✕</button>}
@@ -2350,6 +2376,7 @@ function ExerciseSheet({initial,onSave,onClose}){
           </span>
         </button>
       </div>
+      {erroEx && <div className="loginerro">{erroEx}</div>}
       <div className="sheetactions">
         <button className="btn ghost" onClick={onClose}>Cancelar</button>
         <button className="btn" onClick={save}>Salvar</button></div>
@@ -2396,22 +2423,25 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
     return ses.length?ses[ses.length-1]:null;
   };
   const montarSeries=(v)=>{
-    if(isEdit) return [{carga:editLog.carga||'', reps:editLog.reps||''}];
+    if(isEdit) return [{carga:editLog.carga||'', reps:editLog.reps||'',
+      intensidade:(editLog.intensidade!=null?editLog.intensidade:null), dor:(editLog.dor!=null?editLog.dor:null)}];
     const ult=ultimaSessao(v);
     const out=[];
     for(let i=0;i<nSeries;i++){
       const ref=ult&&ult.series[i];
       const fallback=ult&&ult.series.length?ult.series[ult.series.length-1]:null;
-      out.push({carga:(ref?ref.carga:(fallback?fallback.carga:''))||'', reps:''});
+      out.push({carga:(ref?ref.carga:(fallback?fallback.carga:''))||'', reps:'', intensidade:null, dor:null});
     }
     return out;
   };
   const [series,setSeries]=useState(()=>montarSeries(variantInicial));
-  const [aberta,setAberta]=useState(0); // série com os botões de ajuste visíveis
+  const [ativa,setAtiva]=useState(0); // série sendo preenchida
+  const at=series[Math.min(ativa,series.length-1)]||{carga:'',reps:''};
+  const setAt=(patch)=>setSerie(Math.min(ativa,series.length-1),patch);
+  const serieCompleta=(sr)=>!!(sr && String(sr.carga||'').trim() && String(sr.reps||'').trim());
+  const serieIniciada=(sr)=>!!(sr && (String(sr.carga||'').trim() || String(sr.reps||'').trim()));
   const setSerie=(i,patch)=>setSeries(a=>a.map((x,k)=>k===i?{...x,...patch}:x));
-  const aplicarCargaTodas=()=>{ const c=series[0].carga; setSeries(a=>a.map(x=>({...x,carga:c}))); };
-  const [intensidade,setInt]=useState(isEdit?(editLog.intensidade!=null?editLog.intensidade:null):null);
-  const [dor,setDor]=useState(isEdit?(editLog.dor!=null?editLog.dor:null):null);
+  const aplicarCargaTodas=()=>{ const c=(series[ativa]||series[0]).carga; setSeries(a=>a.map(x=>({...x,carga:c}))); };
   const [erro,setErro]=useState('');
   // separa número e sufixo (ex "40kg" -> 40 + "kg"); preserva unidade ao operar
   const parseCarga=(str)=>{
@@ -2444,8 +2474,9 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
     const pend=lerVarPend(alunoId,exName);
     if(pend.includes(variante)) salvarVarPend(alunoId,exName,pend.filter(v=>v!==variante));
     onSave({
-      series: feitas.map(sr=>({serie:sr.i+1, carga:sr.carga.trim(), reps:sr.reps.trim()})),
-      intensidade, dor, variante:(variante===base?'':variante)
+      series: feitas.map(sr=>({serie:sr.i+1, carga:sr.carga.trim(), reps:sr.reps.trim(),
+        intensidade:(sr.intensidade!=null?sr.intensidade:null), dor:(sr.dor!=null?sr.dor:null)})),
+      variante:(variante===base?'':variante)
     });
   };
   const escolherVariante=(v)=>{
@@ -2517,47 +2548,62 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
           <button type="button" className="vrcancel" onClick={()=>setRenomeando(null)}>✕</button>
         </div>}
       </div>
-      <div className="field">
-        <label className="reglab">{isEdit?'Carga e repetições':'Carga e repetições por série'}</label>
-        <div className="serieform">
-          {series.map((sr,i)=>(
-            <div className={'sfrow'+(aberta===i?' on':'')} key={i}>
-              <div className="sfhead">
-                <span className="sfnum">{isEdit?'—':(i+1)+'ª'}</span>
-                <div className="sfcol">
-                  <input className="sfcarga" value={sr.carga} inputMode="decimal" placeholder="carga"
-                    onFocus={()=>setAberta(i)}
-                    onChange={e=>{setSerie(i,{carga:e.target.value});setErro('');}}/>
-                </div>
-                <span className="sfx">×</span>
-                <div className="sfcol sfrepcol">
-                  <input className="sfreps" type="number" inputMode="numeric" value={sr.reps} placeholder="reps"
-                    onFocus={()=>setAberta(i)}
-                    onChange={e=>{setSerie(i,{reps:e.target.value});setErro('');}}/>
-                </div>
-                {!isEdit && <span className="sfpresc">{prescricaoDe(i)}</span>}
-              </div>
-              {aberta===i && <div className="sfbumps">
-                <button type="button" className="bump minus" onClick={()=>bumpSerie(i,-10)}>−10</button>
-                <button type="button" className="bump minus" onClick={()=>bumpSerie(i,-2.5)}>−2,5</button>
-                <button type="button" className="bump minus" onClick={()=>bumpSerie(i,-1)}>−1</button>
-                <button type="button" className="bump plus" onClick={()=>bumpSerie(i,1)}>+1</button>
-                <button type="button" className="bump plus" onClick={()=>bumpSerie(i,2.5)}>+2,5</button>
-                <button type="button" className="bump plus" onClick={()=>bumpSerie(i,10)}>+10</button>
-                <button type="button" className="bump minus rp" onClick={()=>bumpRepsSerie(i,-1)}>−1 rep</button>
-                <button type="button" className="bump plus rp" onClick={()=>bumpRepsSerie(i,1)}>+1 rep</button>
-              </div>}
-            </div>
+      {!isEdit && series.length>1 && <div className="serietabs">
+        {series.map((sr,i)=>(
+          <button type="button" key={i}
+            className={'stab'+(ativa===i?' sel':'')+(serieCompleta(sr)?' ok':'')}
+            onClick={()=>setAtiva(i)}>
+            <span className="stnum">{i+1}ª</span>
+            {serieCompleta(sr) && <span className="stok">✓</span>}
+          </button>))}
+      </div>}
+      {!isEdit && series.length>1 && <div className="serieresumo">
+        {series.map((sr,i)=>(
+          <span key={i} className={'srchip'+(ativa===i?' sel':'')+(serieIniciada(sr)?'':' vazia')}>
+            {i+1}ª {serieIniciada(sr)?((sr.carga||'—')+(sr.reps?' × '+sr.reps:'')):'—'}
+          </span>))}
+      </div>}
+      <div className="field"><label className="reglab">Carga{!isEdit && series.length>1?' · '+(ativa+1)+'ª série':''}</label>
+        <input value={at.carga} inputMode="decimal" onChange={e=>{setAt({carga:e.target.value});setErro('');}} placeholder="Ex: 40kg"/>
+        <div className="reprow">
+          {[10,20,40,50,80,100].map(v=>(
+            <button type="button" key={v} className={'rpreset'+(parseCarga(at.carga).num===v?' sel':'')}
+              onClick={()=>setAt({carga:fmtNum(v)+(parseCarga(at.carga).suf||'kg')})}>{v}</button>
           ))}
         </div>
+        <div className="bumpgrid">
+          <button type="button" className="bump minus" onClick={()=>bumpSerie(ativa,-10)}>−10</button>
+          <button type="button" className="bump minus" onClick={()=>bumpSerie(ativa,-2.5)}>−2,5</button>
+          <button type="button" className="bump minus" onClick={()=>bumpSerie(ativa,-1)}>−1</button>
+          <button type="button" className="bump plus" onClick={()=>bumpSerie(ativa,1)}>+1</button>
+          <button type="button" className="bump plus" onClick={()=>bumpSerie(ativa,2.5)}>+2,5</button>
+          <button type="button" className="bump plus" onClick={()=>bumpSerie(ativa,10)}>+10</button>
+        </div>
         {!isEdit && series.length>1 &&
-          <button type="button" className="sfcopiar" onClick={aplicarCargaTodas}>⇩ Usar a carga da 1ª em todas</button>}
-        {!isEdit && <div className="prefill">Pré-preenchido com a última sessão neste equipamento — ajuste o que mudou.</div>}
+          <button type="button" className="sfcopiar" onClick={aplicarCargaTodas}>⇩ Usar esta carga em todas as séries</button>}
       </div>
-      <div className="field"><label className="reglab">Esforço <span className="reghint">(esforço percebido nessa carga)</span></label>
-        <Scale value={intensidade} onChange={setInt} leftLabel="Leve" rightLabel="Máxima"/></div>
-      <div className="field"><label className="reglab">Dor Articular</label>
-        <Scale value={dor} onChange={setDor} leftLabel="Sem dor" rightLabel="Dor forte"/></div>
+      <div className="field"><label className="reglab">Repetições feitas <span className="reghint">(só o número)</span></label>
+        <input type="number" inputMode="numeric" value={at.reps} onChange={e=>{setAt({reps:e.target.value});setErro('');}} placeholder="Ex: 10"/>
+        <div className="reprow">
+          {[6,8,10,12,15,20].map(v=>(
+            <button type="button" key={v} className={'rpreset'+(String(v)===String(at.reps)?' sel':'')}
+              onClick={()=>setAt({reps:String(v)})}>{v}</button>
+          ))}
+        </div>
+        <div className="repbump">
+          <button type="button" className="bump minus" onClick={()=>bumpRepsSerie(ativa,-1)}>−1</button>
+          <button type="button" className="bump plus" onClick={()=>bumpRepsSerie(ativa,1)}>+1</button>
+        </div>
+        {!isEdit && <div className="prefill">{prescricaoDe(ativa)?('Prescrito: '+prescricaoDe(ativa)):'Pré-preenchido com a última sessão neste equipamento.'}</div>}
+      </div>
+      <div className="field"><label className="reglab">Esforço <span className="reghint">(opcional)</span></label>
+        <Scale value={at.intensidade!=null?at.intensidade:null} onChange={(v)=>setAt({intensidade:v})} leftLabel="Leve" rightLabel="Máxima"/></div>
+      <div className="field"><label className="reglab">Dor Articular <span className="reghint">(opcional)</span></label>
+        <Scale value={at.dor!=null?at.dor:null} onChange={(v)=>setAt({dor:v})} leftLabel="Sem dor" rightLabel="Dor forte"/></div>
+      {!isEdit && series.length>1 && ativa<series.length-1 &&
+        <button type="button" className="btnprox" onClick={()=>setAtiva(ativa+1)}>
+          Próxima série ({ativa+2}ª) →
+        </button>}
       {erro && <div style={{color:'var(--danger)',fontSize:13,marginBottom:12}}>{erro}</div>}
       <div className="sheetactions">
         <button className="btn ghost" onClick={onClose}>Cancelar</button>
@@ -2916,23 +2962,22 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
   const varAtiva=varsUsadas.includes(varSel)?varSel:(varsUsadas[0]||baseVar);
   const entriesFiltradas=entries.filter(e=>((e.variante||'').trim()||baseVar)===varAtiva);
   const sessoesGraf=agruparSessoes(entriesFiltradas, baseVar);
-  // quantas séries a sessão mais longa teve — define quantas linhas o gráfico desenha
   const maxSeries=sessoesGraf.reduce((m,x)=>Math.max(m,x.series.length),0);
-  const CORES_SERIE=['#00c9cc','#71fcff','#9b7cff','#6ee89a','#f1d94a','#ffa45c','#ff8fb1','#8fd6ff','#c0a6ff','#a2feff'];
+  // uma linha por vez: o gráfico mostra a série escolhida (misturar 1ª leve com 4ª pesada não diz nada)
+  const [serieSel,setSerieSel]=useState(1);
+  const sn=Math.min(Math.max(1,serieSel),Math.max(1,maxSeries));
   const chartData=sessoesGraf.map(ses=>{
-    const pt={date:fmtDate(ses.date),
-      intensidade:(ses.intensidade!=null?ses.intensidade:null),
-      dor:(ses.dor!=null?ses.dor:null)};
-    let vol=0, temVol=false, maxC=null;
-    ses.series.forEach((l,i)=>{
-      const c=numFrom(l.carga), r=numFrom(l.reps);
-      pt['s'+(i+1)] = (c!=null?c:null);
-      if(c!=null&&r!=null){ vol+=c*r; temVol=true; }
-      if(c!=null && (maxC==null||c>maxC)) maxC=c;
-    });
-    pt.carga=maxC; pt.volume=temVol?vol:null;
+    const pt={date:fmtDate(ses.date)};
+    // a série n daquela sessão (por número de série, com fallback pela posição)
+    const l=ses.series.find(x=>x.serie===sn) || (maxSeries<=1?ses.series[0]:null);
+    if(!l) return null;
+    const c=numFrom(l.carga), r=numFrom(l.reps);
+    pt.carga=c;
+    pt.volume=(c!=null&&r!=null)?c*r:null;
+    pt.intensidade=(l.intensidade!=null?l.intensidade:null);
+    pt.dor=(l.dor!=null?l.dor:null);
     return pt;
-  }).filter(d=>d.carga!=null);
+  }).filter(d=>d&&d.carga!=null);
   const delLog=(logId)=>{
     setDb({...db,students:db.students.map(st=>st.id!==studentId?st:{...st,treinos:st.treinos.map(t=>({...t,exercises:t.exercises.map(ex=>norm(ex.name)===norm(exName)?{...ex,logs:(ex.logs||[]).filter(l=>l.id!==logId)}:ex)}))})});
     enqueueOp({tipo:'delete',tabela:'logs',id:logId});
@@ -2966,7 +3011,7 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
     const LineChart=RC.LineChart, Line=RC.Line, XAxis=RC.XAxis, YAxis=RC.YAxis, CartesianGrid=RC.CartesianGrid, Tooltip=RC.Tooltip, ResponsiveContainer=RC.ResponsiveContainer;
     const ColorDot=(p)=>(p.cy==null?null:<circle cx={p.cx} cy={p.cy} r={4.5} fill={scaleColor(p.payload.dor)} stroke="#0b0f10" strokeWidth={2}/>);
     const M=[
-      {k:'carga',label:maxSeries>1?'Carga por série (kg)':'Carga (kg)',color:'#00c9cc',domain:['auto','auto'],width:3,porSerie:maxSeries>1},
+      {k:'carga',label:maxSeries>1?('Carga · '+sn+'ª série (kg)'):'Carga (kg)',color:'#00c9cc',domain:['auto','auto'],width:3},
       {k:'volume',label:'Volume (kg×reps)',color:'#9b7cff',domain:['auto','auto'],width:2},
       {k:'intensidade',label:'Intensidade',color:'#f1d94a',domain:[0,10],ticks:[0,5,10],width:2},
       {k:'dor',label:'Dor articular',color:'#ff5c6c',domain:[0,10],ticks:[0,5,10],width:2},
@@ -2992,24 +3037,13 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
               <XAxis dataKey="date" tick={i===active.length-1?{fill:'#7d9298',fontSize:11}:false} tickMargin={8} height={i===active.length-1?24:6}/>
               <YAxis domain={m.domain} ticks={m.ticks||undefined} tick={{fill:'#7d9298',fontSize:11}} width={40}/>
               <Tooltip contentStyle={{background:'#12181a',border:'1px solid #243036',borderRadius:12,color:'#eaf6f7'}}/>
-              {m.porSerie
-                ? Array.from({length:maxSeries}).map((_,si)=>(
-                    <Line key={si} type="monotone" dataKey={'s'+(si+1)} name={(si+1)+'ª série'}
-                      stroke={CORES_SERIE[si%CORES_SERIE.length]} strokeWidth={2} connectNulls
-                      dot={{r:3,fill:CORES_SERIE[si%CORES_SERIE.length],strokeWidth:0}} activeDot={{r:6}}/>))
-                : <Line type="monotone" dataKey={m.k} name={m.label} stroke={m.color} strokeWidth={m.width} connectNulls
-                    dot={m.k==='carga'?<ColorDot/>:{r:3,fill:m.color,strokeWidth:0}} activeDot={{r:6}}/>}
+              <Line type="monotone" dataKey={m.k} name={m.label} stroke={m.color} strokeWidth={m.width} connectNulls
+                dot={m.k==='carga'?<ColorDot/>:{r:3,fill:m.color,strokeWidth:0}} activeDot={{r:6}}/>
             </LineChart>
           </ResponsiveContainer>
         </div>
       ))}
-      {metrics.carga && maxSeries>1 && <div className="serielegend">
-        {Array.from({length:maxSeries}).map((_,si)=>(
-          <span className="slitem" key={si}>
-            <span className="sldot" style={{background:CORES_SERIE[si%CORES_SERIE.length]}}></span>{si+1}ª
-          </span>))}
-      </div>}
-      {metrics.carga && maxSeries<=1 && <div className="legend">
+      {metrics.carga && <div className="legend">
         <span className="lgtitle">Bolinha da carga = Dor articular:</span>
         <span><span className="d" style={{background:'var(--green)'}}></span>0-3</span>
         <span><span className="d" style={{background:'var(--yellow)'}}></span>4-6</span>
@@ -3029,6 +3063,12 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
         {varsUsadas.map(v=>(
           <button type="button" key={v} className={'varchip'+(varAtiva===v?' sel':'')} onClick={()=>setVarSel(v)}>{v}</button>
         ))}
+      </div>}
+      {maxSeries>1 && <div className="varfiltro sgf">
+        <span className="sgflab">Gráfico:</span>
+        {Array.from({length:maxSeries}).map((_,i)=>(
+          <button type="button" key={i} className={'varchip'+(sn===i+1?' sel':'')}
+            onClick={()=>setSerieSel(i+1)}>{i+1}ª série</button>))}
       </div>}
       {chart}
       <h3 style={{fontSize:15,margin:'6px 4px 10px',color:'var(--muted)'}}>Histórico contínuo</h3>
