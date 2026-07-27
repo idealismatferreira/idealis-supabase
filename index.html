@@ -992,28 +992,56 @@ function parseDescanso(txt){
   if(u) return {min:parseInt(u[1],10), max:parseInt(u[1],10)};
   return null;
 }
+const REST_KEY='idealis_descanso_v1';
 function useRestTimer(){
   const [open,setOpen]=useState(false);
-  const [running,setRunning]=useState(false);
-  const [elapsed,setElapsed]=useState(0);   // segundos decorridos
   const [faixa,setFaixa]=useState(null);    // {min,max}
   const [exNome,setExNome]=useState('');
+  // guarda o INSTANTE de início (não a contagem): sobrevive a tela travada,
+  // app minimizado e até a recarregar a página
+  const [inicioMs,setInicioMs]=useState(null);
+  const [agora,setAgora]=useState(Date.now());
   const avisouRef=React.useRef(false);
+  // retoma um descanso em andamento (ex: aluno recarregou a página)
+  useEffect(()=>{
+    try{
+      if(!LS_OK) return;
+      const r=window.localStorage.getItem(REST_KEY);
+      if(!r) return;
+      const d=JSON.parse(r);
+      if(!d || !d.inicio || !d.faixa) return;
+      // descarta se já passou muito do máximo (não faz sentido retomar)
+      if((Date.now()-d.inicio)/1000 > (d.faixa.max+600)){ window.localStorage.removeItem(REST_KEY); return; }
+      setFaixa(d.faixa); setExNome(d.nome||''); setInicioMs(d.inicio); avisouRef.current=true;
+    }catch(e){}
+  },[]);
+  const running = inicioMs!=null;
+  const elapsed = running ? Math.floor((agora-inicioMs)/1000) : 0;
+  useEffect(()=>{
+    if(!running) return;
+    const id=setInterval(()=>setAgora(Date.now()),500);
+    // ao voltar do segundo plano, atualiza na hora (sem esperar o próximo tick)
+    const onVis=()=>{ if(document.visibilityState==='visible') setAgora(Date.now()); };
+    document.addEventListener('visibilitychange',onVis);
+    return ()=>{ clearInterval(id); document.removeEventListener('visibilitychange',onVis); };
+  },[running]);
   useEffect(()=>{
     if(!running || !faixa) return;
-    // vibra ao cruzar o mínimo (uma vez)
     if(!avisouRef.current && elapsed>=faixa.min){
       avisouRef.current=true;
       if(navigator.vibrate) navigator.vibrate([260,110,260]);
     }
-    const id=setTimeout(()=>setElapsed(e=>e+1),1000);
-    return ()=>clearTimeout(id);
   },[running,elapsed,faixa]);
   const start=(f,nome)=>{
+    const t=Date.now();
     avisouRef.current=false;
-    setFaixa(f); setElapsed(0); setExNome(nome||''); setRunning(true); setOpen(false);
+    setFaixa(f); setExNome(nome||''); setInicioMs(t); setAgora(t); setOpen(false);
+    try{ if(LS_OK) window.localStorage.setItem(REST_KEY,JSON.stringify({inicio:t,faixa:f,nome:nome||''})); }catch(e){}
   };
-  const cancel=()=>{ setRunning(false); setElapsed(0); setFaixa(null); setExNome(''); };
+  const cancel=()=>{
+    setInicioMs(null); setFaixa(null); setExNome('');
+    try{ if(LS_OK) window.localStorage.removeItem(REST_KEY); }catch(e){}
+  };
   return {open,setOpen,running,elapsed,faixa,exNome,start,cancel};
 }
 function RestTimerTrigger({timer}){
@@ -1273,9 +1301,9 @@ const FRASES_DIA=[
   "Aquece rapidinho antes da primeira série 🔄",
   "Capricha na execução 🎯",
   "Amplitude completa vale mais que peso extra 📏",
-  "Controla a descida, é lá que o músculo trabalha ⬇️",
-  "Se doer articulação, para e me avisa 🩺",
-  "Registra a carga, é assim que a gente evolui 📈",
+  "Controla o movimento, é aí que o músculo trabalha ⬇️",
+  "Concentre-se no músculo que está trabalhando no exercício 💪",
+  "De vez em quando registre a carga. Assim que a gente evolui 📈",
   "Qualquer dúvida em algum exercício, me chama 👋",
   "Hoje é dia de fazer o simples bem feito 👌",
   "Treino curto e bem feito rende mais que treino arrastado ⚡",
