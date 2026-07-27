@@ -407,7 +407,10 @@
   .mpblocos{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:5px}
   .mpbl{font-size:11.5px;font-weight:600;color:var(--cyan-2);background:rgba(0,201,204,.1);
     border:1px solid rgba(0,201,204,.3);border-radius:7px;padding:2px 8px}
-  .mppausa{font-size:10.5px;color:#ddff00}
+  .mppausa{font-size:10.5px;color:#ddff00;white-space:nowrap}
+  button.mppausa{font-family:inherit;font-weight:700;cursor:pointer;padding:3px 9px;border-radius:999px;
+    background:rgba(221,255,0,.1);border:1px solid rgba(221,255,0,.45);-webkit-tap-highlight-color:transparent}
+  button.mppausa:active{background:rgba(221,255,0,.26)}
   .mpext{margin-top:5px;font-size:11.5px;font-weight:600;color:#ffc48a}
   .mpdesc{flex:0 0 auto;font-size:11px;font-weight:600;color:var(--muted);padding-top:3px}
   .crono{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:10px;
@@ -498,12 +501,7 @@
   .filmtoggle.on .ftlab{color:var(--cyan-2)}
   .filmtoggle .fthint{font-size:11px;color:var(--muted);line-height:1.3}
   .exfilm{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;letter-spacing:.01em;color:var(--cyan-2);background:rgba(0,201,204,.13);border:1px solid rgba(0,201,204,.4);border-radius:999px;padding:3px 9px;white-space:nowrap}
-  .fimcard{margin:18px 4px 90px;padding:22px 18px;border-radius:18px;background:linear-gradient(160deg,rgba(0,201,204,.14),rgba(0,201,204,.04));border:1px solid var(--cyan);text-align:center;animation:fcup .35s ease}
   @keyframes fcup{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-  .fimcard .fctit{font-size:19px;font-weight:700;color:var(--text);line-height:1.25;margin-bottom:6px}
-  .fimcard .fcsub{font-size:13px;color:var(--muted);line-height:1.4;margin-bottom:16px}
-  .fimcard .fcbtn{width:100%;padding:15px;border-radius:13px;border:none;background:var(--cyan);color:#04191a;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer}
-  .fimcard .fcskip{margin-top:10px;background:none;border:none;color:var(--muted);font-size:13px;font-family:inherit;cursor:pointer;text-decoration:underline;padding:6px}
   .sesspanel{margin:18px 4px 90px;padding:16px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
   .sesspanel .sptit{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px}
   .sesspanel .spcount{font-size:12px;font-weight:700;color:#04191a;background:var(--cyan);border-radius:999px;padding:2px 9px}
@@ -518,11 +516,23 @@
   .sesspanel .spdel{flex:0 0 auto;width:26px;height:26px;border-radius:8px;border:none;background:transparent;color:var(--muted);font-size:14px;cursor:pointer;font-family:inherit}
   .sesspanel .spdel:active{background:rgba(255,92,108,.15);color:var(--danger)}
   .sesspanel .spmais{font-size:11.5px;color:var(--muted);text-align:center;padding-top:4px}
-  .fimmini{display:block;width:100%;margin:18px 4px 90px;padding:13px;border-radius:13px;border:1px solid var(--cyan);background:rgba(0,201,204,.08);color:var(--cyan-2);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer}
-  .fimdone{margin:18px 4px 90px;padding:16px;border-radius:16px;background:rgba(0,201,204,.07);border:1px solid rgba(0,201,204,.35);text-align:center}
-  .fimdone .fdtit{font-size:15px;font-weight:700;color:var(--cyan-2)}
-  .fimdone .fdsub{font-size:12px;color:var(--muted);margin-top:3px}
-  .fimdone .fdundo{margin-top:9px;background:none;border:none;color:var(--muted);font-size:12px;font-family:inherit;cursor:pointer;text-decoration:underline}
+  .fimbox{display:flex;align-items:center;gap:12px;width:100%;margin:16px 4px 90px;padding:15px 16px;
+    border-radius:14px;border:1px solid var(--line);background:var(--surface);font-family:inherit;
+    cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent;transition:border-color .2s,background .2s}
+  .fimbox:active{background:var(--surface-2)}
+  .fimbox.done{border-color:#ddff00;background:rgba(221,255,0,.07);cursor:default}
+  .fimcheck{flex:0 0 26px;width:26px;height:26px;border-radius:8px;border:2px solid #ddff00;
+    display:grid;place-items:center;font-size:15px;font-weight:900;color:#0b0f10;transition:background .2s}
+  .fimcheck.on{background:#ddff00}
+  .fimlabel{flex:1;font-size:15.5px;font-weight:700;color:var(--text)}
+  .fimbox.done .fimlabel{color:#ddff00}
+  .fimundo{flex:0 0 auto;background:none;border:none;color:var(--muted);font-size:12px;
+    font-family:inherit;cursor:pointer;text-decoration:underline;padding:6px}
+  .fimavisa{position:relative;margin:16px 4px -6px;padding:11px 34px 11px 13px;border-radius:12px;
+    background:rgba(0,201,204,.09);border:1px solid rgba(0,201,204,.35);
+    font-size:12.5px;line-height:1.45;color:var(--cyan-2);animation:fcup .3s ease}
+  .fimavisax{position:absolute;top:6px;right:6px;width:24px;height:24px;border:none;background:none;
+    color:var(--muted);font-size:12px;font-family:inherit;cursor:pointer}
   .rtrunning .rttrack{position:relative;display:flex;height:6px;width:100%;overflow:hidden}
   .rtrunning .rtzona{height:100%}
   .rtrunning .rtzona.zmin{background:var(--cyan)}
@@ -2195,7 +2205,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   const [editingEx,setEditingEx]=useState(null);
   const [registering,setRegistering]=useState(null);
   // --- conclusão de treino: gatilho por scroll + tempo mínimo na tela ---
-  const ESPERA_MS = 5*60*1000; // 5 minutos
+  const ESPERA_MS = 3*60*1000; // 3 minutos
   const abertoEmRef = React.useRef(Date.now());
   const sentinelaRef = React.useRef(null);
   // "armado" = já bateu no fim depois do tempo mínimo. Uma vez true, NÃO volta a false
@@ -2287,6 +2297,14 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     flash(iso===todayISO()?'Treino concluído ✓':('Registrado em '+fmtDate(iso)+' ✓'));
   };
   const concluirTreino=()=>registrarSessao(todayISO(),'manual');
+  // auto-conclusão: 3 min depois da 1ª série avançada (evidência real de treino)
+  useEffect(()=>{
+    if(!ehAluno || inicio==null || treinoConcluidoHoje) return;
+    const falta=ESPERA_MS-(Date.now()-inicio);
+    if(falta<=0){ registrarSessao(todayISO(),'inferido'); return; }
+    const id=setTimeout(()=>registrarSessao(todayISO(),'inferido'), falta+300);
+    return ()=>clearTimeout(id);
+  },[ehAluno,inicio,treinoConcluidoHoje,treinoId]);
   const removerSessao=(iso)=>{
     const alvo=sessaoDe(iso);
     if(!alvo) return;
@@ -2419,15 +2437,23 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
                 <div className={'mpserie'+st} key={i}>
                   <span className="mpnum">{i<fe?'✓':(i+1)+'ª'}</span>
                   <div className="mpbody">
-                    <div className="mplinha">
-                      <span className="mpreps">{sr.reps||'—'}</span>
-                      {sr.carga && <span className="mptag">⚖ {sr.carga}</span>}
-                      {sr.cadencia && <span className="mptag">⏱ {sr.cadencia}</span>}
-                    </div>
+                    {(() => { const temBlocos=(sr.blocos||[]).length>0;
+                      const extras=(sr.carga||sr.cadencia);
+                      // com blocos, o total (ex: "16 (8+8)") é redundante — mostra só os blocos
+                      if(temBlocos && !extras) return null;
+                      return <div className="mplinha">
+                        {!temBlocos && <span className="mpreps">{sr.reps||'—'}</span>}
+                        {sr.carga && <span className="mptag">⚖ {sr.carga}</span>}
+                        {sr.cadencia && <span className="mptag">⏱ {sr.cadencia}</span>}
+                      </div>; })()}
                     {(sr.blocos||[]).length>0 && <div className="mpblocos">
                       {sr.blocos.map((b,k)=>(<React.Fragment key={k}>
-                        <span className="mpbl">{b.reps} reps</span>
-                        {b.pausa && <span className="mppausa">↺ {b.pausa}</span>}
+                        <span className="mpbl">{b.reps}{/^\d+$/.test(String(b.reps||''))?' reps':''}</span>
+                        {b.pausa && (parseDescanso(b.pausa)
+                          ? <button className="mppausa btn" onClick={()=>timer.start(parseDescanso(b.pausa), ex.name+' · pausa')}>
+                              ↺ {b.pausa}
+                            </button>
+                          : <span className="mppausa">↺ {b.pausa}</span>)}
                       </React.Fragment>))}
                     </div>}
                     {(sr.extensao||[]).map((x,k)=>(
@@ -2474,19 +2500,21 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
       <div ref={sentinelaRef} style={{height:1}} aria-hidden="true"></div>
       {ehAluno && (t.exercises||[]).length>0 && (
         treinoConcluidoHoje
-          ? <div className="fimdone">
-              <div className="fdtit">✓ Treino concluído hoje</div>
-              <div className="fdsub">{sessoes.length} {sessoes.length===1?'sessão registrada':'sessões registradas'}</div>
-              <button className="fdundo" onClick={desfazerConclusao}>desfazer</button>
+          ? <div className="fimbox done">
+              <span className="fimcheck on">✓</span>
+              <span className="fimlabel">Treino Concluído!</span>
+              <button className="fimundo" onClick={desfazerConclusao}>desfazer</button>
             </div>
-          : (armado && (dispensado
-              ? <button className="fimmini" onClick={concluirTreino}>✓ Concluir treino de hoje</button>
-              : <div className="fimcard">
-                  <div className="fctit">Você está finalizando o treino?</div>
-                  <div className="fcsub">Toque aqui para já deixar concluído e não esquecer depois.</div>
-                  <button className="fcbtn" onClick={concluirTreino}>✓ Concluir treino de hoje</button>
-                  <button className="fcskip" onClick={()=>setDispensado(true)}>ainda não terminei</button>
-                </div>))
+          : <React.Fragment>
+              {armado && !dispensado && <div className="fimavisa">
+                Você está finalizando o treino? Marque abaixo para não esquecer.
+                <button className="fimavisax" onClick={()=>setDispensado(true)}>✕</button>
+              </div>}
+              <button className="fimbox" onClick={concluirTreino}>
+                <span className="fimcheck"></span>
+                <span className="fimlabel">Finalizar Treino</span>
+              </button>
+            </React.Fragment>
       )}
       {!ehAluno && (t.exercises||[]).length>0 && <div className="sesspanel">
         <div className="sptit">📅 Sessões registradas <span className="spcount">{sessoes.length}</span></div>
