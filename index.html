@@ -474,6 +474,55 @@
     font-size:11.5px;color:var(--muted)}
   .slitem{display:inline-flex;align-items:center;gap:5px}
   .sldot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  /* --- cardio: editor --- */
+  .cdlista{display:flex;flex-direction:column;gap:6px}
+  .cdrow{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:11px;
+    background:var(--surface-2);border:1px solid var(--line)}
+  .cdnivelbar{flex:0 0 4px;width:4px;height:26px;border-radius:3px}
+  .cdrow input,.cdrow select{padding:8px 9px;border-radius:9px;border:1px solid var(--line);
+    background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;min-width:0}
+  .cdtempo{flex:0 0 66px;width:66px;text-align:center}
+  .cdrotulo{flex:1 1 auto}
+  .cdnivel{flex:0 0 96px;width:96px}
+  .cddel{flex:0 0 26px;width:26px;height:28px;border-radius:8px;border:1px solid var(--line);
+    background:var(--bg);color:#ff9ba3;font-family:inherit;font-size:11px;cursor:pointer}
+  .cdrepetir{display:flex;align-items:center;gap:9px;margin-top:10px;font-size:12.5px;color:var(--muted)}
+  .cdrepetir input{width:66px;padding:8px 10px;border-radius:9px;border:1px solid var(--line);
+    background:var(--bg);color:var(--text);font-family:inherit;font-size:14px;text-align:center}
+  .cdrx{font-weight:700;color:var(--text)}
+  /* --- cardio: card do aluno --- */
+  .cdcard{margin:10px 0 2px;padding:11px;border-radius:13px;background:var(--surface-2);border:1px solid var(--line)}
+  .cdtiraprev{display:flex;gap:2px;height:8px;border-radius:99px;overflow:hidden;margin-bottom:10px}
+  .cdtiraprev span{display:block;min-width:2px}
+  .cdblocos{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:11px}
+  .cdbchip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--text);
+    background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+  .cdbdot{width:7px;height:7px;border-radius:50%}
+  .cdbrep{font-size:11.5px;font-weight:800;color:#ddff00;align-self:center}
+  .cdiniciar{width:100%;padding:13px;border-radius:12px;border:none;background:var(--cyan);
+    color:#04191a;font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer}
+  .cdiniciar:active{filter:brightness(.92)}
+  /* --- cardio: overlay em execução --- */
+  .cdover{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;
+    padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
+  .cdtop{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+  .cdnome{flex:1;font-size:13.5px;font-weight:600;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cdsair{width:34px;height:34px;border-radius:11px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--muted);font-family:inherit;font-size:14px;cursor:pointer}
+  .cdmeio{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}
+  .cdrot{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--cd);line-height:1.1}
+  .cdnum{font-size:88px;font-weight:700;line-height:1;letter-spacing:-.04em;
+    font-variant-numeric:tabular-nums;color:var(--cd)}
+  .cdfim{font-size:76px;line-height:1;color:var(--cd);font-weight:800}
+  .cdbar{width:min(320px,86%);height:7px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:8px}
+  .cdbar span{display:block;height:100%;background:var(--cd);transition:width .25s linear}
+  .cdsub{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.4}
+  .cdsub b{color:var(--text)}
+  .cdtira{display:flex;gap:2px;height:10px;border-radius:99px;overflow:hidden;flex:0 0 auto;margin-bottom:9px}
+  .cdtira span{display:block;min-width:2px;opacity:.28;transition:opacity .2s}
+  .cdtira span.feito{opacity:.6}
+  .cdtira span.agora{opacity:1}
+  .cdrodape{flex:0 0 auto;text-align:center;font-size:12.5px;color:var(--muted)}
   .serieform{display:flex;flex-direction:column;gap:7px}
   .sfrow{padding:8px 9px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);transition:border-color .15s}
   .sfrow.on{border-color:var(--cyan)}
@@ -740,7 +789,7 @@ async function fetchDbFromSupabase(){
     const [rAlunos, rTreinos, rEx, rLogs, rSess] = await Promise.all([
       sb.from('alunos').select('id,nome,foto_url,academia').order('nome'),
       sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data').order('ordem'),
-      sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo').order('ordem'),
+      sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio').order('ordem'),
       sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor,variante,serie').order('data,serie'),
       sb.from('sessoes').select('id,aluno_id,treino_id,data,origem').order('data')
     ]);
@@ -758,7 +807,7 @@ async function fetchDbFromSupabase(){
     (rEx.data||[]).forEach(e=>{
       (exPorTreino[e.treino_id]=exPorTreino[e.treino_id]||[]).push({
         id:e.id, name:e.nome, series:e.series||'',
-        exerciseId:e.cardapio_id, doneDate:e.done_date, descanso:e.descanso||'', filmar:!!e.filmar, observacao:e.observacao||'', metodo:e.metodo||null,
+        exerciseId:e.cardapio_id, doneDate:e.done_date, descanso:e.descanso||'', filmar:!!e.filmar, observacao:e.observacao||'', metodo:e.metodo||null, cardio:e.cardio||null,
         logs: logsPorEx[e.id]||[]
       });
     });
@@ -923,7 +972,7 @@ function buildEstruturaSnapshot(db){
         id:t.id, nome:t.nome,
         exercises:(t.exercises||[]).map(ex=>({
           id:ex.id, name:ex.name, series:ex.series,
-          filmar:!!ex.filmar, observacao:ex.observacao||'', metodo:ex.metodo||null,
+          filmar:!!ex.filmar, observacao:ex.observacao||'', metodo:ex.metodo||null, cardio:ex.cardio||null,
           logs:(ex.logs||[]).map(l=>({id:l.id,date:l.date,carga:l.carga,reps:l.reps,intensidade:l.intensidade,dor:l.dor,variante:l.variante||'',serie:(l.serie!=null?l.serie:null)}))
           // doneDate propositalmente omitido (efêmero do dia)
         }))
@@ -1049,6 +1098,110 @@ function RestTimerTrigger({timer}){
     ⏱️ Contar descanso
   </button>);
 }
+/* ---------- motor do cardio: sequencial, baseado em Date.now() ----------
+   Guarda só o instante de início; o bloco atual é CALCULADO.
+   Tela travada, app minimizado ou página recarregada não perdem o lugar. */
+const CARDIO_KEY='idealis_cardio_v1';
+function useCardioTimer(){
+  const [sessao,setSessao]=useState(null); // {inicio, blocos, nome}
+  const [agora,setAgora]=useState(Date.now());
+  const wakeRef=React.useRef(null);
+  useEffect(()=>{ // retoma se a página recarregou no meio
+    try{
+      if(!LS_OK) return;
+      const r=window.localStorage.getItem(CARDIO_KEY); if(!r) return;
+      const d=JSON.parse(r);
+      if(!d||!d.inicio||!d.blocos||!d.blocos.length) return;
+      const tot=d.blocos.reduce((a,b)=>a+b.seg,0);
+      if((Date.now()-d.inicio)/1000 > tot+900){ window.localStorage.removeItem(CARDIO_KEY); return; }
+      setSessao(d);
+    }catch(e){}
+  },[]);
+  useEffect(()=>{
+    if(!sessao) return;
+    const id=setInterval(()=>setAgora(Date.now()),250);
+    const onVis=()=>{ if(document.visibilityState==='visible') setAgora(Date.now()); };
+    document.addEventListener('visibilitychange',onVis);
+    // mantém a tela acesa onde a API existir (Chrome Android 2019+, Safari 16.4+)
+    let cancelado=false;
+    (async()=>{ try{
+      if(navigator.wakeLock && navigator.wakeLock.request){
+        const w=await navigator.wakeLock.request('screen');
+        if(cancelado) w.release(); else wakeRef.current=w;
+      }
+    }catch(e){} })();
+    return ()=>{
+      cancelado=true; clearInterval(id);
+      document.removeEventListener('visibilitychange',onVis);
+      try{ if(wakeRef.current){ wakeRef.current.release(); wakeRef.current=null; } }catch(e){}
+    };
+  },[sessao]);
+  const iniciar=(blocos,nome)=>{
+    if(!blocos||!blocos.length) return;
+    const d={inicio:Date.now(), blocos, nome:nome||''};
+    setSessao(d); setAgora(d.inicio);
+    try{ if(LS_OK) window.localStorage.setItem(CARDIO_KEY,JSON.stringify(d)); }catch(e){}
+  };
+  const parar=()=>{
+    setSessao(null);
+    try{ if(LS_OK) window.localStorage.removeItem(CARDIO_KEY); }catch(e){}
+  };
+  // ---- estado derivado ----
+  let estado=null;
+  if(sessao){
+    const dec=Math.max(0,(agora-sessao.inicio)/1000);
+    const total=sessao.blocos.reduce((a,b)=>a+b.seg,0);
+    let acc=0, idx=-1, restante=0;
+    for(let i=0;i<sessao.blocos.length;i++){
+      const fim=acc+sessao.blocos[i].seg;
+      if(dec<fim){ idx=i; restante=fim-dec; break; }
+      acc=fim;
+    }
+    estado={
+      nome:sessao.nome, blocos:sessao.blocos, total,
+      idx, terminou:idx<0,
+      atual: idx>=0?sessao.blocos[idx]:null,
+      proximo: idx>=0?sessao.blocos[idx+1]||null:null,
+      restanteBloco: Math.ceil(restante),
+      restanteTotal: Math.max(0,Math.ceil(total-dec)),
+      progressoBloco: idx>=0?1-(restante/sessao.blocos[idx].seg):1,
+    };
+  }
+  return {ativo:!!sessao, estado, iniciar, parar};
+}
+function CardioOverlay({cardio}){
+  const e=cardio.estado;
+  if(!e) return null;
+  const cor = e.terminou ? '#6ee89a' : nivelInfo(e.atual.nivel).cor;
+  return (<div className="cdover" style={{'--cd':cor}}>
+    <div className="cdtop">
+      <span className="cdnome">{e.nome}</span>
+      <button className="cdsair" onClick={cardio.parar}>✕</button>
+    </div>
+    {e.terminou
+      ? <div className="cdmeio">
+          <div className="cdfim">✓</div>
+          <div className="cdrot">Cardio concluído!</div>
+          <div className="cdsub">{fmtMin(e.total)} no total</div>
+        </div>
+      : <div className="cdmeio">
+          <div className="cdrot">{e.atual.rotulo}</div>
+          <div className="cdnum">{fmtCrono(e.restanteBloco*1000)}</div>
+          <div className="cdbar"><span style={{width:(e.progressoBloco*100)+'%'}}></span></div>
+          <div className="cdsub">
+            Bloco {e.idx+1} de {e.blocos.length}
+            {e.proximo && <React.Fragment> · a seguir: <b>{e.proximo.rotulo}</b> ({fmtMin(e.proximo.seg)})</React.Fragment>}
+          </div>
+        </div>}
+    <div className="cdtira">
+      {e.blocos.map((b,i)=>(
+        <span key={i} className={'cdt'+(i<e.idx||e.terminou?' feito':(i===e.idx?' agora':''))}
+          style={{flex:b.seg, background:nivelInfo(b.nivel).cor}}></span>
+      ))}
+    </div>
+    <div className="cdrodape">Falta {fmtMin(e.restanteTotal)} de {fmtMin(e.total)}</div>
+  </div>);
+}
 function RestTimerOverlay({timer}){
   const {running,elapsed,faixa,exNome,cancel}=timer;
   if(!running || !faixa) return null;
@@ -1086,6 +1239,7 @@ function App({auth}){
   const [view,setView]=useState(ehAluno?{name:'student',studentId:meuAlunoId}:{name:'students'});
   const [toast,setToast]=useState(null);
   const timer=useRestTimer();
+  const cardio=useCardioTimer();
   const [seriesFeitas,setSeriesFeitas]=useState({}); // progresso de séries da sessão
   const [catalogoVer,setCatalogoVer]=useState(0); // muda quando o catálogo é rebaixado
   const prevStructRef=React.useRef(null);
@@ -1160,7 +1314,7 @@ function App({auth}){
   let screen;
   if(view.name==='students') screen=<Students db={db} setDb={setDb} nav={nav}/>;
   else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash} ehAluno={ehAluno} onSair={auth?auth.sair:null}/>;
-  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer}/>;
+  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio}/>;
   else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={ehAluno}/>;
   return (<React.Fragment>
     {!LS_OK && <div className="warnbar">⚠️ Modo temporário: os dados somem ao fechar. Abra pelo link do GitHub Pages para salvar.</div>}
@@ -1173,6 +1327,7 @@ function App({auth}){
     {screen}
     <NuvemBadge carga={carga} fila={fila} onRetry={()=>{flushOps();recarregar();}}/>
     <RestTimerOverlay timer={timer}/>
+    {cardio.ativo && <CardioOverlay cardio={cardio}/>}
     {toast && <div className="toast">{toast}</div>}
   </React.Fragment>);
 }
@@ -1591,6 +1746,85 @@ function Scale({value,onChange,leftLabel,rightLabel}){
 }
 /* ---- Templates de método (fase 1: constantes no código) ----
    Estrutura: {nome, tipo:'uniforme'|'porSerie', series:[{reps,descanso,carga?,cadencia?,blocos?,extensao?,aberto?}]} */
+/* ================= CARDIO =================
+   Estrutura: {blocos:[{tempo,rotulo,nivel}], repetir:n}
+   nivel: 'leve' | 'moderado' | 'forte' | 'maximo'  (só cor/rótulo)
+   `tempo` aceita "1min", "45s", "30" — mesmo parser do descanso. */
+const NIVEIS=[
+  {k:'leve',label:'Leve',cor:'#6ee89a'},
+  {k:'moderado',label:'Moderado',cor:'#00c9cc'},
+  {k:'forte',label:'Forte',cor:'#ffa45c'},
+  {k:'maximo',label:'Máximo',cor:'#ff5c6c'},
+];
+const nivelInfo=(k)=>NIVEIS.find(n=>n.k===k)||NIVEIS[1];
+/* transforma a prescrição em lista linear de blocos com segundos */
+function expandirCardio(c){
+  if(!c||!c.blocos) return [];
+  const rep=Math.max(1,parseInt(c.repetir,10)||1);
+  const out=[];
+  for(let r=0;r<rep;r++){
+    c.blocos.forEach(b=>{
+      const f=parseDescanso(b.tempo);
+      if(f && f.max>0) out.push({rotulo:b.rotulo||nivelInfo(b.nivel).label, nivel:b.nivel||'moderado', seg:f.max, ciclo:r+1});
+    });
+  }
+  return out;
+}
+function totalCardioSeg(c){ return expandirCardio(c).reduce((a,b)=>a+b.seg,0); }
+function fmtMin(seg){
+  const m=Math.floor(seg/60), sg=seg%60;
+  if(m&&sg) return m+'min '+sg+'s';
+  if(m) return m+'min';
+  return sg+'s';
+}
+const CARDIO_TEMPLATES=[
+  {fam:'HIIT', nome:"HIIT 1'/1' (6 a 8×)", repetir:7, blocos:[
+    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'1min',rotulo:'Forte',nivel:'forte'}]},
+  {fam:'HIIT', nome:'HIIT 60"/30" (6 a 10×)', repetir:8, blocos:[
+    {tempo:'60s',rotulo:'Leve',nivel:'leve'},{tempo:'30s',rotulo:'Forte',nivel:'forte'}]},
+  {fam:'HIIT', nome:'HIIT 90"/30"', repetir:6, blocos:[
+    {tempo:'90s',rotulo:'Leve',nivel:'leve'},{tempo:'30s',rotulo:'Forte',nivel:'forte'}]},
+  {fam:'HIIT', nome:"HIIT crescente (14min)", repetir:1, blocos:[
+    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'1min',rotulo:'Forte',nivel:'forte'},
+    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'2min',rotulo:'Forte',nivel:'forte'},
+    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'3min',rotulo:'Forte',nivel:'forte'},
+    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'4min',rotulo:'Forte',nivel:'forte'}]},
+  {fam:'HIIT', nome:'HIIT crescente/decrescente (28min)', repetir:1, blocos:[
+    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'1min',rotulo:'Forte',nivel:'forte'},
+    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'2min',rotulo:'Forte',nivel:'forte'},
+    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'3min',rotulo:'Forte',nivel:'forte'},
+    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'4min',rotulo:'Forte',nivel:'forte'},
+    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'4min',rotulo:'Forte',nivel:'forte'},
+    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'3min',rotulo:'Forte',nivel:'forte'},
+    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'2min',rotulo:'Forte',nivel:'forte'},
+    {tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'1min',rotulo:'Forte',nivel:'forte'}]},
+  {fam:'HIIT + SIT', nome:'HIIT + SIT esteira (14min)', repetir:1, blocos:[
+    {tempo:'1min',rotulo:'Caminhada',nivel:'leve'},{tempo:'1min',rotulo:'Trote',nivel:'forte'},
+    {tempo:'1min',rotulo:'Caminhada',nivel:'leve'},{tempo:'1min',rotulo:'Trote',nivel:'forte'},
+    {tempo:'2min',rotulo:'Caminhada',nivel:'leve'},{tempo:'30s',rotulo:'Sprint',nivel:'maximo'},
+    {tempo:'2min',rotulo:'Caminhada',nivel:'leve'},{tempo:'30s',rotulo:'Sprint',nivel:'maximo'},
+    {tempo:'2min',rotulo:'Caminhada',nivel:'leve'},{tempo:'30s',rotulo:'Sprint',nivel:'maximo'},
+    {tempo:'2min',rotulo:'Caminhada',nivel:'leve'},{tempo:'30s',rotulo:'Sprint',nivel:'maximo'}]},
+  {fam:'HIIT + SIT', nome:'HIIT + SIT bike (12min)', repetir:1, blocos:[
+    {tempo:'1min',rotulo:'Moderado',nivel:'moderado'},{tempo:'1min',rotulo:'Pesado',nivel:'forte'},
+    {tempo:'1min',rotulo:'Moderado',nivel:'moderado'},{tempo:'1min',rotulo:'Pesado',nivel:'forte'},
+    {tempo:'45s',rotulo:'Leve',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'},
+    {tempo:'45s',rotulo:'Leve',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'},
+    {tempo:'45s',rotulo:'Leve',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'},
+    {tempo:'45s',rotulo:'Leve',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'},
+    {tempo:'45s',rotulo:'Leve',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'}]},
+  {fam:'SIT', nome:'SIT 45"/15" (8×)', repetir:8, blocos:[
+    {tempo:'45s',rotulo:'Leve',nivel:'leve'},{tempo:'15s',rotulo:'Sprint',nivel:'maximo'}]},
+  {fam:'SIT', nome:'Spinning em pé 60"/30" (10×)', repetir:10, blocos:[
+    {tempo:'60s',rotulo:'Sentado rápido',nivel:'moderado'},{tempo:'30s',rotulo:'Em pé, pesado',nivel:'forte'}]},
+  {fam:'Contínuo', nome:'Contínuo 20min', repetir:1, blocos:[
+    {tempo:'20min',rotulo:'Ritmo constante',nivel:'moderado'}]},
+  {fam:'Contínuo', nome:'Caminhada inclinada 25min', repetir:1, blocos:[
+    {tempo:'25min',rotulo:'Caminhada inclinada',nivel:'moderado'}]},
+  {fam:'Contínuo', nome:'Inclinação progressiva (18min)', repetir:6, blocos:[
+    {tempo:'3min',rotulo:'Sobe a inclinação',nivel:'moderado'}]},
+];
+
 const SERIE_VAZIA={reps:'',descanso:''};
 function serieRep(n,base){ const out=[]; for(let i=0;i<n;i++) out.push(Object.assign({},SERIE_VAZIA,base)); return out; }
 const METODOS_TEMPLATE=[
@@ -1756,6 +1990,22 @@ function ExerciseSheet({initial,onSave,onClose}){
   const [filmar,setFilmar]=useState(initial?!!initial.filmar:false);
   const [observacao,setObservacao]=useState(initial?(initial.observacao||''):'');
   const [metodo,setMetodo]=useState(initial&&initial.metodo?initial.metodo:null);
+  const [cardio,setCardio]=useState(initial&&initial.cardio?initial.cardio:null);
+  const [escolhendoCard,setEscolhendoCard]=useState(false);
+  const [buscaCard,setBuscaCard]=useState('');
+  const [famCard,setFamCard]=useState(null);
+  const termosCard=normAcc(buscaCard).split(/\s+/).filter(Boolean);
+  const cardFiltrados=termosCard.length
+    ? CARDIO_TEMPLATES.filter(t=>{const a=normAcc(t.nome+' '+t.fam);return termosCard.every(x=>a.includes(x));})
+    : [];
+  const famsCard=CARDIO_TEMPLATES.reduce((acc,t)=>{(acc[t.fam]=acc[t.fam]||[]).push(t);return acc;},{});
+  const aplicarCardio=(t)=>{
+    const c=JSON.parse(JSON.stringify({repetir:t.repetir||1, blocos:t.blocos}));
+    setCardio(c); setEscolhendoCard(false); setBuscaCard(''); setFamCard(null); setMetodo(null);
+  };
+  const setBlocoC=(i,patch)=>setCardio(c=>({...c,blocos:c.blocos.map((b,k)=>k===i?{...b,...patch}:b)}));
+  const addBlocoC=()=>setCardio(c=>({...c,blocos:[...c.blocos,{tempo:'1min',rotulo:'Leve',nivel:'leve'}]}));
+  const delBlocoC=(i)=>setCardio(c=>c.blocos.length<=1?c:{...c,blocos:c.blocos.filter((b,k)=>k!==i)});
   const [escolhendoMet,setEscolhendoMet]=useState(false);
   const [buscaMet,setBuscaMet]=useState('');
   const [famAberta,setFamAberta]=useState(null);
@@ -1837,7 +2087,7 @@ function ExerciseSheet({initial,onSave,onClose}){
   const save=()=>{
     if(!name.trim())return;
     const combined = (sets.trim()&&reps.trim()) ? `${sets.trim()} × ${reps.trim()}` : (sets.trim()||reps.trim()||'');
-    onSave({name:name.trim(), series:combined, exerciseId, descanso:descanso.trim(), filmar, observacao:observacao.trim(), metodo});
+    onSave({name:name.trim(), series:combined, exerciseId, descanso:descanso.trim(), filmar, observacao:observacao.trim(), metodo, cardio});
   };
   return (<div className="backdrop" onClick={onClose}>
     <div className="sheet" onClick={e=>e.stopPropagation()}>
@@ -1856,6 +2106,76 @@ function ExerciseSheet({initial,onSave,onClose}){
           <div className="autolist"><div className="hint">Nenhum no Cardápio — será salvo como texto livre ✍️</div></div>}
       </div>
       <div className="field">
+        <label>Cardio</label>
+        {!cardio
+          ? <div className="metrow">
+              <span className="metatual">Não é cardio</span>
+              <button type="button" className="metbtn" onClick={()=>setEscolhendoCard(true)}>🏃 Definir cardio</button>
+            </div>
+          : <div className="metrow">
+              <span className="metatual on">🏃 {cardio.blocos.length} blocos · {fmtMin(totalCardioSeg(cardio))}</span>
+              <button type="button" className="metbtn" onClick={()=>setEscolhendoCard(true)}>Trocar</button>
+              <button type="button" className="metbtn del" onClick={()=>setCardio(null)}>Remover</button>
+            </div>}
+        {escolhendoCard && <div className="metlista">
+          <input className="metbusca" autoFocus value={buscaCard} placeholder="🔍 Buscar cardio (ex: hiit 60, sit bike)"
+            onChange={e=>setBuscaCard(e.target.value)}/>
+          {termosCard.length>0
+            ? (cardFiltrados.length
+                ? cardFiltrados.map(t=>(
+                    <button type="button" key={t.nome} className="metopt" onClick={()=>aplicarCardio(t)}>
+                      <span className="monome">{t.nome}</span>
+                      <span className="modesc"><span className="mofam">{t.fam}</span> · {fmtMin(totalCardioSeg(t))}</span>
+                    </button>))
+                : <div className="metvazio">Nenhum cardio encontrado.</div>)
+            : Object.keys(famsCard).map(f=>(
+                <div className="metfam" key={f}>
+                  <button type="button" className={'mfhead'+(famCard===f?' on':'')} onClick={()=>setFamCard(famCard===f?null:f)}>
+                    <span className="mfnome">{f}</span><span className="mfqtd">{famsCard[f].length}</span>
+                    <span className="mfseta">{famCard===f?'▾':'▸'}</span>
+                  </button>
+                  {famCard===f && <div className="mffilhos">
+                    {famsCard[f].map(t=>(
+                      <button type="button" key={t.nome} className="metopt" onClick={()=>aplicarCardio(t)}>
+                        <span className="monome">{t.nome}</span>
+                        <span className="modesc">{t.blocos.length} blocos · {fmtMin(totalCardioSeg(t))}</span>
+                      </button>))}
+                  </div>}
+                </div>))}
+          <button type="button" className="metopt novo" onClick={()=>aplicarCardio(
+            {nome:'Personalizado', repetir:1, blocos:[{tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'1min',rotulo:'Forte',nivel:'forte'}]})}>
+            <span className="monome">✎ Montar do zero</span>
+            <span className="modesc">2 blocos para editar</span>
+          </button>
+          <button type="button" className="metcancel" onClick={()=>{setEscolhendoCard(false);setBuscaCard('');}}>cancelar</button>
+        </div>}
+      </div>
+      {cardio && <div className="field">
+        <label>Blocos do cardio <span className="obscount">total {fmtMin(totalCardioSeg(cardio))}</span></label>
+        <div className="cdlista">
+          {cardio.blocos.map((b,i)=>(
+            <div className="cdrow" key={i}>
+              <span className="cdnivelbar" style={{background:nivelInfo(b.nivel).cor}}></span>
+              <input className="cdtempo" value={b.tempo} placeholder="1min"
+                onChange={e=>setBlocoC(i,{tempo:e.target.value})}/>
+              <input className="cdrotulo" value={b.rotulo||''} placeholder="rótulo (ex: Trote)"
+                onChange={e=>setBlocoC(i,{rotulo:e.target.value})}/>
+              <select className="cdnivel" value={b.nivel||'moderado'} onChange={e=>setBlocoC(i,{nivel:e.target.value})}>
+                {NIVEIS.map(n=><option key={n.k} value={n.k}>{n.label}</option>)}
+              </select>
+              {cardio.blocos.length>1 && <button type="button" className="cddel" onClick={()=>delBlocoC(i)}>✕</button>}
+            </div>
+          ))}
+        </div>
+        <button type="button" className="serieadd" onClick={addBlocoC}>+ bloco</button>
+        <div className="cdrepetir">
+          <span>Repetir o conjunto</span>
+          <input type="number" min="1" max="30" value={cardio.repetir||1}
+            onChange={e=>setCardio(c=>({...c,repetir:Math.max(1,Math.min(30,parseInt(e.target.value,10)||1))}))}/>
+          <span className="cdrx">×</span>
+        </div>
+      </div>}
+      {!cardio && <div className="field">
         <label>Método</label>
         {!metodo
           ? <div className="metrow">
@@ -1905,8 +2225,8 @@ function ExerciseSheet({initial,onSave,onClose}){
           </button>
           <button type="button" className="metcancel" onClick={()=>{setEscolhendoMet(false);setBuscaMet('');}}>cancelar</button>
         </div>}
-      </div>
-      {metodo && <div className="field">
+      </div>}
+      {!cardio && metodo && <div className="field">
         <label>Prescrição série a série</label>
         <div className="metmodo">
           <button type="button" className={'mmtab'+(metUniforme?' sel':'')}
@@ -1985,7 +2305,7 @@ function ExerciseSheet({initial,onSave,onClose}){
               <button type="button" className="tplx" onClick={()=>setSalvandoTpl(null)}>✕</button>
             </div>}
       </div>}
-      {!metodo && <div className="field"><label>Séries</label>
+      {!cardio && !metodo && <div className="field"><label>Séries</label>
         {setsManual
           ? <input value={sets} inputMode="numeric" onChange={e=>setSets(e.target.value)} onBlur={()=>setSetsManual(false)} placeholder="Nº de séries" autoFocus/>
           : <div className="pickgrid s6">
@@ -1995,7 +2315,7 @@ function ExerciseSheet({initial,onSave,onClose}){
               <button type="button" className="pcell more" onClick={()=>setSetsManual(true)}>⌨</button>
             </div>}
       </div>}
-      {!metodo && <div className="field"><label>Repetições</label>
+      {!cardio && !metodo && <div className="field"><label>Repetições</label>
         {repsManual
           ? <input value={reps} onChange={e=>setReps(e.target.value)} onBlur={()=>setRepsManual(false)} placeholder="Ex: 8 a 12" autoFocus/>
           : <div className="pickgrid s3">
@@ -2005,7 +2325,7 @@ function ExerciseSheet({initial,onSave,onClose}){
               <button type="button" className="pcell more" onClick={()=>setRepsManual(true)}>⌨ digitar</button>
             </div>}
       </div>}
-      {!metodo && <div className="field"><label>Descanso (segundos)</label>
+      {!cardio && !metodo && <div className="field"><label>Descanso (segundos)</label>
         {descManual
           ? <input value={descanso} onChange={e=>setDescanso(e.target.value)} onBlur={()=>setDescManual(false)} placeholder="Ex: 45~60 ou 60" autoFocus/>
           : <div className="pickgrid s3">
@@ -2244,7 +2564,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
         <button className="btn" onClick={save}>{isEdit?'Salvar alterações':'Salvar registro'}</button></div>
     </div></div>);
 }
-function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesFeitas,setSeriesFeitas,catalogoVer}){
+function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesFeitas,setSeriesFeitas,catalogoVer,cardio}){
   const s=db.students.find(x=>x.id===studentId);
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
   const [editingEx,setEditingEx]=useState(null);
@@ -2267,23 +2587,23 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   const updExercises=(exs)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,treinos:x.treinos.map(tt=>tt.id===treinoId?{...tt,exercises:exs}:tt)}:x)});
   const saveEx=(data)=>{
     if(editingEx==='new'){
-      const novo={id:uid(),name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,observacao:data.observacao||'',metodo:data.metodo||null,logs:[]};
+      const novo={id:uid(),name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,observacao:data.observacao||'',metodo:data.metodo||null,cardio:data.cardio||null,logs:[]};
       updExercises([...(t.exercises||[]),novo]);
       enqueueOp({tipo:'insert',tabela:'exercicios',dados:{
         id:novo.id, treino_id:treinoId, nome:novo.name, series:novo.series||null,
         cardapio_id:novo.exerciseId!=null?novo.exerciseId:null, ordem:(t.exercises||[]).length,
         descanso:novo.descanso||null, filmar:!!novo.filmar, observacao:novo.observacao||null,
-        metodo:novo.metodo||null
+        metodo:novo.metodo||null, cardio:novo.cardio||null
       }});
       const herda=lastLogOfExercise(s,data.name,data.exerciseId);
       flash(herda?('Adicionado — última carga '+herda.carga+' disponível ✓'):'Exercício adicionado ✓');
     }else{
-      updExercises(t.exercises.map(e=>e.id===editingEx.id?{...e,name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,observacao:data.observacao||'',metodo:data.metodo||null}:e));
+      updExercises(t.exercises.map(e=>e.id===editingEx.id?{...e,name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,observacao:data.observacao||'',metodo:data.metodo||null,cardio:data.cardio||null}:e));
       enqueueOp({tipo:'update',tabela:'exercicios',id:editingEx.id,dados:{
         nome:data.name, series:data.series||null,
         cardapio_id:data.exerciseId!=null?data.exerciseId:null,
         descanso:data.descanso||null, filmar:!!data.filmar, observacao:data.observacao||null,
-        metodo:data.metodo||null
+        metodo:data.metodo||null, cardio:data.cardio||null
       }});
       flash('Atualizado ✓');
     }
@@ -2432,17 +2752,18 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
               <div className="exname">{ex.name}</div>
               <div className="exmeta">
                 {(()=>{ const tot=totalSeries(ex); const fe=seriesFeitas[ex.id]||0;
-                  const cl='exseries'+(ex.metodo?' met':'')+((tot&&fe>=tot)?' concl':'');
+                  const cl='exseries'+((ex.metodo||ex.cardio)?' met':'')+((tot&&fe>=tot)?' concl':'');
+                  if(ex.cardio) return <span className={cl}>🏃 Cardio · {fmtMin(totalCardioSeg(ex.cardio))}</span>;
                   if(ex.metodo) return <span className={cl}>🔺 {ex.metodo.nome}</span>;
                   return ex.series ? <span className={cl}>{ex.series}</span> : null; })()}
                 {ex.filmar && <span className="exfilm">🎥 Recomendado Filmar</span>}
-                {(()=>{ const d=descansoDaSerie(ex, seriesFeitas[ex.id]||0); const f=parseDescanso(d);
+                {!ex.cardio && (()=>{ const d=descansoDaSerie(ex, seriesFeitas[ex.id]||0); const f=parseDescanso(d);
                   return f ? <button className="exrest" onClick={()=>timer.start(f, ex.name)}>
                     🕐 Descansar <span className="exresth">{String(d).replace('~','–')}</span>
                   </button> : null; })()}
               </div>
             </div>
-            {totalSeries(ex)
+            {!ex.cardio && totalSeries(ex)
               ? <SerieRing total={totalSeries(ex)} feitas={seriesFeitas[ex.id]||0}
                   onAvancar={()=>avancarSerie(ex)} onZerar={()=>zerarSerie(ex.id)}/>
               : <button className={'donecheck'+(done?' on':'')} onClick={()=>toggleDone(ex.id)} aria-label={done?'Marcar como não feito':'Marcar como feito'}>
@@ -2451,6 +2772,21 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
                 </button>}
           </div>
           {ex.exerciseId!=null && videoPorId[String(ex.exerciseId)] && <VideoExercicio url={videoPorId[String(ex.exerciseId)]}/>}
+          {ex.cardio && (()=>{ const bl=expandirCardio(ex.cardio); return (
+            <div className="cdcard">
+              <div className="cdtiraprev">
+                {bl.map((b,i)=><span key={i} style={{flex:b.seg, background:nivelInfo(b.nivel).cor}}></span>)}
+              </div>
+              <div className="cdblocos">
+                {ex.cardio.blocos.map((b,i)=>(
+                  <span className="cdbchip" key={i}>
+                    <span className="cdbdot" style={{background:nivelInfo(b.nivel).cor}}></span>
+                    {b.tempo} {b.rotulo||nivelInfo(b.nivel).label}
+                  </span>))}
+                {(ex.cardio.repetir||1)>1 && <span className="cdbrep">× {ex.cardio.repetir}</span>}
+              </div>
+              <button className="cdiniciar" onClick={()=>cardio.iniciar(bl, ex.name)}>▶ Iniciar cardio · {fmtMin(totalCardioSeg(ex.cardio))}</button>
+            </div>); })()}
           {ex.metodo && <div className="metplanowrap">
             <div className="metplano">
               {ex.metodo.series.map((sr,i)=>{
