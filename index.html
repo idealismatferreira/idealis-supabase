@@ -407,7 +407,7 @@
   .mpblocos{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:5px}
   .mpbl{font-size:11.5px;font-weight:600;color:var(--cyan-2);background:rgba(0,201,204,.1);
     border:1px solid rgba(0,201,204,.3);border-radius:7px;padding:2px 8px}
-  .mppausa{font-size:10.5px;color:#ddff00;white-space:nowrap}
+  .mppausa{font-size:11.5px;font-weight:600;color:#ddff00;white-space:nowrap}
   button.mppausa{font-family:inherit;font-weight:700;cursor:pointer;padding:3px 9px;border-radius:999px;
     background:rgba(221,255,0,.1);border:1px solid rgba(221,255,0,.45);-webkit-tap-highlight-color:transparent}
   button.mppausa:active{background:rgba(221,255,0,.26)}
@@ -528,11 +528,6 @@
   .fimbox.done .fimlabel{color:#ddff00}
   .fimundo{flex:0 0 auto;background:none;border:none;color:var(--muted);font-size:12px;
     font-family:inherit;cursor:pointer;text-decoration:underline;padding:6px}
-  .fimavisa{position:relative;margin:16px 4px -6px;padding:11px 34px 11px 13px;border-radius:12px;
-    background:rgba(0,201,204,.09);border:1px solid rgba(0,201,204,.35);
-    font-size:12.5px;line-height:1.45;color:var(--cyan-2);animation:fcup .3s ease}
-  .fimavisax{position:absolute;top:6px;right:6px;width:24px;height:24px;border:none;background:none;
-    color:var(--muted);font-size:12px;font-family:inherit;cursor:pointer}
   .rtrunning .rttrack{position:relative;display:flex;height:6px;width:100%;overflow:hidden}
   .rtrunning .rtzona{height:100%}
   .rtrunning .rtzona.zmin{background:var(--cyan)}
@@ -1199,6 +1194,28 @@ function chaveVarBase(alunoId, exName){
 /* chips criados mas ainda sem log — persistidos por aluno+exercício */
 /* início da sessão de treino: persiste por treino+dia, sobrevive a reload */
 function chaveInicio(treinoId){ return 'idealis_inicio_'+String(treinoId||'')+'_'+todayISO(); }
+/* momento em que o treino foi ABERTO hoje (base da auto-conclusão) */
+function chaveAberto(treinoId){ return 'idealis_aberto_'+String(treinoId||'')+'_'+todayISO(); }
+function marcarAberto(treinoId){
+  try{
+    if(!LS_OK) return Date.now();
+    const k=chaveAberto(treinoId);
+    let v=window.localStorage.getItem(k);
+    if(!v){ v=String(Date.now()); window.localStorage.setItem(k,v); }
+    const n=parseInt(v,10); return isNaN(n)?Date.now():n;
+  }catch(e){ return Date.now(); }
+}
+/* se o aluno desfez a conclusão, a auto-conclusão não pode reativar hoje */
+function chaveAutoOff(treinoId){ return 'idealis_autooff_'+String(treinoId||'')+'_'+todayISO(); }
+function autoDesligado(treinoId){
+  try{ return LS_OK && window.localStorage.getItem(chaveAutoOff(treinoId))==='1'; }catch(e){ return false; }
+}
+function desligarAuto(treinoId){
+  try{ if(LS_OK) window.localStorage.setItem(chaveAutoOff(treinoId),'1'); }catch(e){}
+}
+function zerarCrono(treinoId){
+  try{ if(LS_OK) window.localStorage.removeItem(chaveInicio(treinoId)); }catch(e){}
+}
 function lerInicio(treinoId){
   try{
     if(!LS_OK) return null;
@@ -2205,13 +2222,9 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   const [editingEx,setEditingEx]=useState(null);
   const [registering,setRegistering]=useState(null);
   // --- conclusão de treino: gatilho por scroll + tempo mínimo na tela ---
-  const ESPERA_MS = 3*60*1000; // 3 minutos
-  const abertoEmRef = React.useRef(Date.now());
-  const sentinelaRef = React.useRef(null);
-  // "armado" = já bateu no fim depois do tempo mínimo. Uma vez true, NÃO volta a false
-  // sozinho (evita o loop: card aparece -> página cresce -> sai do fim -> card some...).
-  const [armado,setArmado]=useState(false);
-  const [dispensado,setDispensado]=useState(false);
+  const ESPERA_MS = 5*60*1000; // 5 minutos de tela aberta -> conclui sozinho
+  const abertoEmRef = React.useRef(marcarAberto(treinoId));
+  useEffect(()=>{ abertoEmRef.current=marcarAberto(treinoId); },[treinoId]);
   const [dataRetro,setDataRetro]=useState(todayISO());
   // cronômetro da sessão — conta desde a 1ª abertura do treino hoje
   const [agora,setAgora]=useState(Date.now());
@@ -2222,34 +2235,6 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     const id=setInterval(()=>setAgora(Date.now()),1000);
     return ()=>clearInterval(id);
   },[inicio]);
-  useEffect(()=>{
-    abertoEmRef.current=Date.now();
-    setArmado(false); setDispensado(false);
-  },[treinoId]);
-  useEffect(()=>{
-    if(!ehAluno || armado) return;
-    const el=sentinelaRef.current;
-    if(!el || typeof IntersectionObserver==='undefined') return;
-    const io=new IntersectionObserver((entries)=>{
-      const visivel=entries.some(e=>e.isIntersecting);
-      if(visivel && (Date.now()-abertoEmRef.current)>=ESPERA_MS) setArmado(true);
-    },{root:null, rootMargin:'0px 0px -40px 0px', threshold:0});
-    io.observe(el);
-    return ()=>io.disconnect();
-  },[ehAluno,armado,treinoId,dispensado]);
-  // se o aluno chegar ao fim antes dos 5min e ficar parado ali, arma quando o tempo completar
-  useEffect(()=>{
-    if(!ehAluno || armado) return;
-    const falta=ESPERA_MS-(Date.now()-abertoEmRef.current);
-    if(falta<=0) return;
-    const id=setTimeout(()=>{
-      const el=sentinelaRef.current;
-      if(!el) return;
-      const r=el.getBoundingClientRect();
-      if(r.top<=window.innerHeight) setArmado(true);
-    }, falta+200);
-    return ()=>clearTimeout(id);
-  },[ehAluno,armado,treinoId]);
   if(!t) return null;
   const updExercises=(exs)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,treinos:x.treinos.map(tt=>tt.id===treinoId?{...tt,exercises:exs}:tt)}:x)});
   const saveEx=(data)=>{
@@ -2286,25 +2271,32 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   const sessaoHoje = sessaoDe(todayISO());
   const treinoConcluidoHoje = !!sessaoHoje;
   const updTreino=(patch)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,treinos:x.treinos.map(tt=>tt.id===treinoId?{...tt,...patch}:tt)}:x)});
-  const registrarSessao=(iso,origem)=>{
-    if(sessaoDe(iso)){ flash('Já registrado nesse dia'); return; }
+  const registrarSessao=(iso,origem,silencioso)=>{
+    if(sessaoDe(iso)){ if(!silencioso) flash('Já registrado nesse dia'); return; }
     const nova={id:uid(), data:iso, origem:origem||'manual'};
     updTreino({sessoes:[...sessoes,nova].sort((a,b)=>a.data.localeCompare(b.data)), concluidoData:iso});
     enqueueOp({tipo:'insert',tabela:'sessoes',dados:{
       id:nova.id, aluno_id:studentId, treino_id:treinoId, data:iso, origem:nova.origem
     }});
+    if(silencioso) return; // registro automático não avisa nem vibra
     if(navigator.vibrate) navigator.vibrate([180,80,180]);
     flash(iso===todayISO()?'Treino concluído ✓':('Registrado em '+fmtDate(iso)+' ✓'));
   };
-  const concluirTreino=()=>registrarSessao(todayISO(),'manual');
-  // auto-conclusão: 3 min depois da 1ª série avançada (evidência real de treino)
+  const concluirTreino=()=>{
+    registrarSessao(todayISO(),'manual');
+    zerarCrono(treinoId); setInicio(null); // treino acabou: relógio zera
+  };
+  // auto-conclusão SILENCIOSA: 5 min com o treino aberto.
+  // não roda se o aluno desfez a conclusão hoje (senão reativaria em loop).
   useEffect(()=>{
-    if(!ehAluno || inicio==null || treinoConcluidoHoje) return;
-    const falta=ESPERA_MS-(Date.now()-inicio);
-    if(falta<=0){ registrarSessao(todayISO(),'inferido'); return; }
-    const id=setTimeout(()=>registrarSessao(todayISO(),'inferido'), falta+300);
+    if(!ehAluno || treinoConcluidoHoje) return;
+    if(autoDesligado(treinoId)) return;
+    if(!(t.exercises||[]).length) return;
+    const falta=ESPERA_MS-(Date.now()-abertoEmRef.current);
+    if(falta<=0){ registrarSessao(todayISO(),'inferido',true); return; }
+    const id=setTimeout(()=>registrarSessao(todayISO(),'inferido',true), falta+300);
     return ()=>clearTimeout(id);
-  },[ehAluno,inicio,treinoConcluidoHoje,treinoId]);
+  },[ehAluno,treinoConcluidoHoje,treinoId]);
   const removerSessao=(iso)=>{
     const alvo=sessaoDe(iso);
     if(!alvo) return;
@@ -2314,7 +2306,10 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     enqueueOp({tipo:'delete',tabela:'sessoes',id:alvo.id});
     flash('Registro removido');
   };
-  const desfazerConclusao=()=>removerSessao(todayISO());
+  const desfazerConclusao=()=>{
+    desligarAuto(treinoId); // impede a auto-conclusão de reativar em seguida
+    removerSessao(todayISO());
+  };
   const toggleDone=(id)=>{
     const alvo=(t.exercises||[]).find(e=>e.id===id);
     const novaData = (alvo && alvo.doneDate===todayISO()) ? null : todayISO();
@@ -2496,8 +2491,6 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
           </div>
         </div>);
       })}
-      {/* sentinela: marca o fim da lista de exercícios */}
-      <div ref={sentinelaRef} style={{height:1}} aria-hidden="true"></div>
       {ehAluno && (t.exercises||[]).length>0 && (
         treinoConcluidoHoje
           ? <div className="fimbox done">
@@ -2505,16 +2498,10 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
               <span className="fimlabel">Treino Concluído!</span>
               <button className="fimundo" onClick={desfazerConclusao}>desfazer</button>
             </div>
-          : <React.Fragment>
-              {armado && !dispensado && <div className="fimavisa">
-                Você está finalizando o treino? Marque abaixo para não esquecer.
-                <button className="fimavisax" onClick={()=>setDispensado(true)}>✕</button>
-              </div>}
-              <button className="fimbox" onClick={concluirTreino}>
-                <span className="fimcheck"></span>
-                <span className="fimlabel">Finalizar Treino</span>
-              </button>
-            </React.Fragment>
+          : <button className="fimbox" onClick={concluirTreino}>
+              <span className="fimcheck"></span>
+              <span className="fimlabel">Finalizar Treino</span>
+            </button>
       )}
       {!ehAluno && (t.exercises||[]).length>0 && <div className="sesspanel">
         <div className="sptit">📅 Sessões registradas <span className="spcount">{sessoes.length}</span></div>
