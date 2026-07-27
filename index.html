@@ -685,7 +685,10 @@ function agruparSessoes(logs, base){
     (mapa[k]=mapa[k]||{date:l.date, variante:v, series:[]}).series.push(l);
   });
   return Object.values(mapa).map(s=>{
-    s.series.sort((a,b)=>((a.serie||1)-(b.serie||1)));
+    s.series.sort((a,b)=>((a.serie||99)-(b.serie||99)) || String(a.id).localeCompare(String(b.id)));
+    // logs antigos (ou salvos antes da coluna `serie`) não têm número:
+    // atribui pela posição para não quebrar gráfico nem exibição
+    s.series=s.series.map((l,i)=>({...l, serieN:(l.serie!=null?l.serie:i+1)}));
     const prim=s.series.find(x=>x.intensidade!=null)||s.series[0];
     s.intensidade=prim?prim.intensidade:null;
     const pd=s.series.find(x=>x.dor!=null)||s.series[0];
@@ -2426,16 +2429,29 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
     if(isEdit) return [{carga:editLog.carga||'', reps:editLog.reps||'',
       intensidade:(editLog.intensidade!=null?editLog.intensidade:null), dor:(editLog.dor!=null?editLog.dor:null)}];
     const ult=ultimaSessao(v);
+    const deHoje = ult && ult.date===todayISO();
     const out=[];
     for(let i=0;i<nSeries;i++){
       const ref=ult&&ult.series[i];
       const fallback=ult&&ult.series.length?ult.series[ult.series.length-1]:null;
-      out.push({carga:(ref?ref.carga:(fallback?fallback.carga:''))||'', reps:'', intensidade:null, dor:null});
+      if(deHoje && ref){
+        // série já registrada HOJE: volta completa (✓) — salvar de novo atualiza, não duplica
+        out.push({carga:ref.carga||'', reps:ref.reps||'',
+          intensidade:(ref.intensidade!=null?ref.intensidade:null),
+          dor:(ref.dor!=null?ref.dor:null)});
+      }else{
+        // sessão anterior: só a carga como sugestão
+        out.push({carga:(ref?ref.carga:(fallback?fallback.carga:''))||'', reps:'', intensidade:null, dor:null});
+      }
     }
     return out;
   };
   const [series,setSeries]=useState(()=>montarSeries(variantInicial));
-  const [ativa,setAtiva]=useState(0); // série sendo preenchida
+  const primeiraPendente=(lista)=>{
+    const i=lista.findIndex(sr=>!(String(sr.carga||'').trim() && String(sr.reps||'').trim()));
+    return i<0?Math.max(0,lista.length-1):i;
+  };
+  const [ativa,setAtiva]=useState(()=>primeiraPendente(series)); // começa na primeira pendente
   const at=series[Math.min(ativa,series.length-1)]||{carga:'',reps:''};
   const setAt=(patch)=>setSerie(Math.min(ativa,series.length-1),patch);
   const serieCompleta=(sr)=>!!(sr && String(sr.carga||'').trim() && String(sr.reps||'').trim());
@@ -2466,11 +2482,10 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
     setSerie(i,{reps:String(Math.max(0,(isNaN(cur)?0:cur)+d))}); setErro('');
   };
   const save=()=>{
-    // aceita séries em branco (o aluno pode ter feito menos), mas exige ao menos uma completa
-    const feitas=series.map((sr,i)=>({...sr,i})).filter(sr=>sr.carga.trim()||sr.reps.trim());
-    if(!feitas.length){ setErro('Preencha ao menos uma série.'); return; }
-    const incompleta=feitas.find(sr=>!sr.carga.trim()||!sr.reps.trim());
-    if(incompleta){ setErro('Série '+(incompleta.i+1)+': falta carga ou repetições.'); return; }
+    // registro independente: salva SÓ as séries completas (carga + reps).
+    // As demais ficam de fora sem bloquear — a carga pré-preenchida sozinha não conta como iniciada.
+    const feitas=series.map((sr,i)=>({...sr,i})).filter(sr=>String(sr.carga||'').trim() && String(sr.reps||'').trim());
+    if(!feitas.length){ setErro('Preencha carga e repetições de ao menos uma série.'); return; }
     const pend=lerVarPend(alunoId,exName);
     if(pend.includes(variante)) salvarVarPend(alunoId,exName,pend.filter(v=>v!==variante));
     onSave({
@@ -2481,7 +2496,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
   };
   const escolherVariante=(v)=>{
     setVariante(v);
-    if(!isEdit){ setSeries(montarSeries(v)); setErro(''); }
+    if(!isEdit){ const ns=montarSeries(v); setSeries(ns); setAtiva(primeiraPendente(ns)); setErro(''); }
   };
   const criarVariante=()=>{
     const nome=String(novaVar||'').trim();
@@ -2739,20 +2754,37 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   const saveLog=(data)=>{
     const ex=registering;
     const hoje=todayISO();
-    // uma linha por série; esforço e dor ficam iguais em todas (são do exercício, não da série)
-    const novos=(data.series||[]).map(sr=>({
-      id:uid(), date:hoje, serie:sr.serie, carga:sr.carga, reps:sr.reps,
-      intensidade:data.intensidade, dor:data.dor, variante:data.variante||''
+    const varData=data.variante||'';
+    // registro incremental: se a série N de hoje (mesmo equipamento) já existe, ATUALIZA em vez de duplicar
+    const existentes=(ex.logs||[]).filter(l=>l.date===hoje && (l.variante||'')===varData);
+    const atualizados=[], inseridos=[];
+    (data.series||[]).forEach(sr=>{
+      const ja=existentes.find(l=>l.serie===sr.serie);
+      const base={serie:sr.serie, carga:sr.carga, reps:sr.reps,
+        intensidade:(sr.intensidade!=null?sr.intensidade:null),
+        dor:(sr.dor!=null?sr.dor:null), variante:varData};
+      if(ja) atualizados.push({...ja, ...base});
+      else inseridos.push({id:uid(), date:hoje, ...base});
+    });
+    if(!atualizados.length && !inseridos.length) return;
+    updExercises(t.exercises.map(e=>{
+      if(e.id!==ex.id) return e;
+      let logs=(e.logs||[]).map(l=>{ const a=atualizados.find(x=>x.id===l.id); return a||l; });
+      return {...e, logs:[...logs, ...inseridos]};
     }));
-    if(!novos.length) return;
-    updExercises(t.exercises.map(e=>e.id===ex.id?{...e,logs:[...(e.logs||[]),...novos]}:e));
-    novos.forEach(log=>enqueueOp({tipo:'insert',tabela:'logs',dados:{
+    inseridos.forEach(log=>enqueueOp({tipo:'insert',tabela:'logs',dados:{
       id:log.id, exercicio_id:ex.id, data:log.date, serie:log.serie,
       carga:log.carga||null, reps:log.reps||null,
       intensidade:log.intensidade, dor:log.dor,
       variante:log.variante||null
     }}));
-    flash(novos.length>1?(novos.length+' séries registradas ✓'):'Carga registrada ✓');
+    atualizados.forEach(log=>enqueueOp({tipo:'update',tabela:'logs',id:log.id,dados:{
+      serie:log.serie, carga:log.carga||null, reps:log.reps||null,
+      intensidade:log.intensidade, dor:log.dor,
+      variante:log.variante||null
+    }}));
+    const n=atualizados.length+inseridos.length;
+    flash(n>1?(n+' séries registradas ✓'):'Carga registrada ✓');
     setRegistering(null);
   };
   // progresso de séries — vem do App (sobrevive à navegação)
@@ -2882,7 +2914,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
               <div className="ultseries">
                 {ult.series.map((sr,i)=>(
                   <span className="uspill" key={sr.id}>
-                    <span className="usn">{sr.serie!=null?sr.serie+'ª':'—'}</span>
+                    <span className="usn">{sr.serieN+'ª'}</span>
                     {sr.carga||'—'}{sr.reps?' × '+sr.reps:''}
                   </span>
                 ))}
@@ -2962,22 +2994,22 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
   const varAtiva=varsUsadas.includes(varSel)?varSel:(varsUsadas[0]||baseVar);
   const entriesFiltradas=entries.filter(e=>((e.variante||'').trim()||baseVar)===varAtiva);
   const sessoesGraf=agruparSessoes(entriesFiltradas, baseVar);
-  const maxSeries=sessoesGraf.reduce((m,x)=>Math.max(m,x.series.length),0);
-  // uma linha por vez: o gráfico mostra a série escolhida (misturar 1ª leve com 4ª pesada não diz nada)
-  const [serieSel,setSerieSel]=useState(1);
-  const sn=Math.min(Math.max(1,serieSel),Math.max(1,maxSeries));
-  const chartData=sessoesGraf.map(ses=>{
-    const pt={date:fmtDate(ses.date)};
-    // a série n daquela sessão (por número de série, com fallback pela posição)
-    const l=ses.series.find(x=>x.serie===sn) || (maxSeries<=1?ses.series[0]:null);
-    if(!l) return null;
-    const c=numFrom(l.carga), r=numFrom(l.reps);
-    pt.carga=c;
-    pt.volume=(c!=null&&r!=null)?c*r:null;
-    pt.intensidade=(l.intensidade!=null?l.intensidade:null);
-    pt.dor=(l.dor!=null?l.dor:null);
-    return pt;
-  }).filter(d=>d&&d.carga!=null);
+  // progressão CONTÍNUA: cada série registrada é um ponto, em ordem.
+  // Numa pirâmide o gráfico sobe e desce dentro da sessão — é o esperado.
+  const chartData=[];
+  sessoesGraf.forEach(ses=>{
+    ses.series.forEach(l=>{
+      const c=numFrom(l.carga), r=numFrom(l.reps);
+      if(c==null) return;
+      chartData.push({
+        date: fmtDate(ses.date).slice(0,5)+(ses.series.length>1?' · '+l.serieN+'ª':''),
+        carga:c,
+        volume:(c!=null&&r!=null)?c*r:null,
+        intensidade:(l.intensidade!=null?l.intensidade:null),
+        dor:(l.dor!=null?l.dor:null),
+      });
+    });
+  });
   const delLog=(logId)=>{
     setDb({...db,students:db.students.map(st=>st.id!==studentId?st:{...st,treinos:st.treinos.map(t=>({...t,exercises:t.exercises.map(ex=>norm(ex.name)===norm(exName)?{...ex,logs:(ex.logs||[]).filter(l=>l.id!==logId)}:ex)}))})});
     enqueueOp({tipo:'delete',tabela:'logs',id:logId});
@@ -3011,7 +3043,7 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
     const LineChart=RC.LineChart, Line=RC.Line, XAxis=RC.XAxis, YAxis=RC.YAxis, CartesianGrid=RC.CartesianGrid, Tooltip=RC.Tooltip, ResponsiveContainer=RC.ResponsiveContainer;
     const ColorDot=(p)=>(p.cy==null?null:<circle cx={p.cx} cy={p.cy} r={4.5} fill={scaleColor(p.payload.dor)} stroke="#0b0f10" strokeWidth={2}/>);
     const M=[
-      {k:'carga',label:maxSeries>1?('Carga · '+sn+'ª série (kg)'):'Carga (kg)',color:'#00c9cc',domain:['auto','auto'],width:3},
+      {k:'carga',label:'Carga (kg)',color:'#00c9cc',domain:['auto','auto'],width:3},
       {k:'volume',label:'Volume (kg×reps)',color:'#9b7cff',domain:['auto','auto'],width:2},
       {k:'intensidade',label:'Intensidade',color:'#f1d94a',domain:[0,10],ticks:[0,5,10],width:2},
       {k:'dor',label:'Dor articular',color:'#ff5c6c',domain:[0,10],ticks:[0,5,10],width:2},
@@ -3064,12 +3096,6 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
           <button type="button" key={v} className={'varchip'+(varAtiva===v?' sel':'')} onClick={()=>setVarSel(v)}>{v}</button>
         ))}
       </div>}
-      {maxSeries>1 && <div className="varfiltro sgf">
-        <span className="sgflab">Gráfico:</span>
-        {Array.from({length:maxSeries}).map((_,i)=>(
-          <button type="button" key={i} className={'varchip'+(sn===i+1?' sel':'')}
-            onClick={()=>setSerieSel(i+1)}>{i+1}ª série</button>))}
-      </div>}
       {chart}
       <h3 style={{fontSize:15,margin:'6px 4px 10px',color:'var(--muted)'}}>Histórico contínuo</h3>
       {[...agruparSessoes(entriesFiltradas, baseVar)].reverse().map(ses=>(
@@ -3082,7 +3108,7 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
           </div>
           {ses.series.map(e=>(
             <div key={e.id} className="hserie">
-              <span className="hsn">{e.serie!=null?e.serie+'ª':'—'}</span>
+              <span className="hsn">{e.serieN+'ª'}</span>
               <span className="hsv">{e.carga||'—'}{e.reps?' × '+e.reps+' reps':''}</span>
               <button className="hedit" onClick={()=>setEditing(e)}>✎</button>
               <button className="hdel" onClick={()=>delLog(e.id)}>🗑</button>
