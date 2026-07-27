@@ -329,7 +329,11 @@
   .mofam{font-weight:700;color:var(--cyan-2)}
   .tplsalvar{width:100%;margin-top:10px;padding:11px;border-radius:11px;border:1px solid rgba(221,255,0,.4);
     background:rgba(221,255,0,.07);color:#ddff00;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
-  .tplrow{display:flex;gap:6px;margin-top:10px}
+  .tplbox{margin-top:10px;padding:10px;border-radius:12px;background:var(--bg);border:1px solid var(--cyan)}
+  .tplbox .tplrow:first-child{margin-top:0}
+  .tplrow{display:flex;gap:6px;margin-top:8px}
+  .tplfam{flex:1;min-width:0;padding:10px 11px;border-radius:11px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--text);font-family:inherit;font-size:13px}
   .tplrow input{flex:1;min-width:0;padding:10px 12px;border-radius:11px;border:1px solid var(--cyan);
     background:var(--bg);color:var(--text);font-family:inherit;font-size:13px}
   .tplok,.tplx{flex:0 0 auto;padding:10px 13px;border-radius:11px;border:1px solid var(--line);
@@ -921,6 +925,8 @@ const CARDAPIO_URL = 'https://script.google.com/macros/s/AKfycbyi183noK7vugBRyh5
 /* ---- métodos salvos pelo treinador (tabela `metodos`) ---- */
 const METODOS_KEY = 'idealis_metodos_v1';
 const FAM_MEUS = 'Meus métodos';
+/* famílias onde um template pode ser guardado (ordem de exibição) */
+const FAMILIAS_MET = ['Pirâmide','Cluster','Drop','Degrau','Back-off','Alternado','Cadência','Volume',FAM_MEUS];
 function loadMetodosSalvos(){
   if(!LS_OK) return [];
   try{ const r=window.localStorage.getItem(METODOS_KEY); return r?JSON.parse(r):[]; }catch(e){ return []; }
@@ -2068,19 +2074,31 @@ function ExerciseSheet({initial,onSave,onClose}){
         return termosMet.every(x=>alvo.includes(x));
       })
     : [];
-  const familias = listaMetodos.reduce((acc,t)=>{
-    (acc[t.fam]=acc[t.fam]||[]).push(t); return acc;
-  },{});
+  // agrupa e ordena: "Meus métodos" primeiro, depois a ordem fixa das famílias
+  const familias = (()=>{
+    const m={};
+    listaMetodos.forEach(t=>{ (m[t.fam]=m[t.fam]||[]).push(t); });
+    const ordem=[FAM_MEUS].concat(FAMILIAS_MET.filter(f=>f!==FAM_MEUS));
+    const out={};
+    ordem.forEach(f=>{ if(m[f]) out[f]=m[f]; });
+    Object.keys(m).forEach(f=>{ if(!out[f]) out[f]=m[f]; }); // famílias inesperadas no fim
+    return out;
+  })();
   const [salvandoTpl,setSalvandoTpl]=useState(null); // nome em edição, ou null
+  const [famSalvar,setFamSalvar]=useState(FAM_MEUS);
   const salvarComoTemplate=async ()=>{
     const nome=String(salvandoTpl||'').trim();
     if(!nome || !metodo) return;
-    const novo={id:uid(), nome, fam:FAM_MEUS, tipo:metodo.tipo,
+    const fam=famSalvar||FAM_MEUS;
+    const antigos=loadMetodosSalvos();
+    // salvar com o mesmo nome substitui o anterior (inclusive movendo de família)
+    const substituido=antigos.find(x=>x.nome===nome);
+    const novo={id:uid(), nome, fam, tipo:metodo.tipo,
       series:JSON.parse(JSON.stringify(metodo.series)), custom:true};
-    // grava local na hora (funciona offline) e enfileira pro Supabase
-    saveMetodosSalvos([novo].concat(loadMetodosSalvos().filter(x=>x.nome!==nome)));
+    saveMetodosSalvos([novo].concat(antigos.filter(x=>x.nome!==nome)));
+    if(substituido) enqueueOp({tipo:'delete',tabela:'metodos',id:substituido.id});
     enqueueOp({tipo:'insert',tabela:'metodos',dados:{
-      id:novo.id, nome:novo.nome, familia:FAM_MEUS, tipo:novo.tipo, series:novo.series
+      id:novo.id, nome:novo.nome, familia:fam, tipo:novo.tipo, series:novo.series
     }});
     setSalvandoTpl(null); setMetVer(v=>v+1);
     setMetodo(m=>({...m,nome}));
@@ -2351,12 +2369,19 @@ function ExerciseSheet({initial,onSave,onClose}){
           ? <button type="button" className="tplsalvar" onClick={()=>setSalvandoTpl(metodo.nome||'')}>
               ⭐ Salvar como template
             </button>
-          : <div className="tplrow">
-              <input autoFocus value={salvandoTpl} placeholder="Nome do template"
-                onChange={e=>setSalvandoTpl(e.target.value)}
-                onKeyDown={e=>{ if(e.key==='Enter')salvarComoTemplate(); if(e.key==='Escape')setSalvandoTpl(null); }}/>
-              <button type="button" className="tplok" onClick={salvarComoTemplate}>Salvar</button>
-              <button type="button" className="tplx" onClick={()=>setSalvandoTpl(null)}>✕</button>
+          : <div className="tplbox">
+              <div className="tplrow">
+                <input autoFocus value={salvandoTpl} placeholder="Nome do template"
+                  onChange={e=>setSalvandoTpl(e.target.value)}
+                  onKeyDown={e=>{ if(e.key==='Enter')salvarComoTemplate(); if(e.key==='Escape')setSalvandoTpl(null); }}/>
+                <button type="button" className="tplx" onClick={()=>setSalvandoTpl(null)}>✕</button>
+              </div>
+              <div className="tplrow">
+                <select className="tplfam" value={famSalvar} onChange={e=>setFamSalvar(e.target.value)}>
+                  {FAMILIAS_MET.map(f=><option key={f} value={f}>{f}</option>)}
+                </select>
+                <button type="button" className="tplok" onClick={salvarComoTemplate}>Salvar</button>
+              </div>
             </div>}
       </div>}
       {!cardio && !metodo && <div className="field"><label>Séries</label>
