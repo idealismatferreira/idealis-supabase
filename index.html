@@ -447,6 +447,40 @@
     background:var(--bg);color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
   .varrename .vrok{border-color:var(--cyan);color:var(--cyan-2)}
   .pill.vpill{color:var(--cyan-2);border-color:rgba(0,201,204,.35);background:rgba(0,201,204,.08)}
+  .ultseries{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+  .uspill{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--text);
+    background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
+  .uspill .usn{font-size:10.5px;font-weight:800;color:var(--cyan-2)}
+  .exlastmeta{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+  .hsessao{margin-bottom:10px;padding:10px 11px;border-radius:13px;background:var(--surface);border:1px solid var(--line)}
+  .hstopo{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:8px}
+  .hstopo .hdate{font-size:13.5px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+  .hserie{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:9px;background:var(--bg);margin-bottom:5px}
+  .hserie:last-child{margin-bottom:0}
+  .hserie .hsn{flex:0 0 24px;font-size:11px;font-weight:800;color:var(--cyan-2)}
+  .hserie .hsv{flex:1;font-size:13.5px;font-weight:600;color:var(--text)}
+  .serielegend{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:6px;
+    font-size:11.5px;color:var(--muted)}
+  .slitem{display:inline-flex;align-items:center;gap:5px}
+  .sldot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .serieform{display:flex;flex-direction:column;gap:7px}
+  .sfrow{padding:8px 9px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);transition:border-color .15s}
+  .sfrow.on{border-color:var(--cyan)}
+  .sfhead{display:flex;align-items:center;gap:7px}
+  .sfnum{flex:0 0 26px;font-size:12px;font-weight:800;color:var(--cyan-2)}
+  .sfcol{flex:1 1 auto;min-width:0}
+  .sfrepcol{flex:0 0 72px;max-width:72px}
+  .sfhead input{width:100%;padding:10px 11px;border-radius:10px;border:1px solid var(--line);
+    background:var(--bg);color:var(--text);font-family:inherit;font-size:15px;font-weight:600}
+  .sfhead input:focus{outline:none;border-color:var(--cyan)}
+  .sfreps{text-align:center}
+  .sfx{flex:0 0 auto;color:var(--muted);font-size:13px}
+  .sfpresc{flex:0 0 auto;max-width:78px;font-size:10.5px;line-height:1.15;color:var(--muted);text-align:right}
+  .sfbumps{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:8px}
+  .sfbumps .bump{padding:9px 0;border-radius:9px;font-size:12px}
+  .sfbumps .bump.rp{grid-column:span 3;font-size:12.5px}
+  .sfcopiar{width:100%;margin-top:9px;padding:10px;border-radius:11px;border:1px dashed var(--line);
+    background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;cursor:pointer}
   .filmtoggle{display:flex;align-items:center;gap:12px;width:100%;padding:13px 14px;border-radius:13px;border:1px solid var(--line);background:var(--surface-2);font-family:inherit;cursor:pointer;text-align:left;transition:border-color .18s,background .18s}
   .filmtoggle.on{border-color:var(--cyan);background:rgba(0,201,204,.09)}
   .filmtoggle .ftbox{flex:0 0 24px;width:24px;height:24px;border-radius:7px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#04191a;transition:.18s}
@@ -567,6 +601,23 @@ const norm = (t)=>(t||'').trim().toLowerCase();
 const normAcc = (t)=>(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
 const CATALOGO_EXEMPLO = ['Supino Reto','Supino Inclinado','Remada Baixa Anatômica','Puxada Frontal','Agachamento Livre','Leg Press','Cadeira Extensora','Mesa Flexora','Desenvolvimento Militar','Elevação Lateral','Rosca Direta','Tríceps Corda','Stiff','Panturrilha em Pé','Abdominal Infra','Prancha Isométrica'];
 function scaleColor(v){ if(v==null)return 'var(--line)'; if(v<=3)return 'var(--green)'; if(v<=6)return 'var(--yellow)'; if(v<=8)return 'var(--orange)'; return 'var(--red)'; }
+/* agrupa logs em SESSÕES (mesma data + mesma variante), ordenando por série */
+function agruparSessoes(logs, base){
+  const mapa={};
+  (logs||[]).forEach(l=>{
+    const v=(l.variante||'').trim()||base;
+    const k=l.date+'|'+v;
+    (mapa[k]=mapa[k]||{date:l.date, variante:v, series:[]}).series.push(l);
+  });
+  return Object.values(mapa).map(s=>{
+    s.series.sort((a,b)=>((a.serie||1)-(b.serie||1)));
+    const prim=s.series.find(x=>x.intensidade!=null)||s.series[0];
+    s.intensidade=prim?prim.intensidade:null;
+    const pd=s.series.find(x=>x.dor!=null)||s.series[0];
+    s.dor=pd?pd.dor:null;
+    return s;
+  }).sort((a,b)=>a.date.localeCompare(b.date));
+}
 const numFrom=(c)=>{const m=(c||'').replace(',','.').match(/[\d.]+/);return m?parseFloat(m[0]):null;};
 function allLogsOfExercise(student, exName, exId){
   const out=[];
@@ -677,7 +728,7 @@ async function fetchDbFromSupabase(){
       sb.from('alunos').select('id,nome,foto_url,academia').order('nome'),
       sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data').order('ordem'),
       sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo').order('ordem'),
-      sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor,variante').order('data'),
+      sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor,variante,serie').order('data,serie'),
       sb.from('sessoes').select('id,aluno_id,treino_id,data,origem').order('data')
     ]);
     const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error||rSess.error;
@@ -687,7 +738,7 @@ async function fetchDbFromSupabase(){
     (rLogs.data||[]).forEach(l=>{
       (logsPorEx[l.exercicio_id]=logsPorEx[l.exercicio_id]||[]).push({
         id:l.id, date:l.data, carga:l.carga||'', reps:l.reps||'',
-        intensidade:l.intensidade, dor:l.dor, variante:l.variante||''
+        intensidade:l.intensidade, dor:l.dor, variante:l.variante||'', serie:(l.serie!=null?l.serie:null)
       });
     });
     const exPorTreino={};
@@ -860,7 +911,7 @@ function buildEstruturaSnapshot(db){
         exercises:(t.exercises||[]).map(ex=>({
           id:ex.id, name:ex.name, series:ex.series,
           filmar:!!ex.filmar, observacao:ex.observacao||'', metodo:ex.metodo||null,
-          logs:(ex.logs||[]).map(l=>({id:l.id,date:l.date,carga:l.carga,reps:l.reps,intensidade:l.intensidade,dor:l.dor,variante:l.variante||''}))
+          logs:(ex.logs||[]).map(l=>({id:l.id,date:l.date,carga:l.carga,reps:l.reps,intensidade:l.intensidade,dor:l.dor,variante:l.variante||'',serie:(l.serie!=null?l.serie:null)}))
           // doneDate propositalmente omitido (efêmero do dia)
         }))
       }))
@@ -1921,7 +1972,7 @@ function ExerciseSheet({initial,onSave,onClose}){
         <button className="btn" onClick={save}>Salvar</button></div>
     </div></div>);
 }
-function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico,onRenomearVariante,alunoId}){
+function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico,onRenomearVariante,alunoId,exercicio}){
   const isEdit=!!editLog;
   const baseOriginal=varPadrao(academia);
   // se a base foi renomeada mas ainda não existe log para materializar, guarda o apelido
@@ -1948,18 +1999,34 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
   const [novaVar,setNovaVar]=useState(null); // string em edição, ou null
   const [ajuda,setAjuda]=useState(false);
   const [renomeando,setRenomeando]=useState(null);
-  // última carga registrada na variante escolhida (sugestão inteligente)
-  const ultimaDaVariante=(v)=>{
-    const lista=(historico||[]).filter(l=>(((l.variante||'').trim()||base)===v) && l.carga);
-    return lista.length?lista[lista.length-1].carga:'';
+  // ---- registro POR SÉRIE ----
+  const nSeries = isEdit ? 1 : Math.max(1, totalSeries(exercicio||{}) || 1);
+  // prescrição de reps por série (quando há método), pra mostrar como referência
+  const prescricaoDe=(i)=>{
+    const m=exercicio&&exercicio.metodo;
+    if(m&&m.series&&m.series[i]) return m.series[i].reps||'';
+    return (exercicio&&exercicio.series)?String(exercicio.series).replace(/^\s*\d+\s*[x×]\s*/i,''):'';
   };
-  const cargaInicial=(()=>{
-    if(isEdit) return editLog.carga||'';
-    const lista=(historico||[]).filter(l=>(((l.variante||'').trim()||base)===variantInicial) && l.carga);
-    return lista.length?lista[lista.length-1].carga:'';
-  })();
-  const [carga,setCarga]=useState(cargaInicial);
-  const [reps,setReps]=useState(isEdit?(editLog.reps||''):'');
+  /* última sessão registrada naquela variante -> pré-preenche cada série */
+  const ultimaSessao=(v)=>{
+    const ses=agruparSessoes((historico||[]).filter(l=>(((l.variante||'').trim()||base)===v), base), base);
+    return ses.length?ses[ses.length-1]:null;
+  };
+  const montarSeries=(v)=>{
+    if(isEdit) return [{carga:editLog.carga||'', reps:editLog.reps||''}];
+    const ult=ultimaSessao(v);
+    const out=[];
+    for(let i=0;i<nSeries;i++){
+      const ref=ult&&ult.series[i];
+      const fallback=ult&&ult.series.length?ult.series[ult.series.length-1]:null;
+      out.push({carga:(ref?ref.carga:(fallback?fallback.carga:''))||'', reps:''});
+    }
+    return out;
+  };
+  const [series,setSeries]=useState(()=>montarSeries(variantInicial));
+  const [aberta,setAberta]=useState(0); // série com os botões de ajuste visíveis
+  const setSerie=(i,patch)=>setSeries(a=>a.map((x,k)=>k===i?{...x,...patch}:x));
+  const aplicarCargaTodas=()=>{ const c=series[0].carga; setSeries(a=>a.map(x=>({...x,carga:c}))); };
   const [intensidade,setInt]=useState(isEdit?(editLog.intensidade!=null?editLog.intensidade:null):null);
   const [dor,setDor]=useState(isEdit?(editLog.dor!=null?editLog.dor:null):null);
   const [erro,setErro]=useState('');
@@ -1976,30 +2043,31 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
     const r=Math.round(n*10)/10;
     return (Number.isInteger(r)?String(r):String(r).replace('.',',')).toString();
   };
-  const setNum=(n,keepSuf)=>{
-    const cur=parseCarga(carga);
-    const suf=keepSuf!=null?keepSuf:(cur.suf||'kg');
-    const val=n<0?0:n;
-    setCarga(fmtNum(val)+(suf?suf:'')); setErro('');
+  const bumpSerie=(i,d)=>{
+    const cur=parseCarga(series[i].carga);
+    const val=Math.max(0,(cur.num!=null?cur.num:0)+d);
+    setSerie(i,{carga:fmtNum(val)+(cur.suf||'kg')}); setErro('');
   };
-  const bump=(d)=>{
-    const cur=parseCarga(carga);
-    const base=cur.num!=null?cur.num:0;
-    setNum(base+d, cur.suf||'kg');
+  const bumpRepsSerie=(i,d)=>{
+    const cur=parseInt(series[i].reps,10);
+    setSerie(i,{reps:String(Math.max(0,(isNaN(cur)?0:cur)+d))}); setErro('');
   };
   const save=()=>{
-    if(!carga.trim()){ setErro('Preencha a carga.'); return; }
-    if(!reps.trim()){ setErro('Preencha as repetições feitas.'); return; }
+    // aceita séries em branco (o aluno pode ter feito menos), mas exige ao menos uma completa
+    const feitas=series.map((sr,i)=>({...sr,i})).filter(sr=>sr.carga.trim()||sr.reps.trim());
+    if(!feitas.length){ setErro('Preencha ao menos uma série.'); return; }
+    const incompleta=feitas.find(sr=>!sr.carga.trim()||!sr.reps.trim());
+    if(incompleta){ setErro('Série '+(incompleta.i+1)+': falta carga ou repetições.'); return; }
     const pend=lerVarPend(alunoId,exName);
     if(pend.includes(variante)) salvarVarPend(alunoId,exName,pend.filter(v=>v!==variante));
-    onSave({carga:carga.trim(),reps:reps.trim(),intensidade,dor,variante:(variante===base?'':variante)});
+    onSave({
+      series: feitas.map(sr=>({serie:sr.i+1, carga:sr.carga.trim(), reps:sr.reps.trim()})),
+      intensidade, dor, variante:(variante===base?'':variante)
+    });
   };
-  const setRepsVal=(n)=>{ setReps(String(n<0?0:n)); setErro(''); };
-  const bumpReps=(d)=>{ const cur=parseInt(reps,10); setRepsVal((isNaN(cur)?0:cur)+d); };
-  const repPresets=[6,8,10,12,15,20];
   const escolherVariante=(v)=>{
     setVariante(v);
-    if(!isEdit){ const u=ultimaDaVariante(v); setCarga(u||''); setErro(''); }
+    if(!isEdit){ setSeries(montarSeries(v)); setErro(''); }
   };
   const criarVariante=()=>{
     const nome=String(novaVar||'').trim();
@@ -2066,35 +2134,42 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
           <button type="button" className="vrcancel" onClick={()=>setRenomeando(null)}>✕</button>
         </div>}
       </div>
-      <div className="field"><label className="reglab">Carga</label>
-        <input value={carga} inputMode="decimal" onChange={e=>{setCarga(e.target.value);setErro('');}} placeholder="Ex: 40kg"/>
-        <div className="reprow">
-          {[10,20,40,50,80,100].map(v=>(
-            <button type="button" key={v} className={'rpreset'+(parseCarga(carga).num===v?' sel':'')} onClick={()=>setNum(v)}>{v}</button>
+      <div className="field">
+        <label className="reglab">{isEdit?'Carga e repetições':'Carga e repetições por série'}</label>
+        <div className="serieform">
+          {series.map((sr,i)=>(
+            <div className={'sfrow'+(aberta===i?' on':'')} key={i}>
+              <div className="sfhead">
+                <span className="sfnum">{isEdit?'—':(i+1)+'ª'}</span>
+                <div className="sfcol">
+                  <input className="sfcarga" value={sr.carga} inputMode="decimal" placeholder="carga"
+                    onFocus={()=>setAberta(i)}
+                    onChange={e=>{setSerie(i,{carga:e.target.value});setErro('');}}/>
+                </div>
+                <span className="sfx">×</span>
+                <div className="sfcol sfrepcol">
+                  <input className="sfreps" type="number" inputMode="numeric" value={sr.reps} placeholder="reps"
+                    onFocus={()=>setAberta(i)}
+                    onChange={e=>{setSerie(i,{reps:e.target.value});setErro('');}}/>
+                </div>
+                {!isEdit && <span className="sfpresc">{prescricaoDe(i)}</span>}
+              </div>
+              {aberta===i && <div className="sfbumps">
+                <button type="button" className="bump minus" onClick={()=>bumpSerie(i,-5)}>−5</button>
+                <button type="button" className="bump minus" onClick={()=>bumpSerie(i,-2.5)}>−2,5</button>
+                <button type="button" className="bump minus" onClick={()=>bumpSerie(i,-1)}>−1</button>
+                <button type="button" className="bump plus" onClick={()=>bumpSerie(i,1)}>+1</button>
+                <button type="button" className="bump plus" onClick={()=>bumpSerie(i,2.5)}>+2,5</button>
+                <button type="button" className="bump plus" onClick={()=>bumpSerie(i,5)}>+5</button>
+                <button type="button" className="bump minus rp" onClick={()=>bumpRepsSerie(i,-1)}>−1 rep</button>
+                <button type="button" className="bump plus rp" onClick={()=>bumpRepsSerie(i,1)}>+1 rep</button>
+              </div>}
+            </div>
           ))}
         </div>
-        <div className="bumpgrid">
-          <button type="button" className="bump minus" onClick={()=>bump(-5)}>−5</button>
-          <button type="button" className="bump minus" onClick={()=>bump(-2.5)}>−2,5</button>
-          <button type="button" className="bump minus" onClick={()=>bump(-1)}>−1</button>
-          <button type="button" className="bump plus" onClick={()=>bump(1)}>+1</button>
-          <button type="button" className="bump plus" onClick={()=>bump(2.5)}>+2,5</button>
-          <button type="button" className="bump plus" onClick={()=>bump(5)}>+5</button>
-        </div>
-        {!isEdit && lastLog && lastLog.carga && <div className="prefill">↩︎ Última: {lastLog.carga} ({fmtDate(lastLog.date)}) — ajuste se mudou</div>}
-      </div>
-      <div className="field"><label className="reglab">Repetições feitas <span className="reghint">(só o número)</span></label>
-        <input type="number" inputMode="numeric" value={reps} onChange={e=>{setReps(e.target.value);setErro('');}} placeholder="Ex: 10"/>
-        <div className="reprow">
-          {repPresets.map(v=>(
-            <button type="button" key={v} className={'rpreset'+(String(v)===String(reps)?' sel':'')} onClick={()=>setRepsVal(v)}>{v}</button>
-          ))}
-        </div>
-        <div className="repbump">
-          <button type="button" className="bump minus" onClick={()=>bumpReps(-1)}>−1</button>
-          <button type="button" className="bump plus" onClick={()=>bumpReps(1)}>+1</button>
-        </div>
-        {!isEdit && lastLog && lastLog.reps && <div className="prefill">↩︎ Última: {lastLog.reps} reps</div>}
+        {!isEdit && series.length>1 &&
+          <button type="button" className="sfcopiar" onClick={aplicarCargaTodas}>⇩ Usar a carga da 1ª em todas</button>}
+        {!isEdit && <div className="prefill">Pré-preenchido com a última sessão neste equipamento — ajuste o que mudou.</div>}
       </div>
       <div className="field"><label className="reglab">Esforço <span className="reghint">(esforço percebido nessa carga)</span></label>
         <Scale value={intensidade} onChange={setInt} leftLabel="Leve" rightLabel="Máxima"/></div>
@@ -2248,15 +2323,22 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   };
   const saveLog=(data)=>{
     const ex=registering;
-    const log={id:uid(),date:todayISO(),...data};
-    updExercises(t.exercises.map(e=>e.id===ex.id?{...e,logs:[...(e.logs||[]),log]}:e));
-    enqueueOp({tipo:'insert',tabela:'logs',dados:{
-      id:log.id, exercicio_id:ex.id, data:log.date,
+    const hoje=todayISO();
+    // uma linha por série; esforço e dor ficam iguais em todas (são do exercício, não da série)
+    const novos=(data.series||[]).map(sr=>({
+      id:uid(), date:hoje, serie:sr.serie, carga:sr.carga, reps:sr.reps,
+      intensidade:data.intensidade, dor:data.dor, variante:data.variante||''
+    }));
+    if(!novos.length) return;
+    updExercises(t.exercises.map(e=>e.id===ex.id?{...e,logs:[...(e.logs||[]),...novos]}:e));
+    novos.forEach(log=>enqueueOp({tipo:'insert',tabela:'logs',dados:{
+      id:log.id, exercicio_id:ex.id, data:log.date, serie:log.serie,
       carga:log.carga||null, reps:log.reps||null,
       intensidade:log.intensidade, dor:log.dor,
       variante:log.variante||null
-    }});
-    flash('Carga registrada ✓'); setRegistering(null);
+    }}));
+    flash(novos.length>1?(novos.length+' séries registradas ✓'):'Carga registrada ✓');
+    setRegistering(null);
   };
   // progresso de séries — vem do App (sobrevive à navegação)
   const avancarSerie=(ex)=>{
@@ -2351,15 +2433,27 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
             </div>
           </div>}
           {ex.observacao && <div className="exobs"><span className="eoico">💬</span><span className="eotxt">{ex.observacao}</span></div>}
-          <div className="exlast">
-            {last ? <React.Fragment>
-              <span className="lastnote">Última carga · {fmtDate(last.date)}</span>
-              <span className="pill big"><span className="k">Carga</span>{last.carga||'—'}</span>
-              {last.reps && <span className="pill big"><span className="k">Reps</span>{last.reps}</span>}
-              {last.intensidade!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(last.intensidade)}}></span><span className="k">Int</span>{last.intensidade}</span>}
-              {last.dor!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(last.dor)}}></span><span className="k">Dor art.</span>{last.dor}</span>}
-            </React.Fragment> : <span className="lastnote">Ainda sem registro — toque em “Registrar Carga”.</span>}
-          </div>
+          {(()=>{
+            const todos=allLogsOfExercise(s,ex.name,ex.exerciseId);
+            const ses=agruparSessoes(todos, varPadrao(s.academia));
+            const ult=ses.length?ses[ses.length-1]:null;
+            if(!ult) return <div className="exlast"><span className="lastnote">Ainda sem registro — toque em “Registrar Carga”.</span></div>;
+            return <div className="exlast">
+              <span className="lastnote">Última sessão · {fmtDate(ult.date)}</span>
+              <div className="ultseries">
+                {ult.series.map((sr,i)=>(
+                  <span className="uspill" key={sr.id}>
+                    <span className="usn">{sr.serie!=null?sr.serie+'ª':'—'}</span>
+                    {sr.carga||'—'}{sr.reps?' × '+sr.reps:''}
+                  </span>
+                ))}
+              </div>
+              <div className="exlastmeta">
+                {ult.intensidade!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(ult.intensidade)}}></span><span className="k">Esforço</span>{ult.intensidade}</span>}
+                {ult.dor!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(ult.dor)}}></span><span className="k">Dor art.</span>{ult.dor}</span>}
+              </div>
+            </div>;
+          })()}
           <div className="exactions">
             <button className="reg" onClick={()=>setRegistering(ex)}>Registrar Carga</button>
             <button className="evo" onClick={()=>nav({name:'evolution',studentId,exName:ex.name,exId:ex.exerciseId,back:{name:'treino',studentId,treinoId}})}>Evolução</button>
@@ -2408,7 +2502,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     </div>
     {!ehAluno && <button className="fab" onClick={()=>setEditingEx('new')}>＋ Exercício</button>}
     {editingEx && !ehAluno && <ExerciseSheet initial={editingEx==='new'?null:editingEx} onSave={saveEx} onClose={()=>setEditingEx(null)}/>}
-    {registering && <RegisterSheet exName={registering.name} lastLog={lastLogOfExercise(s,registering.name,registering.exerciseId)} onSave={saveLog} onClose={()=>setRegistering(null)} academia={s.academia} historico={allLogsOfExercise(s,registering.name,registering.exerciseId)} onRenomearVariante={(a,n,b)=>renomearVarTreino(registering,a,n,b)} alunoId={studentId}/>}
+    {registering && <RegisterSheet exName={registering.name} lastLog={lastLogOfExercise(s,registering.name,registering.exerciseId)} onSave={saveLog} onClose={()=>setRegistering(null)} academia={s.academia} exercicio={registering} historico={allLogsOfExercise(s,registering.name,registering.exerciseId)} onRenomearVariante={(a,n,b)=>renomearVarTreino(registering,a,n,b)} alunoId={studentId}/>}
   </React.Fragment>);
 }
 function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
@@ -2434,10 +2528,23 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
   const [varSel,setVarSel]=useState(varDoUltimoLog);
   const varAtiva=varsUsadas.includes(varSel)?varSel:(varsUsadas[0]||baseVar);
   const entriesFiltradas=entries.filter(e=>((e.variante||'').trim()||baseVar)===varAtiva);
-  const chartData=entriesFiltradas.map(e=>{
-    const c=numFrom(e.carga), r=numFrom(e.reps);
-    return {date:fmtDate(e.date), carga:c, volume:(c!=null&&r!=null)?c*r:null,
-      intensidade:(e.intensidade!=null?e.intensidade:null), dor:(e.dor!=null?e.dor:null)};
+  const sessoesGraf=agruparSessoes(entriesFiltradas, baseVar);
+  // quantas séries a sessão mais longa teve — define quantas linhas o gráfico desenha
+  const maxSeries=sessoesGraf.reduce((m,x)=>Math.max(m,x.series.length),0);
+  const CORES_SERIE=['#00c9cc','#71fcff','#9b7cff','#6ee89a','#f1d94a','#ffa45c','#ff8fb1','#8fd6ff','#c0a6ff','#a2feff'];
+  const chartData=sessoesGraf.map(ses=>{
+    const pt={date:fmtDate(ses.date),
+      intensidade:(ses.intensidade!=null?ses.intensidade:null),
+      dor:(ses.dor!=null?ses.dor:null)};
+    let vol=0, temVol=false, maxC=null;
+    ses.series.forEach((l,i)=>{
+      const c=numFrom(l.carga), r=numFrom(l.reps);
+      pt['s'+(i+1)] = (c!=null?c:null);
+      if(c!=null&&r!=null){ vol+=c*r; temVol=true; }
+      if(c!=null && (maxC==null||c>maxC)) maxC=c;
+    });
+    pt.carga=maxC; pt.volume=temVol?vol:null;
+    return pt;
   }).filter(d=>d.carga!=null);
   const delLog=(logId)=>{
     setDb({...db,students:db.students.map(st=>st.id!==studentId?st:{...st,treinos:st.treinos.map(t=>({...t,exercises:t.exercises.map(ex=>norm(ex.name)===norm(exName)?{...ex,logs:(ex.logs||[]).filter(l=>l.id!==logId)}:ex)}))})});
@@ -2454,7 +2561,11 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
     ids.forEach(id=>enqueueOp({tipo:'update',tabela:'logs',id,dados:{variante:novo}}));
     if(varAtiva===antigo) setVarSel(novo);
   };
-  const editLogSave=(logId,data)=>{
+  const editLogSave=(logId,dataIn)=>{
+    const data = dataIn && dataIn.series
+      ? {carga:dataIn.series[0].carga, reps:dataIn.series[0].reps,
+         intensidade:dataIn.intensidade, dor:dataIn.dor, variante:dataIn.variante}
+      : dataIn;
     setDb({...db,students:db.students.map(st=>st.id!==studentId?st:{...st,treinos:st.treinos.map(t=>({...t,exercises:t.exercises.map(ex=>norm(ex.name)===norm(exName)?{...ex,logs:(ex.logs||[]).map(l=>l.id===logId?{...l,...data}:l)}:ex)}))})});
     enqueueOp({tipo:'update',tabela:'logs',id:logId,dados:{
       carga:data.carga||null, reps:data.reps||null,
@@ -2468,7 +2579,7 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
     const LineChart=RC.LineChart, Line=RC.Line, XAxis=RC.XAxis, YAxis=RC.YAxis, CartesianGrid=RC.CartesianGrid, Tooltip=RC.Tooltip, ResponsiveContainer=RC.ResponsiveContainer;
     const ColorDot=(p)=>(p.cy==null?null:<circle cx={p.cx} cy={p.cy} r={4.5} fill={scaleColor(p.payload.dor)} stroke="#0b0f10" strokeWidth={2}/>);
     const M=[
-      {k:'carga',label:'Carga (kg)',color:'#00c9cc',domain:['auto','auto'],width:3},
+      {k:'carga',label:maxSeries>1?'Carga por série (kg)':'Carga (kg)',color:'#00c9cc',domain:['auto','auto'],width:3,porSerie:maxSeries>1},
       {k:'volume',label:'Volume (kg×reps)',color:'#9b7cff',domain:['auto','auto'],width:2},
       {k:'intensidade',label:'Intensidade',color:'#f1d94a',domain:[0,10],ticks:[0,5,10],width:2},
       {k:'dor',label:'Dor articular',color:'#ff5c6c',domain:[0,10],ticks:[0,5,10],width:2},
@@ -2494,13 +2605,24 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
               <XAxis dataKey="date" tick={i===active.length-1?{fill:'#7d9298',fontSize:11}:false} tickMargin={8} height={i===active.length-1?24:6}/>
               <YAxis domain={m.domain} ticks={m.ticks||undefined} tick={{fill:'#7d9298',fontSize:11}} width={40}/>
               <Tooltip contentStyle={{background:'#12181a',border:'1px solid #243036',borderRadius:12,color:'#eaf6f7'}}/>
-              <Line type="monotone" dataKey={m.k} name={m.label} stroke={m.color} strokeWidth={m.width} connectNulls
-                dot={m.k==='carga'?<ColorDot/>:{r:3,fill:m.color,strokeWidth:0}} activeDot={{r:6}}/>
+              {m.porSerie
+                ? Array.from({length:maxSeries}).map((_,si)=>(
+                    <Line key={si} type="monotone" dataKey={'s'+(si+1)} name={(si+1)+'ª série'}
+                      stroke={CORES_SERIE[si%CORES_SERIE.length]} strokeWidth={2} connectNulls
+                      dot={{r:3,fill:CORES_SERIE[si%CORES_SERIE.length],strokeWidth:0}} activeDot={{r:6}}/>))
+                : <Line type="monotone" dataKey={m.k} name={m.label} stroke={m.color} strokeWidth={m.width} connectNulls
+                    dot={m.k==='carga'?<ColorDot/>:{r:3,fill:m.color,strokeWidth:0}} activeDot={{r:6}}/>}
             </LineChart>
           </ResponsiveContainer>
         </div>
       ))}
-      {metrics.carga && <div className="legend">
+      {metrics.carga && maxSeries>1 && <div className="serielegend">
+        {Array.from({length:maxSeries}).map((_,si)=>(
+          <span className="slitem" key={si}>
+            <span className="sldot" style={{background:CORES_SERIE[si%CORES_SERIE.length]}}></span>{si+1}ª
+          </span>))}
+      </div>}
+      {metrics.carga && maxSeries<=1 && <div className="legend">
         <span className="lgtitle">Bolinha da carga = Dor articular:</span>
         <span><span className="d" style={{background:'var(--green)'}}></span>0-3</span>
         <span><span className="d" style={{background:'var(--yellow)'}}></span>4-6</span>
@@ -2523,24 +2645,27 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
       </div>}
       {chart}
       <h3 style={{fontSize:15,margin:'6px 4px 10px',color:'var(--muted)'}}>Histórico contínuo</h3>
-      {[...entriesFiltradas].reverse().map(e=>(
-        <div key={e.id} className="histrow">
-          <div className="hdate">{fmtDate(e.date)}</div>
-          <div className="hmeta">
-            {e.carga && <span className="pill"><span className="k">Carga</span>{e.carga}</span>}
-            {e.reps && <span className="pill"><span className="k">Reps</span>{e.reps}</span>}
-            {e.intensidade!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(e.intensidade)}}></span>{e.intensidade}</span>}
-            {e.dor!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(e.dor)}}></span>Dor art. {e.dor}</span>}
-            {temVarias && <span className="pill vpill">{((e.variante||'').trim()||baseVar)}</span>}
+      {[...agruparSessoes(entriesFiltradas, baseVar)].reverse().map(ses=>(
+        <div key={ses.date+ses.variante} className="hsessao">
+          <div className="hstopo">
+            <span className="hdate">{fmtDate(ses.date)}</span>
+            {ses.intensidade!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(ses.intensidade)}}></span>Esforço {ses.intensidade}</span>}
+            {ses.dor!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(ses.dor)}}></span>Dor art. {ses.dor}</span>}
+            {temVarias && <span className="pill vpill">{ses.variante}</span>}
           </div>
-          <button className="hedit" onClick={()=>setEditing(e)}>✎</button>
-          <button className="hdel" onClick={()=>delLog(e.id)}>🗑</button>
+          {ses.series.map(e=>(
+            <div key={e.id} className="hserie">
+              <span className="hsn">{e.serie!=null?e.serie+'ª':'—'}</span>
+              <span className="hsv">{e.carga||'—'}{e.reps?' × '+e.reps+' reps':''}</span>
+              <button className="hedit" onClick={()=>setEditing(e)}>✎</button>
+              <button className="hdel" onClick={()=>delLog(e.id)}>🗑</button>
+            </div>))}
         </div>))}
       {entries.length===0 && <div className="empty"><p>Nenhum registro desse exercício ainda.</p></div>}
     </div>
     {editing && <RegisterSheet exName={exName} editLog={editing}
       onSave={(data)=>editLogSave(editing.id,data)} onClose={()=>setEditing(null)}
-      academia={s.academia} historico={entries} onRenomearVariante={renomearVarEvo} alunoId={studentId}/>}
+      academia={s.academia} historico={entries} onRenomearVariante={renomearVarEvo} alunoId={studentId} exercicio={null}/>}
   </React.Fragment>);
 }
 function LoginHeader(){
