@@ -1119,9 +1119,9 @@ function RestTimerTrigger({timer}){
    Tela travada, app minimizado ou página recarregada não perdem o lugar. */
 const CARDIO_KEY='idealis_cardio_v1';
 function useCardioTimer(){
+  // App-level: SÓ inicia/para/retoma a sessão. Nenhum tick aqui —
+  // um setInterval neste nível re-renderizava o app INTEIRO 4×/s e derrubava a aba.
   const [sessao,setSessao]=useState(null); // {inicio, blocos, nome}
-  const [agora,setAgora]=useState(Date.now());
-  const wakeRef=React.useRef(null);
   useEffect(()=>{ // retoma se a página recarregou no meio
     try{
       if(!LS_OK) return;
@@ -1133,12 +1133,27 @@ function useCardioTimer(){
       setSessao(d);
     }catch(e){}
   },[]);
+  const iniciar=(blocos,nome)=>{
+    if(!blocos||!blocos.length) return;
+    const d={inicio:Date.now(), blocos, nome:nome||''};
+    setSessao(d);
+    try{ if(LS_OK) window.localStorage.setItem(CARDIO_KEY,JSON.stringify(d)); }catch(e){}
+  };
+  const parar=()=>{
+    setSessao(null);
+    try{ if(LS_OK) window.localStorage.removeItem(CARDIO_KEY); }catch(e){}
+  };
+  return {ativo:!!sessao, sessao, iniciar, parar};
+}
+function CardioOverlay({cardio}){
+  const sessao=cardio.sessao;
+  // o tick mora AQUI: só o overlay re-renderiza a cada 500ms
+  const [agora,setAgora]=useState(Date.now());
+  const wakeRef=React.useRef(null);
   useEffect(()=>{
-    if(!sessao) return;
-    const id=setInterval(()=>setAgora(Date.now()),250);
+    const id=setInterval(()=>setAgora(Date.now()),500);
     const onVis=()=>{ if(document.visibilityState==='visible') setAgora(Date.now()); };
     document.addEventListener('visibilitychange',onVis);
-    // mantém a tela acesa onde a API existir (Chrome Android 2019+, Safari 16.4+)
     let cancelado=false;
     (async()=>{ try{
       if(navigator.wakeLock && navigator.wakeLock.request){
@@ -1151,43 +1166,25 @@ function useCardioTimer(){
       document.removeEventListener('visibilitychange',onVis);
       try{ if(wakeRef.current){ wakeRef.current.release(); wakeRef.current=null; } }catch(e){}
     };
-  },[sessao]);
-  const iniciar=(blocos,nome)=>{
-    if(!blocos||!blocos.length) return;
-    const d={inicio:Date.now(), blocos, nome:nome||''};
-    setSessao(d); setAgora(d.inicio);
-    try{ if(LS_OK) window.localStorage.setItem(CARDIO_KEY,JSON.stringify(d)); }catch(e){}
-  };
-  const parar=()=>{
-    setSessao(null);
-    try{ if(LS_OK) window.localStorage.removeItem(CARDIO_KEY); }catch(e){}
-  };
-  // ---- estado derivado ----
-  let estado=null;
-  if(sessao){
-    const dec=Math.max(0,(agora-sessao.inicio)/1000);
-    const total=sessao.blocos.reduce((a,b)=>a+b.seg,0);
-    let acc=0, idx=-1, restante=0;
-    for(let i=0;i<sessao.blocos.length;i++){
-      const fim=acc+sessao.blocos[i].seg;
-      if(dec<fim){ idx=i; restante=fim-dec; break; }
-      acc=fim;
-    }
-    estado={
-      nome:sessao.nome, blocos:sessao.blocos, total,
-      idx, terminou:idx<0,
-      atual: idx>=0?sessao.blocos[idx]:null,
-      proximo: idx>=0?sessao.blocos[idx+1]||null:null,
-      restanteBloco: Math.ceil(restante),
-      restanteTotal: Math.max(0,Math.ceil(total-dec)),
-      progressoBloco: idx>=0?1-(restante/sessao.blocos[idx].seg):1,
-    };
+  },[]);
+  if(!sessao) return null;
+  const dec=Math.max(0,(agora-sessao.inicio)/1000);
+  const total=sessao.blocos.reduce((a,b)=>a+b.seg,0);
+  let acc=0, idx=-1, restante=0;
+  for(let i=0;i<sessao.blocos.length;i++){
+    const fimB=acc+sessao.blocos[i].seg;
+    if(dec<fimB){ idx=i; restante=fimB-dec; break; }
+    acc=fimB;
   }
-  return {ativo:!!sessao, estado, iniciar, parar};
-}
-function CardioOverlay({cardio}){
-  const e=cardio.estado;
-  if(!e) return null;
+  const e={
+    nome:sessao.nome, blocos:sessao.blocos, total,
+    idx, terminou:idx<0,
+    atual: idx>=0?sessao.blocos[idx]:null,
+    proximo: idx>=0?sessao.blocos[idx+1]||null:null,
+    restanteBloco: Math.ceil(restante),
+    restanteTotal: Math.max(0,Math.ceil(total-dec)),
+    progressoBloco: idx>=0?1-(restante/sessao.blocos[idx].seg):1,
+  };
   const cor = e.terminou ? '#6ee89a' : nivelInfo(e.atual.nivel).cor;
   return (<div className="cdover" style={{'--cd':cor}}>
     <div className="cdtop">
@@ -1256,7 +1253,21 @@ function App({auth}){
   const [toast,setToast]=useState(null);
   const timer=useRestTimer();
   const cardio=useCardioTimer();
-  const [seriesFeitas,setSeriesFeitas]=useState({}); // progresso de séries da sessão
+  // progresso de séries da sessão — persiste no localStorage:
+  // o Android/iOS mata a aba em segundo plano e o estado React some junto
+  const SFEITAS_KEY='idealis_sfeitas_v1';
+  const [seriesFeitas,setSeriesFeitas]=useState(()=>{
+    try{
+      if(!LS_OK) return {};
+      const r=window.localStorage.getItem(SFEITAS_KEY);
+      if(!r) return {};
+      const d=JSON.parse(r);
+      return (d && d.date===todayISO() && d.m) ? d.m : {};
+    }catch(e){ return {}; }
+  });
+  useEffect(()=>{
+    try{ if(LS_OK) window.localStorage.setItem(SFEITAS_KEY, JSON.stringify({date:todayISO(), m:seriesFeitas})); }catch(e){}
+  },[seriesFeitas]);
   const [catalogoVer,setCatalogoVer]=useState(0); // muda quando o catálogo é rebaixado
   const prevStructRef=React.useRef(null);
 
@@ -1512,6 +1523,20 @@ function saudacao(){
   if(h<12) return 'Bom dia';
   if(h<18) return 'Boa tarde';
   return 'Boa noite';
+}
+/* cronômetro da topbar: o tick fica confinado aqui — o TreinoView (com todos
+   os cards) não re-renderiza a cada segundo por causa do relógio */
+function CronoBadge({inicio}){
+  const [agora,setAgora]=useState(Date.now());
+  useEffect(()=>{
+    if(inicio==null) return;
+    const id=setInterval(()=>setAgora(Date.now()),1000);
+    const onVis=()=>{ if(document.visibilityState==='visible') setAgora(Date.now()); };
+    document.addEventListener('visibilitychange',onVis);
+    return ()=>{ clearInterval(id); document.removeEventListener('visibilitychange',onVis); };
+  },[inicio]);
+  return (<span className={'crono'+(inicio==null?' off':'')}>
+    <span className="crico">⏱</span>{inicio==null?'--:--':fmtCrono(agora-inicio)}</span>);
 }
 function TopBar({title,sub,onBack,logo,onSair,right}){
   if(logo) return (<div className="topbar tbmarca">
@@ -2635,15 +2660,9 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   const abertoEmRef = React.useRef(marcarAberto(treinoId));
   useEffect(()=>{ abertoEmRef.current=marcarAberto(treinoId); },[treinoId]);
   const [dataRetro,setDataRetro]=useState(todayISO());
-  // cronômetro da sessão — conta desde a 1ª abertura do treino hoje
-  const [agora,setAgora]=useState(Date.now());
+  // cronômetro da sessão — o tick vive no CronoBadge, não aqui
   const [inicio,setInicio]=useState(()=>lerInicio(treinoId));
-  useEffect(()=>{ setInicio(lerInicio(treinoId)); setAgora(Date.now()); },[treinoId]);
-  useEffect(()=>{
-    if(inicio==null) return; // só roda depois da 1ª série
-    const id=setInterval(()=>setAgora(Date.now()),1000);
-    return ()=>clearInterval(id);
-  },[inicio]);
+  useEffect(()=>{ setInicio(lerInicio(treinoId)); },[treinoId]);
   if(!t) return null;
   const updExercises=(exs)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,treinos:x.treinos.map(tt=>tt.id===treinoId?{...tt,exercises:exs}:tt)}:x)});
   const saveEx=(data)=>{
@@ -2795,7 +2814,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     const novo=Math.min(tot, atual+1);
     setSeriesFeitas(m=>({...m,[ex.id]:novo}));
     // 1ª série do dia dispara o cronômetro da sessão
-    if(inicio==null){ setInicio(marcarInicio(treinoId)); setAgora(Date.now()); }
+    if(inicio==null){ setInicio(marcarInicio(treinoId)); }
     // descanso da série que ACABOU de ser feita (índice novo-1)
     const f=parseDescanso(descansoDaSerie(ex, novo-1));
     if(f && timer) timer.start(f, ex.name);
@@ -2807,8 +2826,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   },[catalogoVer]);
   return (<React.Fragment>
     <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId})}
-      right={<span className={'crono'+(inicio==null?' off':'')}>
-        <span className="crico">⏱</span>{inicio==null?'--:--':fmtCrono(agora-inicio)}</span>}/>
+      right={<CronoBadge inicio={inicio}/>}/>
     <div className="screen">
       {inicio==null && (t.exercises||[]).length>0 &&
         <div className="cronohint">⏱ O tempo começa a contar a partir da primeira série 💪🏼</div>}
@@ -3045,7 +3063,7 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
     const M=[
       {k:'carga',label:'Carga (kg)',color:'#00c9cc',domain:['auto','auto'],width:3},
       {k:'volume',label:'Volume (kg×reps)',color:'#9b7cff',domain:['auto','auto'],width:2},
-      {k:'intensidade',label:'Intensidade',color:'#f1d94a',domain:[0,10],ticks:[0,5,10],width:2},
+      {k:'intensidade',label:'Esforço',color:'#f1d94a',domain:[0,10],ticks:[0,5,10],width:2},
       {k:'dor',label:'Dor articular',color:'#ff5c6c',domain:[0,10],ticks:[0,5,10],width:2},
     ];
     const active=M.filter(m=>metrics[m.k]);
