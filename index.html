@@ -119,6 +119,8 @@
   .empty{text-align:center;padding:56px 24px;color:var(--muted)}
   .empty .big{font-size:40px;margin-bottom:14px}
   .empty p{font-size:15px;line-height:1.5;margin:0}
+  .tfeito{margin-left:5px;font-weight:600;color:var(--muted)}
+  .tfeito.hoje{color:#ddff00}
   .treino{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
     padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px}
   .treino .tag{width:46px;height:46px;border-radius:12px;flex-shrink:0;display:grid;place-items:center;
@@ -1641,6 +1643,19 @@ function Celebracao({nome,onFim}){
     </div>
   </div>);
 }
+/* força re-render na virada do dia: o app pode ficar aberto passando da meia-noite,
+   e "concluído hoje" precisa deixar de valer sozinho */
+function useViradaDoDia(){
+  const [dia,setDia]=useState(todayISO());
+  useEffect(()=>{
+    const checar=()=>{ const d=todayISO(); setDia(p=>p!==d?d:p); };
+    const id=setInterval(checar, 60000);
+    const onVis=()=>{ if(document.visibilityState==='visible') checar(); };
+    document.addEventListener('visibilitychange',onVis);
+    return ()=>{ clearInterval(id); document.removeEventListener('visibilitychange',onVis); };
+  },[]);
+  return dia;
+}
 function CronoBadge({inicio}){
   const [agora,setAgora]=useState(Date.now());
   useEffect(()=>{
@@ -1869,7 +1884,16 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
         return (<div key={t.id} className="treino" onClick={()=>nav({name:'treino',studentId,treinoId:t.id})}>
           <div className="tag">{letra}</div>
           <div className="meta"><div className="name">{t.nome}</div>
-            <div className="desc">{(t.exercises||[]).length} {(t.exercises||[]).length===1?'exercício':'exercícios'}</div></div>
+            <div className="desc">
+              {(t.exercises||[]).length} {(t.exercises||[]).length===1?'exercício':'exercícios'}
+              {(()=>{
+                // o aluno só vê sessões que ELE confirmou; as inferidas são sinal pro treinador
+                const ses=(t.sessoes||[]).filter(x=>ehAluno ? x.origem!=='inferido' : true);
+                if(!ses.length) return null;
+                const ult=ses[ses.length-1].data; const q=haQuantoTempo(ult);
+                const hoje=ult===todayISO();
+                return <span className={'tfeito'+(hoje?' hoje':'')}>· {hoje?'feito hoje ✓':'feito '+q}</span>; })()}
+            </div></div>
           {!ehAluno && <button className="menudot" onClick={e=>{e.stopPropagation();setMenu(t);}}>⋯</button>}
           <div className="chev" style={{color:'var(--muted)',fontSize:20}}>›</div>
         </div>);
@@ -1927,6 +1951,20 @@ function expandirCardio(c){
   return out;
 }
 function totalCardioSeg(c){ return expandirCardio(c).reduce((a,b)=>a+b.seg,0); }
+/* "hoje", "ontem", "há 3 dias", "há 2 semanas"… a partir de uma data ISO */
+function haQuantoTempo(iso){
+  if(!iso) return null;
+  const hoje=new Date(todayISO()+'T00:00:00');
+  const d=new Date(String(iso)+'T00:00:00');
+  const dias=Math.round((hoje-d)/86400000);
+  if(isNaN(dias)) return null;
+  if(dias<=0) return 'hoje';
+  if(dias===1) return 'ontem';
+  if(dias<7) return 'há '+dias+' dias';
+  if(dias<14) return 'há 1 semana';
+  if(dias<31) return 'há '+Math.floor(dias/7)+' semanas';
+  return 'em '+fmtDate(iso);
+}
 function fmtMin(seg){
   const m=Math.floor(seg/60), sg=seg%60;
   if(m&&sg) return m+'min '+sg+'s';
@@ -2835,10 +2873,21 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   const sessoes = t.sessoes||[];
   const sessaoDe = (iso)=>sessoes.find(x=>x.data===iso)||null;
   const sessaoHoje = sessaoDe(todayISO());
-  const treinoConcluidoHoje = !!sessaoHoje;
+  // o botão só marca ✓ com confirmação MANUAL do aluno.
+  // sessão 'inferido' existe só para o treinador — invisível na tela dele.
+  const treinoConcluidoHoje = !!(sessaoHoje && sessaoHoje.origem!=='inferido');
   const updTreino=(patch)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,treinos:x.treinos.map(tt=>tt.id===treinoId?{...tt,...patch}:tt)}:x)});
   const registrarSessao=(iso,origem,silencioso)=>{
-    if(sessaoDe(iso)){ if(!silencioso) flash('Já registrado nesse dia'); return; }
+    const ja=sessaoDe(iso);
+    if(ja){
+      // já havia registro inferido e o aluno confirmou: vira manual (UNIQUE por treino+dia)
+      if(origem==='manual' && ja.origem==='inferido'){
+        updTreino({sessoes:sessoes.map(x=>x.id===ja.id?{...x,origem:'manual'}:x), concluidoData:iso});
+        enqueueOp({tipo:'update',tabela:'sessoes',id:ja.id,dados:{origem:'manual'}});
+        return;
+      }
+      if(!silencioso) flash('Já registrado nesse dia'); return;
+    }
     const nova={id:uid(), data:iso, origem:origem||'manual'};
     updTreino({sessoes:[...sessoes,nova].sort((a,b)=>a.data.localeCompare(b.data)), concluidoData:iso});
     enqueueOp({tipo:'insert',tabela:'sessoes',dados:{
@@ -2848,9 +2897,10 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     if(navigator.vibrate) navigator.vibrate([180,80,180]);
     flash(iso===todayISO()?'Treino concluído ✓':('Registrado em '+fmtDate(iso)+' ✓'));
   };
+  useViradaDoDia(); // ao virar a meia-noite, o "concluído hoje" cai sozinho
   const [celebrando,setCelebrando]=useState(false);
   const concluirTreino=()=>{
-    if(sessaoDe(todayISO())) return;
+    if(treinoConcluidoHoje) return; // já confirmado manualmente
     registrarSessao(todayISO(),'manual',true); // silencioso: a celebração é o feedback
     zerarCrono(treinoId); setInicio(null);     // treino acabou: relógio zera
     if(navigator.vibrate) navigator.vibrate([180,80,180]);
@@ -2861,16 +2911,16 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     nav({name:'student',studentId}); // volta pra tela inicial do aluno
   };
   // auto-conclusão SILENCIOSA: 5 min com o treino aberto.
-  // não roda se o aluno desfez a conclusão hoje (senão reativaria em loop).
+  // é um AVISO PRO TREINADOR (origem 'inferido') — o aluno não vê nada mudar.
   useEffect(()=>{
-    if(!ehAluno || treinoConcluidoHoje) return;
+    if(!ehAluno || sessaoHoje) return;       // já existe sessão (manual ou inferida)
     if(autoDesligado(treinoId)) return;
     if(!(t.exercises||[]).length) return;
     const falta=ESPERA_MS-(Date.now()-abertoEmRef.current);
     if(falta<=0){ registrarSessao(todayISO(),'inferido',true); return; }
     const id=setTimeout(()=>registrarSessao(todayISO(),'inferido',true), falta+300);
     return ()=>clearTimeout(id);
-  },[ehAluno,treinoConcluidoHoje,treinoId]);
+  },[ehAluno,sessaoHoje,treinoId]);
   const removerSessao=(iso)=>{
     const alvo=sessaoDe(iso);
     if(!alvo) return;
@@ -2882,7 +2932,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   };
   const desfazerConclusao=()=>{
     desligarAuto(treinoId); // impede a auto-conclusão de reativar em seguida
-    removerSessao(todayISO());
+    removerSessao(todayISO()); // remove o registro do dia (manual ou promovido)
   };
   const toggleDone=(id)=>{
     const alvo=(t.exercises||[]).find(e=>e.id===id);
