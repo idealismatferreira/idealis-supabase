@@ -549,6 +549,91 @@
   .cdbar span{display:block;height:100%;background:var(--cd);transition:width .25s linear}
   .cdsub{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.4}
   .cdsub b{color:var(--text)}
+  /* ---- tela de fim do cardio: pulso + raio da marca ---- */
+  .cdfimwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    position:relative;text-align:center;padding:4px 0;overflow-y:auto}
+  .cdpulso{position:absolute;top:74px;left:50%;transform:translateX(-50%);
+    width:150px;height:150px;pointer-events:none}
+  .cdpulso span{position:absolute;inset:0;border-radius:50%;border:2px solid #ddff00;opacity:0;
+    animation:cdping 2.4s cubic-bezier(.2,.6,.3,1) infinite}
+  .cdpulso span:nth-child(2){animation-delay:.8s}
+  .cdpulso span:nth-child(3){animation-delay:1.6s}
+  @keyframes cdping{
+    0%{transform:scale(.42);opacity:0}
+    14%{opacity:.75}
+    100%{transform:scale(1);opacity:0}}
+  .cdraio{position:relative;width:72px;height:72px;color:#ddff00;
+    animation:cdbate 1.15s cubic-bezier(.3,.8,.4,1) infinite}
+  .cdraio svg{width:100%;height:100%;display:block}
+  @keyframes cdbate{
+    0%,100%{transform:scale(1)}
+    12%{transform:scale(1.13)}
+    24%{transform:scale(1)}
+    36%{transform:scale(1.07)}
+    50%{transform:scale(1)}}
+  .cdfimtit{margin-top:14px;font-size:25px;font-weight:800;letter-spacing:-.02em;color:#ddff00}
+  .cdfimsub{margin-top:3px;font-size:13.5px;color:var(--muted)}
+  .cdform{width:min(330px,92%);margin-top:20px;text-align:left}
+  .cdflab{display:block;font-size:12.5px;font-weight:700;color:var(--text);margin:12px 0 7px}
+  .cdflab span{font-weight:500;color:var(--muted)}
+  .cdfinput{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--text);font-family:inherit;font-size:17px;
+    font-weight:700;text-align:center}
+  .cdfinput:focus{outline:none;border-color:var(--cyan)}
+  /* BPM em dois toques */
+  .bpmgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .bpmgrid.un{grid-template-columns:repeat(4,1fr)}
+  .bpmgrid.cp{gap:5px}
+  .bpmb{padding:14px 4px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--text);font-family:inherit;font-size:17px;font-weight:700;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .bpmgrid.cp .bpmb{padding:11px 4px;font-size:15px}
+  .bpmb:active{border-color:var(--cyan);background:rgba(0,201,204,.16)}
+  .bpmb.volta{font-size:19px;color:var(--muted)}
+  .bpmpre{opacity:.4;font-size:.78em}
+  .bpmok{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;
+    border-radius:12px;border:1px solid var(--cyan);background:rgba(0,201,204,.12)}
+  .bpmok.cp{padding:10px}
+  .bpmnum{font-size:30px;font-weight:800;color:var(--cyan-2);line-height:1;font-variant-numeric:tabular-nums}
+  .bpmok.cp .bpmnum{font-size:24px}
+  .bpmun{font-size:12px;color:var(--muted);font-weight:600}
+  .bpmedit{margin-left:6px;background:none;border:none;color:var(--muted);font-family:inherit;
+    font-size:11.5px;text-decoration:underline;cursor:pointer}
+  /* com o check-in aberto, o contador encolhe e sobe: nunca fica escondido */
+  .cdover.ckon .cdmeio{justify-content:flex-start;padding-top:6px;gap:2px}
+  .cdover.ckon .cdrot{font-size:17px}
+  .cdover.ckon .cdnum{font-size:46px}
+  .cdover.ckon .cdbar{margin-top:4px}
+  .cdover.ckon .cdsub{font-size:11.5px;margin-top:3px}
+  /* folha de check-in durante o cardio */
+  .ckwrap{position:absolute;left:0;right:0;bottom:0;z-index:5;padding:12px;
+    animation:cksobe .28s cubic-bezier(.2,.9,.3,1)}
+  @keyframes cksobe{from{transform:translateY(110%)}to{transform:none}}
+  .cksheet{padding:14px;border-radius:18px;background:var(--surface);border:1px solid var(--cyan);
+    box-shadow:0 -8px 30px rgba(0,0,0,.55)}
+  .ckhead{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .cktit{flex:1;font-size:14.5px;font-weight:700;color:var(--text)}
+  .ckx{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--muted);font-family:inherit;font-size:12px;cursor:pointer}
+  .ckcarinhas{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:9px}
+  .ckcarinhas .cdcar{padding:8px 2px}
+  .ckok{width:100%;margin-top:10px;padding:13px;border-radius:12px;border:none;background:#ddff00;
+    color:#0b0f10;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer}
+  .ckok:disabled{opacity:.4;cursor:default}
+  .cdcarinhas{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+  .cdcar{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px;border-radius:11px;
+    border:1px solid var(--line);background:var(--surface-2);font-family:inherit;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;transition:border-color .15s,background .15s}
+  .cdcar.sel{border-color:var(--cyan);background:rgba(0,201,204,.14)}
+  .cdcare{font-size:21px;line-height:1}
+  .cdcart{font-size:8.5px;font-weight:700;color:var(--muted);letter-spacing:-.01em}
+  .cdcar.sel .cdcart{color:var(--cyan-2)}
+  .cdfimbtns{width:min(330px,92%);margin-top:20px;display:flex;flex-direction:column;gap:6px}
+  .cdfsalvar{width:100%;padding:15px;border-radius:13px;border:none;background:#ddff00;color:#0b0f10;
+    font-family:inherit;font-size:15px;font-weight:800;cursor:pointer}
+  .cdfsalvar:active{filter:brightness(.9)}
+  .cdfpular{background:none;border:none;color:var(--muted);font-family:inherit;font-size:12.5px;
+    text-decoration:underline;cursor:pointer;padding:8px}
   .cdtira{display:flex;gap:2px;height:10px;border-radius:99px;overflow:hidden;flex:0 0 auto;margin-bottom:9px}
   .cdtira span{display:block;min-width:2px;opacity:.28;transition:opacity .2s}
   .cdtira span.feito{opacity:.6}
@@ -875,7 +960,7 @@ async function fetchDbFromSupabase(){
       sb.from('alunos').select('id,nome,foto_url,academia').order('nome'),
       sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data').order('ordem'),
       sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio').order('ordem'),
-      sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor,variante,serie').order('data,serie'),
+      sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor,variante,serie,extra').order('data,serie'),
       sb.from('sessoes').select('id,aluno_id,treino_id,data,origem').order('data')
     ]);
     const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error||rSess.error;
@@ -885,7 +970,8 @@ async function fetchDbFromSupabase(){
     (rLogs.data||[]).forEach(l=>{
       (logsPorEx[l.exercicio_id]=logsPorEx[l.exercicio_id]||[]).push({
         id:l.id, date:l.data, carga:l.carga||'', reps:l.reps||'',
-        intensidade:l.intensidade, dor:l.dor, variante:l.variante||'', serie:(l.serie!=null?l.serie:null)
+        intensidade:l.intensidade, dor:l.dor, variante:l.variante||'', serie:(l.serie!=null?l.serie:null),
+        extra:l.extra||null
       });
     });
     const exPorTreino={};
@@ -1212,17 +1298,99 @@ function useCardioTimer(){
       setSessao(d);
     }catch(e){}
   },[]);
-  const iniciar=(blocos,nome)=>{
+  const persistir=(d)=>{ try{ if(LS_OK) window.localStorage.setItem(CARDIO_KEY,JSON.stringify(d)); }catch(e){} };
+  const iniciar=(blocos,nome,exId)=>{
     if(!blocos||!blocos.length) return;
-    const d={inicio:Date.now(), blocos, nome:nome||''};
-    setSessao(d);
-    try{ if(LS_OK) window.localStorage.setItem(CARDIO_KEY,JSON.stringify(d)); }catch(e){}
+    const d={inicio:Date.now(), blocos, nome:nome||'', exId:exId||null,
+      pontos:pontosCheckin(blocos), checkins:[]};
+    setSessao(d); persistir(d);
+  };
+  /* registra (ou dispensa) um check-in — sobrevive a reload */
+  const responderCheckin=(seg,dados)=>{
+    setSessao(sx=>{
+      if(!sx) return sx;
+      const ja=(sx.checkins||[]).some(c=>c.seg===seg);
+      const d={...sx, checkins:[...(sx.checkins||[]), ...(ja?[]:[{seg, ...(dados||{})}])]};
+      persistir(d); return d;
+    });
   };
   const parar=()=>{
     setSessao(null);
     try{ if(LS_OK) window.localStorage.removeItem(CARDIO_KEY); }catch(e){}
   };
-  return {ativo:!!sessao, sessao, iniciar, parar};
+  return {ativo:!!sessao, sessao, iniciar, parar, responderCheckin, salvarLog:null};
+}
+/* pontos de check-in: 2 amostras no meio do cardio (a 3ª é a tela de fim).
+   Mira 5s depois dos blocos mais intensos — a FC ainda está no pico. */
+function pontosCheckin(blocos){
+  if(!blocos||!blocos.length) return [];
+  const total=blocos.reduce((a,b)=>a+b.seg,0);
+  const ordem=['maximo','forte','moderado','leve'];
+  const nivelMax=ordem.find(n=>blocos.some(b=>b.nivel===n));
+  const fins=[]; let acc=0; blocos.forEach(b=>{ acc+=b.seg; fins.push(acc); });
+  const idxs=blocos.map((b,i)=>({b,i})).filter(x=>x.b.nivel===nivelMax).map(x=>x.i);
+  let pts;
+  if(idxs.length>=3) pts=[idxs[0], idxs[Math.floor(idxs.length/2)], idxs[idxs.length-1]].map(i=>fins[i]+5);
+  else if(idxs.length>0 && blocos.length>2) pts=idxs.map(i=>fins[i]+5);
+  else pts=[Math.round(total/3), Math.round(total*2/3)]; // contínuo
+  return [...new Set(pts.filter(p=>p>10 && p<total-8))].sort((a,b)=>a-b);
+}
+/* BPM em dois toques: dezena → unidade. Sem teclado, botões grandes. */
+function BpmPicker({valor,onChange,compacto}){
+  const [dez,setDez]=useState(null);
+  const dezenas=[100,110,120,130,140,150,160,170,180];
+  if(valor!=null) return (
+    <div className={'bpmok'+(compacto?' cp':'')}>
+      <span className="bpmnum">{valor}</span>
+      <span className="bpmun">bpm</span>
+      <button className="bpmedit" onClick={()=>{setDez(null);onChange(null);}}>trocar</button>
+    </div>);
+  if(dez==null) return (
+    <div className={'bpmgrid'+(compacto?' cp':'')}>
+      {dezenas.map(d=><button key={d} className="bpmb" onClick={()=>setDez(d)}>{d}</button>)}
+    </div>);
+  return (
+    <div className={'bpmgrid un'+(compacto?' cp':'')}>
+      <button className="bpmb volta" onClick={()=>setDez(null)}>‹</button>
+      {Array.from({length:10}).map((_,u)=>(
+        <button key={u} className="bpmb" onClick={()=>onChange(dez+u)}>
+          <span className="bpmpre">{String(dez).slice(0,2)}</span>{u}
+        </button>))}
+    </div>);
+}
+const CARINHAS=[
+  {v:2,e:'😌',t:'Tranquilo'},
+  {v:4,e:'🙂',t:'Leve'},
+  {v:6,e:'😅',t:'Puxado'},
+  {v:8,e:'😮‍💨',t:'Difícil'},
+  {v:10,e:'🥵',t:'No limite'},
+];
+/* tela de fim: pulso + raio da Idealis, e registro opcional */
+function CardioFim({estado,onSalvar,onFechar}){
+  const [bpm,setBpm]=useState(null);
+  const [esf,setEsf]=useState(null);
+  const salvar=()=>{ onSalvar({bpm, esforco:esf}); };
+  return (<div className="cdfimwrap">
+    <div className="cdpulso" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div className="cdraio" dangerouslySetInnerHTML={{__html:LOGO_SVG}}></div>
+    <div className="cdfimtit">Cardio concluído!</div>
+    <div className="cdfimsub">{fmtMin(estado.total)} · {estado.blocos.length} blocos</div>
+    <div className="cdform">
+      <label className="cdflab">💓 BPM ao terminar <span>(opcional)</span></label>
+      <BpmPicker valor={bpm} onChange={setBpm}/>
+      <label className="cdflab">Como foi? <span>(opcional)</span></label>
+      <div className="cdcarinhas">
+        {CARINHAS.map(c=>(
+          <button key={c.v} className={'cdcar'+(esf===c.v?' sel':'')} onClick={()=>setEsf(esf===c.v?null:c.v)}>
+            <span className="cdcare">{c.e}</span><span className="cdcart">{c.t}</span>
+          </button>))}
+      </div>
+    </div>
+    <div className="cdfimbtns">
+      <button className="cdfsalvar" onClick={salvar}>Salvar</button>
+      <button className="cdfpular" onClick={onFechar}>pular</button>
+    </div>
+  </div>);
 }
 function CardioOverlay({cardio}){
   const sessao=cardio.sessao;
@@ -1264,18 +1432,19 @@ function CardioOverlay({cardio}){
     restanteTotal: Math.max(0,Math.ceil(total-dec)),
     progressoBloco: idx>=0?1-(restante/sessao.blocos[idx].seg):1,
   };
+  // check-in pendente: passou do ponto, ainda não respondeu, e a janela de 45s não fechou
+  const respondidos=(sessao.checkins||[]).map(c=>c.seg);
+  const pendente=(sessao.pontos||[]).find(p=> dec>=p && dec<p+45 && respondidos.indexOf(p)<0);
   const cor = e.terminou ? '#6ee89a' : nivelInfo(e.atual.nivel).cor;
-  return (<div className="cdover" style={{'--cd':cor}}>
+  return (<div className={'cdover'+(pendente!=null&&!e.terminou?' ckon':'')} style={{'--cd':cor}}>
     <div className="cdtop">
       <span className="cdnome">{e.nome}</span>
       <button className="cdsair" onClick={cardio.parar}>✕</button>
     </div>
     {e.terminou
-      ? <div className="cdmeio">
-          <div className="cdfim">✓</div>
-          <div className="cdrot">Cardio concluído!</div>
-          <div className="cdsub">{fmtMin(e.total)} no total</div>
-        </div>
+      ? <CardioFim estado={e}
+          onSalvar={(d)=>{ cardio.salvarLog && cardio.salvarLog(sessao, e, d); cardio.parar(); }}
+          onFechar={()=>{ cardio.salvarLog && cardio.salvarLog(sessao, e, null); cardio.parar(); }}/>
       : <div className="cdmeio">
           <div className="cdrot">{e.atual.rotulo}</div>
           <div className="cdnum">{fmtCrono(e.restanteBloco*1000)}</div>
@@ -1292,6 +1461,31 @@ function CardioOverlay({cardio}){
       ))}
     </div>
     <div className="cdrodape">Falta {fmtMin(e.restanteTotal)} de {fmtMin(e.total)}</div>
+    {pendente!=null && !e.terminou &&
+      <CheckinSheet key={pendente} seg={pendente}
+        onResponder={(d)=>cardio.responderCheckin(pendente,d)}/>}
+  </div>);
+}
+/* folha de check-in: aparece por cima, NÃO pausa o cardio, some sozinha se ignorada */
+function CheckinSheet({seg,onResponder}){
+  const [bpm,setBpm]=useState(null);
+  const [esf,setEsf]=useState(null);
+  const enviar=()=>onResponder({bpm, esforco:esf});
+  return (<div className="ckwrap">
+    <div className="cksheet">
+      <div className="ckhead">
+        <span className="cktit">💓 Como está agora?</span>
+        <button className="ckx" onClick={()=>onResponder({pulado:true})}>✕</button>
+      </div>
+      <BpmPicker valor={bpm} onChange={setBpm} compacto/>
+      <div className="ckcarinhas">
+        {CARINHAS.map(c=>(
+          <button key={c.v} className={'cdcar'+(esf===c.v?' sel':'')} onClick={()=>setEsf(esf===c.v?null:c.v)}>
+            <span className="cdcare">{c.e}</span>
+          </button>))}
+      </div>
+      <button className="ckok" onClick={enviar} disabled={bpm==null&&esf==null}>Registrar</button>
+    </div>
   </div>);
 }
 function RestTimerOverlay({timer}){
@@ -1340,6 +1534,32 @@ function App({auth}){
   const [toast,setToast]=useState(null);
   const timer=useRestTimer();
   const cardio=useCardioTimer();
+  /* log de cardio: auto-log (tempo e blocos) + campos opcionais da tela de fim.
+     Guardado na própria tabela `logs`, em `extra` (jsonb). */
+  cardio.salvarLog=(sessao, estado, extras)=>{
+    if(!sessao || !sessao.exId) return;
+    const feitos = estado.terminou ? estado.blocos.length : Math.max(0, estado.idx);
+    const segFeitos = estado.terminou ? estado.total : Math.max(0, estado.total-estado.restanteTotal);
+    const log={
+      id:uid(), date:todayISO(),
+      carga:null, reps:null, serie:null, variante:'',
+      intensidade: (extras && extras.esforco!=null) ? extras.esforco : null,
+      dor:null,
+      extra:{ tipo:'cardio', segundos:segFeitos, blocos:feitos, totalBlocos:estado.blocos.length,
+              completo:!!estado.terminou, bpm:(extras&&extras.bpm)||null,
+              // amostras do meio do treino (BPM/esforço por momento)
+              checkins:(sessao.checkins||[]).filter(c=>!c.pulado).map(c=>({seg:c.seg, bpm:c.bpm||null, esforco:(c.esforco!=null?c.esforco:null)})) }
+    };
+    setDb(d=>({...d, students:d.students.map(st=>({...st, treinos:(st.treinos||[]).map(tr=>({...tr,
+      exercises:(tr.exercises||[]).map(ex=> ex.id===sessao.exId ? {...ex, logs:[...(ex.logs||[]), log]} : ex)
+    }))}))}));
+    enqueueOp({tipo:'insert',tabela:'logs',dados:{
+      id:log.id, exercicio_id:sessao.exId, data:log.date,
+      carga:null, reps:null, serie:null, variante:null,
+      intensidade:log.intensidade, dor:null, extra:log.extra
+    }});
+    flash('Cardio registrado ✓');
+  };
   // progresso de séries da sessão — persiste no localStorage:
   // o Android/iOS mata a aba em segundo plano e o estado React some junto
   const SFEITAS_KEY='idealis_sfeitas_v1';
@@ -1931,10 +2151,10 @@ function Scale({value,onChange,leftLabel,rightLabel}){
    nivel: 'leve' | 'moderado' | 'forte' | 'maximo'  (só cor/rótulo)
    `tempo` aceita "1min", "45s", "30" — mesmo parser do descanso. */
 const NIVEIS=[
-  {k:'leve',label:'Leve',cor:'#6ee89a'},
-  {k:'moderado',label:'Moderado',cor:'#00c9cc'},
-  {k:'forte',label:'Forte',cor:'#ffa45c'},
-  {k:'maximo',label:'Máximo',cor:'#ff5c6c'},
+  {k:'leve',label:'Leve',cor:'#5ddb8b'},        // verde
+  {k:'moderado',label:'Moderado',cor:'#ffc247'}, // amarelo-alaranjado
+  {k:'forte',label:'Forte',cor:'#e57b7b'},       // vermelho dessaturado
+  {k:'maximo',label:'Máximo',cor:'#c9414f'},     // vermelho profundo
 ];
 const nivelInfo=(k)=>NIVEIS.find(n=>n.k===k)||NIVEIS[1];
 /* transforma a prescrição em lista linear de blocos com segundos */
@@ -3090,7 +3310,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
                   </span>))}
                 {(ex.cardio.repetir||1)>1 && <span className="cdbrep">× {ex.cardio.repetir}</span>}
               </div>
-              <button className="cdiniciar" onClick={()=>cardio.iniciar(bl, ex.name)}>▶ Iniciar cardio · {fmtMin(totalCardioSeg(ex.cardio))}</button>
+              <button className="cdiniciar" onClick={()=>cardio.iniciar(bl, ex.name, ex.id)}>▶ Iniciar cardio · {fmtMin(totalCardioSeg(ex.cardio))}</button>
             </div>); })()}
           {ex.metodo && <div className="metplanowrap">
             <div className="metplano">
@@ -3220,7 +3440,7 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
   const [varSel,setVarSel]=useState(varDoUltimoLog);
   const varAtiva=varsUsadas.includes(varSel)?varSel:(varsUsadas[0]||baseVar);
   const entriesFiltradas=entries.filter(e=>((e.variante||'').trim()||baseVar)===varAtiva);
-  const sessoesGraf=agruparSessoes(entriesFiltradas, baseVar);
+  const sessoesGraf=agruparSessoes(entriesFiltradas.filter(e=>!(e.extra&&e.extra.tipo==='cardio')), baseVar);
   // progressão CONTÍNUA: cada série registrada é um ponto, em ordem.
   // Numa pirâmide o gráfico sobe e desce dentro da sessão — é o esperado.
   const chartData=[];
