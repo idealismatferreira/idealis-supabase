@@ -289,6 +289,33 @@
   .syncbadge.off{color:var(--muted)}
   .syncbadge.err{color:#ff9ba3;border-color:rgba(255,92,108,.4)}
   .rttrigger:active{transform:scale(.95)}
+  .celebra{position:fixed;inset:0;z-index:90;display:grid;place-items:center;
+    background:rgba(11,15,16,.94);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+    animation:celin .2s ease}
+  @keyframes celin{from{opacity:0}to{opacity:1}}
+  .confetes{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+  .confetes span{position:absolute;top:-24px;border-radius:2px;opacity:0;
+    animation-name:celcai;animation-timing-function:cubic-bezier(.25,.6,.5,1);animation-fill-mode:forwards}
+  @keyframes celcai{
+    0%{opacity:0;transform:translateY(-20px) rotate(0)}
+    12%{opacity:1}
+    100%{opacity:0;transform:translateY(105vh) rotate(var(--giro))}}
+  .celbox{position:relative;text-align:center;animation:celpop .45s cubic-bezier(.2,1.3,.4,1)}
+  @keyframes celpop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+  .celemoji{font-size:64px;line-height:1}
+  .celtit{margin-top:10px;font-size:26px;font-weight:800;letter-spacing:-.02em;color:#ddff00}
+  .celsub{margin-top:4px;font-size:14px;color:var(--muted)}
+  .rtpill{position:fixed;z-index:70;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));
+    display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--muted);
+    font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;
+    box-shadow:0 6px 20px rgba(0,0,0,.45);-webkit-tap-highlight-color:transparent;
+    animation:rtpin .25s ease}
+  @keyframes rtpin{from{opacity:0;transform:translateY(8px) scale(.94)}to{opacity:1;transform:none}}
+  .rtpill:active{background:var(--surface)}
+  .rtpico{font-size:12px;opacity:.75}
+  .rtpnum{font-variant-numeric:tabular-nums;color:#ddff00}
+  .rtpx{font-size:11px;opacity:.6;margin-left:2px}
   .rtrunning{position:fixed;top:0;left:0;right:0;z-index:70;background:var(--surface-2);border-bottom:1px solid var(--line);padding:11px 16px 0;cursor:pointer;transition:border-color .3s}
   .rtrunning.inicial{border-bottom-color:var(--cyan)}
   .rtrunning.liberado{border-bottom-color:#ddff00}
@@ -538,6 +565,10 @@
     border:1px solid var(--line);border-radius:999px;padding:3px 9px}
   .srchip.sel{border-color:var(--cyan);color:var(--cyan-2)}
   .srchip.vazia{opacity:.5}
+  .btnfeita{display:block;width:100%;margin-top:10px;padding:16px;border-radius:14px;border:none;
+    background:#ddff00;color:#0b0f10;font-family:inherit;font-size:15.5px;font-weight:800;
+    letter-spacing:-.01em;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .btnfeita:active{filter:brightness(.9)}
   .btnprox{width:100%;margin:2px 0 14px;padding:13px;border-radius:12px;border:1px solid var(--cyan);
     background:rgba(0,201,204,.1);color:var(--cyan-2);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
   .serieform{display:flex;flex-direction:column;gap:7px}
@@ -1237,6 +1268,14 @@ function RestTimerOverlay({timer}){
   else if(!passouMax){ frase='Descanso máximo acaba em'; numero=(max-elapsed); sufixo='s'; }
   else { frase='Descanso completo'; numero='+'+(elapsed-max); sufixo='s'; }
   const cls = passouMax ? 'fim' : (passouMin ? 'liberado' : 'inicial');
+  // depois do máximo o painel encolhe: libera a barra de cima (e a seta de voltar)
+  // sem perder a contagem de quanto tempo passou
+  if(passouMax) return (
+    <button className="rtpill" onClick={cancel} aria-label="Parar contagem do descanso">
+      <span className="rtpico">🕐</span>
+      <span className="rtpnum">+{elapsed-max}s</span>
+      <span className="rtpx">✕</span>
+    </button>);
   return (<div className={'rtrunning '+cls} onClick={cancel}>
     <div className="rtcontent">
       <span className="rtfrase">{frase}</span>
@@ -1532,6 +1571,36 @@ function saudacao(){
 }
 /* cronômetro da topbar: o tick fica confinado aqui — o TreinoView (com todos
    os cards) não re-renderiza a cada segundo por causa do relógio */
+/* celebração ao concluir o treino: confete em CSS puro, sem biblioteca */
+const CONFETE_CORES=['#ddff00','#00c9cc','#71fcff','#6ee89a','#ffa45c','#a2feff'];
+function Celebracao({nome,onFim}){
+  useEffect(()=>{
+    const id=setTimeout(()=>onFim&&onFim(), 2100);
+    return ()=>clearTimeout(id);
+  },[]);
+  const pecas=React.useMemo(()=>Array.from({length:38}).map((_,i)=>({
+    left:Math.random()*100,
+    delay:Math.random()*0.5,
+    dur:1.1+Math.random()*0.9,
+    cor:CONFETE_CORES[i%CONFETE_CORES.length],
+    giro:(Math.random()*720-360),
+    larg:5+Math.random()*5,
+    alt:8+Math.random()*8,
+  })),[]);
+  return (<div className="celebra" onClick={()=>onFim&&onFim()}>
+    <div className="confetes" aria-hidden="true">
+      {pecas.map((p,i)=>(
+        <span key={i} style={{left:p.left+'%', background:p.cor, width:p.larg+'px', height:p.alt+'px',
+          animationDelay:p.delay+'s', animationDuration:p.dur+'s', '--giro':p.giro+'deg'}}></span>
+      ))}
+    </div>
+    <div className="celbox">
+      <div className="celemoji">🎉</div>
+      <div className="celtit">Treino Concluído!</div>
+      {nome && <div className="celsub">{nome}</div>}
+    </div>
+  </div>);
+}
 function CronoBadge({inicio}){
   const [agora,setAgora]=useState(Date.now());
   useEffect(()=>{
@@ -2531,7 +2600,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
     const cur=parseInt(series[i].reps,10);
     setSerie(i,{reps:String(Math.max(0,(isNaN(cur)?0:cur)+d))}); setErro('');
   };
-  const save=()=>{
+  const save=(marcarSerie)=>{
     // registro independente: salva SÓ as séries completas (carga + reps).
     // As demais ficam de fora sem bloquear — a carga pré-preenchida sozinha não conta como iniciada.
     const feitas=series.map((sr,i)=>({...sr,i})).filter(sr=>String(sr.carga||'').trim() && String(sr.reps||'').trim());
@@ -2541,7 +2610,8 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
     onSave({
       series: feitas.map(sr=>({serie:sr.i+1, carga:sr.carga.trim(), reps:sr.reps.trim(),
         intensidade:(sr.intensidade!=null?sr.intensidade:null), dor:(sr.dor!=null?sr.dor:null)})),
-      variante:(variante===base?'':variante)
+      variante:(variante===base?'':variante),
+      marcarSerie: marcarSerie===true ? Math.max(...feitas.map(sr=>sr.i+1)) : null
     });
   };
   const escolherVariante=(v)=>{
@@ -2659,7 +2729,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
           <button type="button" className="bump minus" onClick={()=>bumpRepsSerie(ativa,-1)}>−1</button>
           <button type="button" className="bump plus" onClick={()=>bumpRepsSerie(ativa,1)}>+1</button>
         </div>
-        {!isEdit && <div className="prefill">{prescricaoDe(ativa)?('Prescrito: '+prescricaoDe(ativa)):'Pré-preenchido com a última sessão neste equipamento.'}</div>}
+        {!isEdit && <div className="prefill">Pré-preenchido com a última sessão neste equipamento.</div>}
       </div>
       <div className="field"><label className="reglab">Esforço <span className="reghint">(opcional)</span></label>
         <Scale value={at.intensidade!=null?at.intensidade:null} onChange={(v)=>setAt({intensidade:v})} leftLabel="Leve" rightLabel="Máxima"/></div>
@@ -2672,7 +2742,10 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
       {erro && <div style={{color:'var(--danger)',fontSize:13,marginBottom:12}}>{erro}</div>}
       <div className="sheetactions">
         <button className="btn ghost" onClick={onClose}>Cancelar</button>
-        <button className="btn" onClick={save}>{isEdit?'Salvar alterações':'Salvar registro'}</button></div>
+        <button className="btn" onClick={()=>save(false)}>{isEdit?'Salvar alterações':'Salvar'}</button></div>
+      {!isEdit && <button className="btnfeita" onClick={()=>save(true)}>
+        ✓ Salvar e marcar série como feita
+      </button>}
     </div></div>);
 }
 function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesFeitas,setSeriesFeitas,catalogoVer,cardio}){
@@ -2735,9 +2808,17 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     if(navigator.vibrate) navigator.vibrate([180,80,180]);
     flash(iso===todayISO()?'Treino concluído ✓':('Registrado em '+fmtDate(iso)+' ✓'));
   };
+  const [celebrando,setCelebrando]=useState(false);
   const concluirTreino=()=>{
-    registrarSessao(todayISO(),'manual');
-    zerarCrono(treinoId); setInicio(null); // treino acabou: relógio zera
+    if(sessaoDe(todayISO())) return;
+    registrarSessao(todayISO(),'manual',true); // silencioso: a celebração é o feedback
+    zerarCrono(treinoId); setInicio(null);     // treino acabou: relógio zera
+    if(navigator.vibrate) navigator.vibrate([180,80,180]);
+    setCelebrando(true);
+  };
+  const fecharCelebracao=()=>{
+    setCelebrando(false);
+    nav({name:'student',studentId}); // volta pra tela inicial do aluno
   };
   // auto-conclusão SILENCIOSA: 5 min com o treino aberto.
   // não roda se o aluno desfez a conclusão hoje (senão reativaria em loop).
@@ -2828,7 +2909,19 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
       variante:log.variante||null
     }}));
     const n=atualizados.length+inseridos.length;
-    flash(n>1?(n+' séries registradas ✓'):'Carga registrada ✓');
+    // "Salvar e marcar série como feita": avança o anel até a série registrada
+    // e dispara o descanso correspondente, como se ela tivesse tocado no anel
+    if(data.marcarSerie){
+      const tot=totalSeries(ex);
+      const alvo=Math.min(tot, Math.max(seriesFeitas[ex.id]||0, data.marcarSerie));
+      setSeriesFeitas(m=>({...m,[ex.id]:alvo}));
+      if(inicio==null) setInicio(marcarInicio(treinoId)); // 1ª série liga o cronômetro
+      const f=parseDescanso(descansoDaSerie(ex, alvo-1));
+      if(f && timer) timer.start(f, ex.name);
+      flash(n>1?(n+' séries registradas · '+alvo+'ª feita ✓'):(alvo+'ª série feita ✓'));
+    }else{
+      flash(n>1?(n+' séries registradas ✓'):'Carga registrada ✓');
+    }
     setRegistering(null);
   };
   // progresso de séries — vem do App (sobrevive à navegação)
@@ -2852,6 +2945,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   return (<React.Fragment>
     <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId})}
       right={<CronoBadge inicio={inicio}/>}/>
+    {celebrando && <Celebracao nome={t.nome} onFim={fecharCelebracao}/>}
     <div className="screen">
       {inicio==null && (t.exercises||[]).length>0 &&
         <div className="cronohint">⏱ O tempo começa a contar a partir da primeira série 💪🏼</div>}
