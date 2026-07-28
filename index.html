@@ -1294,7 +1294,8 @@ function useCardioTimer(){
       const d=JSON.parse(r);
       if(!d||!d.inicio||!d.blocos||!d.blocos.length) return;
       const tot=d.blocos.reduce((a,b)=>a+b.seg,0);
-      if((Date.now()-d.inicio)/1000 > tot+900){ window.localStorage.removeItem(CARDIO_KEY); return; }
+      // só retoma cardio EM ANDAMENTO; se já acabou, descarta (não ressuscita a tela de fim)
+      if((Date.now()-d.inicio)/1000 > tot+120){ window.localStorage.removeItem(CARDIO_KEY); return; }
       setSessao(d);
     }catch(e){}
   },[]);
@@ -1433,8 +1434,12 @@ function CardioOverlay({cardio}){
     progressoBloco: idx>=0?1-(restante/sessao.blocos[idx].seg):1,
   };
   // check-in pendente: passou do ponto, ainda não respondeu, e a janela de 45s não fechou
+  // calcula os pontos a partir dos blocos: sessão retomada do localStorage
+  // (versão antiga) não tem `pontos` salvos e ficaria sem nenhum check-in
+  const pontos=(sessao.pontos&&sessao.pontos.length)?sessao.pontos:pontosCheckin(sessao.blocos);
   const respondidos=(sessao.checkins||[]).map(c=>c.seg);
-  const pendente=(sessao.pontos||[]).find(p=> dec>=p && dec<p+45 && respondidos.indexOf(p)<0);
+  // janela generosa: se a tela ficou apagada no momento exato, ainda aparece ao voltar
+  const pendente=pontos.find(p=> dec>=p && dec<p+90 && respondidos.indexOf(p)<0);
   const cor = e.terminou ? '#6ee89a' : nivelInfo(e.atual.nivel).cor;
   return (<div className={'cdover'+(pendente!=null&&!e.terminou?' ckon':'')} style={{'--cd':cor}}>
     <div className="cdtop">
