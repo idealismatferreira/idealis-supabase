@@ -599,18 +599,21 @@
   .bpmun{font-size:12px;color:var(--muted);font-weight:600}
   .bpmedit{margin-left:6px;background:none;border:none;color:var(--muted);font-family:inherit;
     font-size:11.5px;text-decoration:underline;cursor:pointer}
-  /* com o check-in aberto, o contador encolhe e sobe: nunca fica escondido */
-  .cdover.ckon .cdmeio{justify-content:flex-start;padding-top:6px;gap:2px}
-  .cdover.ckon .cdrot{font-size:17px}
-  .cdover.ckon .cdnum{font-size:46px}
-  .cdover.ckon .cdbar{margin-top:4px}
-  .cdover.ckon .cdsub{font-size:11.5px;margin-top:3px}
+  /* com o check-in aberto, o contador SOBE mas NÃO encolhe:
+     a ênfase continua no relógio (a medição é opcional). Só o texto de apoio cede espaço. */
+  .cdover.ckon .cdmeio{justify-content:flex-start;padding-top:10px;gap:4px;min-height:0}
+  .cdover.ckon .cdnum{font-size:88px}            /* mantido igual ao estado normal */
+  .cdover.ckon .cdrot{font-size:22px}
+  .cdover.ckon .cdbar{margin-top:6px}
+  .cdover.ckon .cdsub{font-size:12px;margin-top:4px}
   /* folha de check-in durante o cardio */
   .ckwrap{position:absolute;left:0;right:0;bottom:0;z-index:5;padding:12px;
     animation:cksobe .28s cubic-bezier(.2,.9,.3,1)}
   @keyframes cksobe{from{transform:translateY(110%)}to{transform:none}}
   .cksheet{padding:14px;border-radius:18px;background:var(--surface);border:1px solid var(--cyan);
     box-shadow:0 -8px 30px rgba(0,0,0,.55)}
+  .ckopc{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;
+    text-transform:lowercase;margin-bottom:3px}
   .ckhead{display:flex;align-items:center;gap:8px;margin-bottom:10px}
   .cktit{flex:1;font-size:14.5px;font-weight:700;color:var(--text)}
   .ckx{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);
@@ -1478,6 +1481,7 @@ function CheckinSheet({seg,onResponder}){
   const enviar=()=>onResponder({bpm, esforco:esf});
   return (<div className="ckwrap">
     <div className="cksheet">
+      <div className="ckopc">(opcional)</div>
       <div className="ckhead">
         <span className="cktit">💓 Como está agora?</span>
         <button className="ckx" onClick={()=>onResponder({pulado:true})}>✕</button>
