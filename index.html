@@ -3526,11 +3526,17 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
             </div>
           </div>}
           {ex.observacao && <div className="exobs"><span className="eoico">💬</span><span className="eotxt">{ex.observacao}</span></div>}
-          {relatos.filter(r=>r.exercicioId===ex.id).slice(-3).reverse().map(r=>(
+          {/* aluno: só HOJE (some na virada do dia). Reler a própria dor toda semana,
+              logo antes de executar o movimento, é priming de expectativa — nocebo.
+              Treinador: histórico, que é quem precisa enxergar o padrão. */}
+          {(ehAluno
+              ? relatosHoje.filter(r=>r.exercicioId===ex.id)
+              : relatos.filter(r=>r.exercicioId===ex.id).slice(-3).reverse()
+           ).map(r=>(
             <div className="exrel" key={r.id}>
               <span className="erico">✍️</span>
               <span className="erbody">
-                <span className="erdata">{r.data===todayISO()?'Hoje':fmtDate(r.data)} · aluno</span>
+                <span className="erdata">{ehAluno?'Sua anotação de hoje':(fmtDate(r.data)+' · aluno')}</span>
                 <span className="ertxt">{r.texto}</span>
               </span>
             </div>))}
