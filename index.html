@@ -460,6 +460,36 @@
   .obstext{width:100%;padding:12px 14px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
     color:var(--text);font-family:inherit;font-size:14px;line-height:1.5;resize:vertical;min-height:76px}
   .obstext:focus{outline:none;border-color:var(--cyan)}
+  /* ===== RELATO DO ALUNO (✍️) — voz do aluno; o 💬 continua sendo a voz do treinador ===== */
+  .exrel{display:flex;gap:9px;align-items:flex-start;margin:8px 0 2px;padding:11px 13px;border-radius:11px;
+    background:rgba(0,201,204,.07);border:1px solid rgba(0,201,204,.3);border-left:3px solid var(--cyan)}
+  .exrel .erico{flex:0 0 auto;font-size:13px;line-height:1.5}
+  .exrel .erbody{min-width:0;flex:1}
+  .exrel .erdata{display:block;font-size:10.5px;font-weight:700;color:var(--cyan-2);
+    letter-spacing:.03em;text-transform:uppercase;margin-bottom:2px}
+  .exrel .ertxt{font-size:13px;line-height:1.5;color:var(--text);white-space:pre-wrap}
+  .exactions .rel.on{border-color:var(--cyan);background:rgba(0,201,204,.16);color:var(--cyan-2)}
+  /* folha de relato */
+  .rlwrap{padding:2px 2px 4px}
+  .rltit{font-size:15px;font-weight:800;color:var(--text);margin-bottom:3px}
+  .rlsub{font-size:12.5px;color:var(--muted);line-height:1.45;margin-bottom:12px}
+  .rlbtns{display:flex;gap:8px;margin-top:12px}
+  .rlbtns button{flex:1;padding:14px;border-radius:12px;font-family:inherit;font-size:14.5px;
+    font-weight:700;cursor:pointer;border:1px solid var(--line);background:var(--surface-2);color:var(--muted)}
+  .rlbtns .ok{border:none;background:var(--cyan);color:#04191a;font-weight:800;flex:1.6}
+  .rlbtns .ok:disabled{opacity:.4;cursor:default}
+  .rlapaga{width:100%;margin-top:8px;background:none;border:none;color:var(--red);
+    font-family:inherit;font-size:12px;text-decoration:underline;cursor:pointer;padding:6px}
+  /* ===== FIM DE TREINO: revisão dos relatos ===== */
+  .ftlista{display:flex;flex-direction:column;gap:7px;margin-bottom:6px}
+  .ftitem{padding:10px 12px;border-radius:11px;background:var(--bg);border:1px solid var(--line);
+    border-left:3px solid var(--cyan)}
+  .ftex{display:block;font-size:11px;font-weight:800;color:var(--cyan-2);margin-bottom:2px}
+  .fttxt{font-size:13px;line-height:1.45;color:var(--text);white-space:pre-wrap}
+  .ftja{font-size:11.5px;color:var(--muted);margin-bottom:12px;line-height:1.45}
+  /* acessos no painel do treinador */
+  .sesspanel .space{font-size:11px;font-weight:700;color:var(--muted);background:var(--surface);
+    border:1px solid var(--line);border-radius:999px;padding:2px 9px}
   .obscount{float:right;font-size:11px;font-weight:500;color:var(--muted)}
   .varbloco{margin:2px 0 16px;padding:12px 13px;border-radius:13px;background:var(--surface-2);border:1px solid var(--line)}
   .varhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
@@ -601,7 +631,7 @@
     font-size:11.5px;text-decoration:underline;cursor:pointer}
   /* com o check-in aberto, o contador SOBE mas NÃO encolhe:
      a ênfase continua no relógio (a medição é opcional). Só o texto de apoio cede espaço. */
-  .cdover.ckon .cdmeio{justify-content:flex-start;padding-top:10px;gap:4px;min-height:0}
+  .cdover.ckon .cdmeio{justify-content:center;padding-bottom:44vh;gap:4px;min-height:0}
   .cdover.ckon .cdnum{font-size:88px}            /* mantido igual ao estado normal */
   .cdover.ckon .cdrot{font-size:22px}
   .cdover.ckon .cdbar{margin-top:6px}
@@ -925,6 +955,11 @@ async function execOp(op){
   if(op.tipo==='insert'){
     const {error}=await sb.from(T).insert(D);
     if(error) throw new Error(error.message);
+  }else if(op.tipo==='upsert'){
+    // conflito: lista de colunas do UNIQUE. Sem isso o Postgres usa a PK.
+    const opts = op.conflito ? {onConflict:op.conflito} : undefined;
+    const {error}=await sb.from(T).upsert(D, opts);
+    if(error) throw new Error(error.message);
   }else if(op.tipo==='update'){
     const {error}=await sb.from(T).update(D).eq('id', op.id);
     if(error) throw new Error(error.message);
@@ -959,14 +994,16 @@ async function fetchDbFromSupabase(){
   if(!sb) return {ok:false, erro:'Sem conexão com o servidor.'};
   try{
     // o RLS já filtra: treinador vê tudo, aluno vê só o dele
-    const [rAlunos, rTreinos, rEx, rLogs, rSess] = await Promise.all([
+    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce] = await Promise.all([
       sb.from('alunos').select('id,nome,foto_url,academia').order('nome'),
       sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data').order('ordem'),
       sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio').order('ordem'),
       sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor,variante,serie,extra').order('data,serie'),
-      sb.from('sessoes').select('id,aluno_id,treino_id,data,origem').order('data')
+      sb.from('sessoes').select('id,aluno_id,treino_id,data,origem').order('data'),
+      sb.from('relatos').select('id,aluno_id,treino_id,exercicio_id,exercicio_nome,data,texto,created_at').order('created_at'),
+      sb.from('acessos').select('id,aluno_id,treino_id,data,vezes').order('data')
     ]);
-    const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error||rSess.error;
+    const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error||rSess.error||rRel.error||rAce.error;
     if(err) return {ok:false, erro:err.message};
 
     const logsPorEx={};
@@ -989,11 +1026,22 @@ async function fetchDbFromSupabase(){
     (rSess.data||[]).forEach(x=>{
       (sessPorTreino[x.treino_id]=sessPorTreino[x.treino_id]||[]).push({id:x.id,data:x.data,origem:x.origem||'manual'});
     });
+    const relPorTreino={};
+    (rRel.data||[]).forEach(x=>{
+      (relPorTreino[x.treino_id]=relPorTreino[x.treino_id]||[]).push({
+        id:x.id, data:x.data, exercicioId:x.exercicio_id||null, texto:x.texto||'', criadoEm:x.created_at||null
+      });
+    });
+    const acePorTreino={};
+    (rAce.data||[]).forEach(x=>{
+      (acePorTreino[x.treino_id]=acePorTreino[x.treino_id]||[]).push({id:x.id,data:x.data,vezes:x.vezes||1});
+    });
     const treinosPorAluno={};
     (rTreinos.data||[]).forEach(t=>{
       (treinosPorAluno[t.aluno_id]=treinosPorAluno[t.aluno_id]||[]).push({
         id:t.id, nome:t.nome, concluidoData:t.concluido_data,
-        sessoes: sessPorTreino[t.id]||[], exercises: exPorTreino[t.id]||[]
+        sessoes: sessPorTreino[t.id]||[], exercises: exPorTreino[t.id]||[],
+        relatos: relPorTreino[t.id]||[], acessos: acePorTreino[t.id]||[]
       });
     });
     const students=(rAlunos.data||[]).map(a=>({
@@ -1871,6 +1919,80 @@ function Celebracao({nome,onFim}){
       {nome && <div className="celsub">{nome}</div>}
     </div>
   </div>);
+}
+/* ===== ACESSO AO TREINO =====
+   Substitui a antiga auto-conclusão "inferida" (5 min de tela aberta), que afirmava
+   algo que não dava pra verificar. Aqui o registro é factual: o aluno ABRIU o treino.
+   Serve pro avançado que só confere o treino e executa de cabeça.
+   Dedupe local: uma marcação por treino por dia, mesmo abrindo 10 vezes. */
+function chaveAcesso(treinoId){ return 'idealis_acesso_'+String(treinoId||'')+'_'+todayISO(); }
+function acessoJaRegistrado(treinoId){
+  try{ return LS_OK && window.localStorage.getItem(chaveAcesso(treinoId))==='1'; }catch(e){ return false; }
+}
+function marcarAcessoLocal(treinoId){
+  try{ if(LS_OK) window.localStorage.setItem(chaveAcesso(treinoId),'1'); }catch(e){}
+}
+/* folha de relato do aluno: um exercício específico, ou o relato geral do treino */
+function RelatoSheet({exNome,inicial,onSalvar,onApagar,onClose}){
+  const [txt,setTxt]=useState(inicial||'');
+  const limpo=txt.trim();
+  return (<div className="backdrop" onClick={onClose}>
+    <div className="sheet" onClick={e=>e.stopPropagation()}>
+      <div className="rlwrap">
+        <div className="rltit">✍️ {exNome?'Algo sobre '+exNome+'?':'Como foi o treino?'}</div>
+        <div className="rlsub">
+          {exNome
+            ? 'Dor, incômodo, sensação estranha, o que funcionou bem — escreva do seu jeito. Só o Matheus vê.'
+            : 'Sono, energia, alguma dor, como o corpo respondeu. Só o Matheus vê.'}
+        </div>
+        <textarea className="obstext" autoFocus value={txt} onChange={e=>setTxt(e.target.value)}
+          placeholder={exNome?'Ex: senti uma fisgada no ombro na 3ª série':'Ex: dormi mal, treino rendeu menos'}/>
+        <div className="rlbtns">
+          <button onClick={onClose}>Cancelar</button>
+          <button className="ok" disabled={!limpo} onClick={()=>onSalvar(limpo)}>Salvar</button>
+        </div>
+        {inicial && onApagar &&
+          <button className="rlapaga" onClick={onApagar}>apagar esta anotação</button>}
+      </div>
+    </div></div>);
+}
+/* fim de treino ADAPTATIVO:
+   - com relatos hoje  -> revisão do que já subiu (não é promessa de envio: já foi)
+   - sem relatos hoje  -> pergunta aberta
+   Em nenhum dos casos esta tela é o canal de entrega: as notas por exercício
+   já foram enfileiradas no momento em que o aluno as escreveu. */
+function FimTreinoSheet({relatosHoje,nomePorEx,onConcluir,onClose}){
+  const tem=(relatosHoje||[]).length>0;
+  const [aberto,setAberto]=useState(!tem);
+  const [txt,setTxt]=useState('');
+  const limpo=txt.trim();
+  return (<div className="backdrop" onClick={onClose}>
+    <div className="sheet" onClick={e=>e.stopPropagation()}>
+      <div className="rlwrap">
+        <div className="rltit">{tem?'✍️ Você anotou hoje':'Como foi o treino de hoje?'}</div>
+        {tem
+          ? <React.Fragment>
+              <div className="ftlista" style={{marginTop:10}}>
+                {relatosHoje.map(r=>(
+                  <div key={r.id} className="ftitem">
+                    <span className="ftex">{r.exercicioId?(nomePorEx[r.exercicioId]||'Exercício'):'No geral'}</span>
+                    <span className="fttxt">{r.texto}</span>
+                  </div>))}
+              </div>
+              <div className="ftja">Isso já está comigo — não precisa reenviar.</div>
+            </React.Fragment>
+          : <div className="rlsub">Alguma observação? Pode deixar em branco se estiver tudo certo.</div>}
+        {aberto &&
+          <textarea className="obstext" autoFocus={tem} value={txt} onChange={e=>setTxt(e.target.value)}
+            placeholder="Ex: joelho incomodou na descida do agachamento"/>}
+        <div className="rlbtns">
+          {tem && !aberto && <button onClick={()=>setAberto(true)}>Relatar mais</button>}
+          <button className="ok" onClick={()=>onConcluir(limpo)}>
+            {tem && !aberto ? 'Está tudo certo ✓' : 'Concluir treino'}
+          </button>
+        </div>
+      </div>
+    </div></div>);
 }
 /* força re-render na virada do dia: o app pode ficar aberto passando da meia-noite,
    e "concluído hoje" precisa deixar de valer sozinho */
@@ -3060,8 +3182,9 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
   const [editingEx,setEditingEx]=useState(null);
   const [registering,setRegistering]=useState(null);
-  // --- conclusão de treino: gatilho por scroll + tempo mínimo na tela ---
-  const ESPERA_MS = 5*60*1000; // 5 minutos de tela aberta -> conclui sozinho
+  const [relatando,setRelatando]=useState(null); // {exId|null, exNome|null, atual}
+  const [finalizando,setFinalizando]=useState(false);
+  // --- conclusão de treino: só confirmação MANUAL do aluno ---
   const abertoEmRef = React.useRef(marcarAberto(treinoId));
   useEffect(()=>{ abertoEmRef.current=marcarAberto(treinoId); },[treinoId]);
   const [dataRetro,setDataRetro]=useState(todayISO());
@@ -3128,8 +3251,62 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   };
   useViradaDoDia(); // ao virar a meia-noite, o "concluído hoje" cai sozinho
   const [celebrando,setCelebrando]=useState(false);
+  // ---- RELATOS (append-only, tabela própria): o canal de voz do ALUNO ----
+  // Vive fora de `sessoes` de propósito: desfazer a conclusão NÃO pode apagar
+  // um relato de dor. E não depende de sessão existir pra ser gravado.
+  const relatos = t.relatos||[];
+  const relatosHoje = relatos.filter(r=>r.data===todayISO());
+  const relatoDoEx = (exId)=>relatosHoje.find(r=>r.exercicioId===exId)||null;
+  const nomePorEx = (t.exercises||[]).reduce((a,ex)=>{a[ex.id]=ex.name;return a;},{});
+  const updRelatos=(lista)=>updTreino({relatos:lista});
+  const salvarRelato=(exId,texto)=>{
+    const existente=relatosHoje.find(r=>r.exercicioId===(exId||null));
+    if(existente){
+      updRelatos(relatos.map(r=>r.id===existente.id?{...r,texto}:r));
+      enqueueOp({tipo:'update',tabela:'relatos',id:existente.id,dados:{texto}});
+    }else{
+      const novo={id:uid(), data:todayISO(), exercicioId:exId||null, texto, criadoEm:new Date().toISOString()};
+      updRelatos([...relatos,novo]);
+      // sobe AGORA. Não espera botão nenhum: a fila offline garante a entrega.
+      enqueueOp({tipo:'insert',tabela:'relatos',dados:{
+        id:novo.id, aluno_id:studentId, treino_id:treinoId,
+        exercicio_id:exId||null, exercicio_nome:(exId?(nomePorEx[exId]||null):null),
+        data:novo.data, texto
+      }});
+    }
+    setRelatando(null);
+    flash('Anotado ✓');
+  };
+  const apagarRelato=(id)=>{
+    updRelatos(relatos.filter(r=>r.id!==id));
+    enqueueOp({tipo:'delete',tabela:'relatos',id});
+    setRelatando(null);
+    flash('Anotação removida');
+  };
+  // ---- ACESSO AO TREINO: factual, substitui a antiga sessão 'inferido' ----
+  useEffect(()=>{
+    if(!ehAluno) return;
+    if(acessoJaRegistrado(treinoId)) return;   // dedupe local: 1x por dia
+    if(!(t.exercises||[]).length) return;
+    marcarAcessoLocal(treinoId);
+    const iso=todayISO();
+    const ja=(t.acessos||[]).find(x=>x.data===iso);
+    if(!ja){
+      const novo={id:uid(), data:iso, vezes:1};
+      updTreino({acessos:[...(t.acessos||[]),novo]});
+      // upsert: se outro aparelho já marcou hoje, o UNIQUE não trava a fila
+      enqueueOp({tipo:'upsert',tabela:'acessos',conflito:'aluno_id,treino_id,data',dados:{
+        id:novo.id, aluno_id:studentId, treino_id:treinoId, data:iso, vezes:1
+      }});
+    }
+  },[ehAluno,treinoId]);
   const concluirTreino=()=>{
     if(treinoConcluidoHoje) return; // já confirmado manualmente
+    setFinalizando(true);           // a tela de fim decide o que perguntar
+  };
+  const confirmarConclusao=(textoGeral)=>{
+    if(textoGeral) salvarRelato(null,textoGeral);
+    setFinalizando(false);
     registrarSessao(todayISO(),'manual',true); // silencioso: a celebração é o feedback
     zerarCrono(treinoId); setInicio(null);     // treino acabou: relógio zera
     if(navigator.vibrate) navigator.vibrate([180,80,180]);
@@ -3139,17 +3316,6 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     setCelebrando(false);
     nav({name:'student',studentId}); // volta pra tela inicial do aluno
   };
-  // auto-conclusão SILENCIOSA: 5 min com o treino aberto.
-  // é um AVISO PRO TREINADOR (origem 'inferido') — o aluno não vê nada mudar.
-  useEffect(()=>{
-    if(!ehAluno || sessaoHoje) return;       // já existe sessão (manual ou inferida)
-    if(autoDesligado(treinoId)) return;
-    if(!(t.exercises||[]).length) return;
-    const falta=ESPERA_MS-(Date.now()-abertoEmRef.current);
-    if(falta<=0){ registrarSessao(todayISO(),'inferido',true); return; }
-    const id=setTimeout(()=>registrarSessao(todayISO(),'inferido',true), falta+300);
-    return ()=>clearTimeout(id);
-  },[ehAluno,sessaoHoje,treinoId]);
   const removerSessao=(iso)=>{
     const alvo=sessaoDe(iso);
     if(!alvo) return;
@@ -3360,6 +3526,14 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
             </div>
           </div>}
           {ex.observacao && <div className="exobs"><span className="eoico">💬</span><span className="eotxt">{ex.observacao}</span></div>}
+          {relatos.filter(r=>r.exercicioId===ex.id).slice(-3).reverse().map(r=>(
+            <div className="exrel" key={r.id}>
+              <span className="erico">✍️</span>
+              <span className="erbody">
+                <span className="erdata">{r.data===todayISO()?'Hoje':fmtDate(r.data)} · aluno</span>
+                <span className="ertxt">{r.texto}</span>
+              </span>
+            </div>))}
           {(()=>{
             const todos=allLogsOfExercise(s,ex.name,ex.exerciseId);
             const ses=agruparSessoes(todos, varPadrao(s.academia));
@@ -3384,6 +3558,9 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
           <div className="exactions">
             <button className="reg" onClick={()=>setRegistering(ex)}>Registrar Carga</button>
             <button className="evo" onClick={()=>nav({name:'evolution',studentId,exName:ex.name,exId:ex.exerciseId,back:{name:'treino',studentId,treinoId}})}>Evolução</button>
+            {ehAluno && (()=>{ const r=relatoDoEx(ex.id); return (
+              <button className={'mini rel'+(r?' on':'')} title="Anotar algo sobre este exercício"
+                onClick={()=>setRelatando({exId:ex.id, exNome:ex.name, atual:r})}>✍️</button>); })()}
             {!ehAluno && <button className="mini" onClick={()=>setEditingEx(ex)}>✎</button>}
             {!ehAluno && <button className="mini" onClick={()=>delEx(ex.id)}>🗑</button>}
           </div>
@@ -3401,6 +3578,14 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
               <span className="fimlabel">Finalizar Treino</span>
             </button>
       )}
+      {ehAluno && (t.exercises||[]).length>0 && relatosHoje.filter(r=>!r.exercicioId).map(r=>(
+        <div className="exrel" key={r.id} style={{margin:'14px 4px 0'}}>
+          <span className="erico">✍️</span>
+          <span className="erbody">
+            <span className="erdata">Hoje · no geral</span>
+            <span className="ertxt">{r.texto}</span>
+          </span>
+        </div>))}
       {!ehAluno && (t.exercises||[]).length>0 && <div className="sesspanel">
         <div className="sptit">📅 Sessões registradas <span className="spcount">{sessoes.length}</span></div>
         <div className="sprow">
@@ -3419,10 +3604,30 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
               ))}
               {sessoes.length>12 && <div className="spmais">+{sessoes.length-12} anteriores</div>}
             </div>}
+        <div className="sptit" style={{marginTop:20}}>👀 Treino acessado
+          <span className="spcount">{(t.acessos||[]).length}</span></div>
+        {(t.acessos||[]).length===0
+          ? <div className="spvazio">Nenhum acesso registrado ainda.</div>
+          : <div className="splist">
+              {(t.acessos||[]).slice().reverse().slice(0,10).map(x=>{
+                const treinou=!!sessaoDe(x.data);
+                return (<div key={x.id} className="spitem">
+                  <span className="spdata">{fmtDate(x.data)}</span>
+                  <span className="space">{treinou?'abriu e concluiu':'abriu, sem confirmar'}</span>
+                </div>);
+              })}
+            </div>}
       </div>}
     </div>
     {!ehAluno && <button className="fab" onClick={()=>setEditingEx('new')}>＋ Exercício</button>}
     {editingEx && !ehAluno && <ExerciseSheet initial={editingEx==='new'?null:editingEx} onSave={saveEx} onClose={()=>setEditingEx(null)}/>}
+    {relatando && <RelatoSheet exNome={relatando.exNome}
+      inicial={relatando.atual?relatando.atual.texto:''}
+      onSalvar={(txt)=>salvarRelato(relatando.exId,txt)}
+      onApagar={relatando.atual?()=>apagarRelato(relatando.atual.id):null}
+      onClose={()=>setRelatando(null)}/>}
+    {finalizando && <FimTreinoSheet relatosHoje={relatosHoje} nomePorEx={nomePorEx}
+      onConcluir={confirmarConclusao} onClose={()=>setFinalizando(false)}/>}
     {registering && <RegisterSheet exName={registering.name} lastLog={lastLogOfExercise(s,registering.name,registering.exerciseId)} onSave={saveLog} onClose={()=>setRegistering(null)} academia={s.academia} exercicio={registering} historico={allLogsOfExercise(s,registering.name,registering.exerciseId)} onRenomearVariante={(a,n,b)=>renomearVarTreino(registering,a,n,b)} alunoId={studentId}/>}
   </React.Fragment>);
 }
