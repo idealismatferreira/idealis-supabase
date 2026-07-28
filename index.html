@@ -651,7 +651,25 @@ function getRC(){ return (window.Recharts && window.Recharts.LineChart) ? window
 /* ===== SUPABASE (login + banco multi-usuário) ===== */
 const SB_URL = 'https://lbnemzhwibcarhkaifoy.supabase.co';
 const SB_KEY = 'sb_publishable_AH0V90ZsYBYpm8M_H0zQPg_zg9po7uo';
-const sb = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(SB_URL, SB_KEY) : null;
+const sb = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SB_URL, SB_KEY, {
+      auth:{
+        persistSession:true,
+        autoRefreshToken:true,     // renova o token antes de expirar
+        detectSessionInUrl:false,
+      }
+    })
+  : null;
+/* o refresh automático dorme junto com a aba; ao voltar, força a renovação */
+if(sb){
+  const acordar=()=>{
+    if(document.visibilityState!=='visible') return;
+    try{ sb.auth.startAutoRefresh && sb.auth.startAutoRefresh(); }catch(e){}
+    try{ sb.auth.getSession(); }catch(e){}
+  };
+  document.addEventListener('visibilitychange',acordar);
+  window.addEventListener('online',acordar);
+}
 
 function _traduzErro(msg){
   const m=(msg||'').toLowerCase();
@@ -666,11 +684,25 @@ function useAuth(){
   useEffect(()=>{
     if(!sb){ setEstado({loading:false, user:null, perfil:null, erro:'Supabase não carregou (sem internet?)'}); return; }
     let vivo=true;
-    async function carregarPerfil(user){
+    const ehTokenVencido=(msg)=>/jwt|token/i.test(String(msg||'')) && /expired|invalid/i.test(String(msg||''));
+    async function carregarPerfil(user, tentativa){
       if(!user){ if(vivo) setEstado({loading:false, user:null, perfil:null}); return; }
       const {data, error}=await sb.from('perfis').select('papel, aluno_id').eq('user_id', user.id).maybeSingle();
       if(!vivo) return;
-      if(error){ setEstado({loading:false, user, perfil:null, erro:'Erro ao ler perfil: '+error.message}); return; }
+      if(error){
+        // token vencido não é "sem perfil": renova a sessão e tenta de novo
+        if(ehTokenVencido(error.message) && !tentativa){
+          try{
+            const {data:rf}=await sb.auth.refreshSession();
+            if(!vivo) return;
+            if(rf && rf.session && rf.session.user) return carregarPerfil(rf.session.user, 1);
+          }catch(e){}
+        }
+        // sem internet: mantém o que já está na tela em vez de expulsar
+        if(!navigator.onLine){ setEstado(e0=>({...e0, loading:false, user})); return; }
+        setEstado({loading:false, user, perfil:null, erro:'Erro ao ler perfil: '+error.message});
+        return;
+      }
       setEstado({loading:false, user, perfil:data||null});
     }
     sb.auth.getSession().then(({data})=>{ carregarPerfil(data.session?data.session.user:null); });
@@ -1133,6 +1165,14 @@ function useRestTimer(){
       avisouRef.current=true;
       if(navigator.vibrate) navigator.vibrate([260,110,260]);
     }
+  },[running,elapsed,faixa]);
+  // tolerância: mostra por 30s quanto passou do máximo e some sozinho
+  const TOLERANCIA=30;
+  useEffect(()=>{
+    if(!running || !faixa) return;
+    if(elapsed < faixa.max + TOLERANCIA) return;
+    setInicioMs(null); setFaixa(null); setExNome('');
+    try{ if(LS_OK) window.localStorage.removeItem(REST_KEY); }catch(e){}
   },[running,elapsed,faixa]);
   const start=(f,nome)=>{
     const t=Date.now();
