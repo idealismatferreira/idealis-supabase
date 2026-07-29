@@ -479,14 +479,22 @@
   /* switch: input real por baixo, trilho e bolinha desenhados por CSS */
   .swrow{display:flex;align-items:center;gap:11px;margin-top:14px;padding:11px 2px;cursor:pointer;
     -webkit-tap-highlight-color:transparent}
-  .swrow input{position:absolute;opacity:0;width:0;height:0}
-  .swtrack{flex:0 0 auto;position:relative;width:46px;height:27px;border-radius:999px;
+  /* dentro de .field, o label vira block e o input ganha width:100% + padding.
+     As duas coisas destroem o switch — por isso os overrides abaixo. */
+  .field label.swrow{display:flex;margin-bottom:0}
+  .swrow input[type="checkbox"]{position:absolute;opacity:0;width:0;height:0;
+    padding:0;border:0;margin:0;min-width:0;appearance:none}
+  .field .swrow input[type="checkbox"]{width:0;padding:0;border:0}
+  .swtrack{flex:0 0 46px;position:relative;width:46px;height:27px;min-width:46px;border-radius:999px;
     background:var(--surface-2);border:1px solid var(--line);transition:background .18s,border-color .18s}
   .swtrack::after{content:'';position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;
     background:var(--muted);transition:transform .18s cubic-bezier(.3,1.3,.5,1),background .18s}
   .swrow input:checked + .swtrack{background:rgba(0,201,204,.28);border-color:var(--cyan)}
   .swrow input:checked + .swtrack::after{transform:translateX(19px);background:var(--cyan)}
-  .swtxt{min-width:0}
+  .swline{display:flex;align-items:center;gap:10px}
+  .swline .swrow{flex:1;margin-top:0}
+  .swline .metbtn{flex:0 0 auto}
+  .swtxt{min-width:0;flex:1}
   .swtit{display:block;font-size:13.5px;font-weight:700;color:var(--text)}
   .swsub{display:block;font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:1px}
   /* anotação fixada: recolhida por padrão — disponível quando ela quiser,
@@ -2929,21 +2937,23 @@ function ExerciseSheet({initial,onSave,onClose}){
           <div className="autolist"><div className="hint">Nenhum no Cardápio — será salvo como texto livre ✍️</div></div>}
       </div>
       <div className="field">
-        {/* toggle no lugar de "Não é cardio / Definir cardio": o estado fica
-            legível de relance e a linha ocupa metade do espaço */}
-        <label className="swrow" style={{margin:0}}>
-          <input type="checkbox" checked={!!cardio}
-            onChange={e=>{ if(e.target.checked) setEscolhendoCard(true); else { setCardio(null); setEscolhendoCard(false); } }}/>
-          <span className="swtrack"></span>
-          <span className="swtxt">
-            <span className="swtit">🏃 Cardio</span>
-            <span className="swsub">{cardio
-              ? cardio.blocos.length+' blocos · '+fmtMin(totalCardioSeg(cardio))
-              : 'Ative se este exercício for cardio'}</span>
-          </span>
-          {cardio && <button type="button" className="metbtn" style={{marginLeft:'auto'}}
-            onClick={e=>{e.preventDefault();e.stopPropagation();setEscolhendoCard(true);}}>Trocar</button>}
-        </label>
+        {/* toggle no lugar de "Não é cardio / Definir cardio". O botão "Trocar" fica
+            FORA do <label>: dentro dele, qualquer clique alternava o checkbox. */}
+        <div className="swline">
+          <label className="swrow">
+            <input type="checkbox" checked={!!cardio}
+              onChange={e=>{ if(e.target.checked) setEscolhendoCard(true); else { setCardio(null); setEscolhendoCard(false); } }}/>
+            <span className="swtrack"></span>
+            <span className="swtxt">
+              <span className="swtit">🏃 Cardio</span>
+              <span className="swsub">{cardio
+                ? cardio.blocos.length+' blocos · '+fmtMin(totalCardioSeg(cardio))
+                : 'Ative se este exercício for cardio'}</span>
+            </span>
+          </label>
+          {cardio && <button type="button" className="metbtn"
+            onClick={()=>setEscolhendoCard(true)}>Trocar</button>}
+        </div>
         {escolhendoCard && <div className="metlista">
           <input className="metbusca" autoFocus value={buscaCard} placeholder="🔍 Buscar cardio (ex: hiit 60, sit bike)"
             onChange={e=>setBuscaCard(e.target.value)}/>
