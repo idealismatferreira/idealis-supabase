@@ -2941,8 +2941,12 @@ function ExerciseSheet({initial,onSave,onClose}){
             FORA do <label>: dentro dele, qualquer clique alternava o checkbox. */}
         <div className="swline">
           <label className="swrow">
-            <input type="checkbox" checked={!!cardio}
-              onChange={e=>{ if(e.target.checked) setEscolhendoCard(true); else { setCardio(null); setEscolhendoCard(false); } }}/>
+            {/* checked precisa refletir a INTENÇÃO, não só o resultado: ligar abre o
+                seletor e `cardio` ainda é null. Somar `escolhendoCard` faz o switch
+                virar na hora e voltar sozinho se a escolha for cancelada. */}
+            <input type="checkbox" checked={!!cardio || escolhendoCard}
+              onChange={e=>{ if(e.target.checked){ setEscolhendoCard(true); }
+                             else { setCardio(null); setEscolhendoCard(false); } }}/>
             <span className="swtrack"></span>
             <span className="swtxt">
               <span className="swtit">🏃 Cardio</span>
