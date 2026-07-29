@@ -318,11 +318,19 @@
   .rtpico{font-size:12px;opacity:.75}
   .rtpnum{font-variant-numeric:tabular-nums;color:#ddff00}
   .rtpx{font-size:11px;opacity:.6;margin-left:2px}
-  .rtrunning{position:fixed;top:0;left:0;right:0;z-index:70;background:var(--surface-2);border-bottom:1px solid var(--line);padding:11px 16px 0;cursor:pointer;transition:border-color .3s}
+  /* volta ao topo, mas agora com seta própria: a .topbar (z-index 20) fica coberta,
+     então a barra precisa carregar o próprio caminho de volta. */
+  .rtrunning{position:fixed;top:0;left:0;right:0;z-index:70;background:var(--surface-2);
+    border-bottom:1px solid var(--line);padding:11px 16px 0;cursor:pointer;transition:border-color .3s}
   .rtrunning.inicial{border-bottom-color:var(--cyan)}
   .rtrunning.liberado{border-bottom-color:#ddff00}
   .rtrunning.fim{border-bottom-color:var(--line)}
   .rtrunning .rtcontent{display:flex;flex-direction:column;align-items:center;gap:1px;padding-bottom:9px}
+  /* alvo grande (56x56) e afastado do centro: parar o descanso por engano é o pior erro aqui */
+  .rtvolta{position:absolute;left:4px;top:2px;width:56px;height:56px;display:grid;place-items:center;
+    border:none;background:transparent;color:var(--ctrl);font-family:inherit;font-size:30px;
+    line-height:1;cursor:pointer;border-radius:14px;-webkit-tap-highlight-color:transparent;z-index:2}
+  .rtvolta:active{background:rgba(255,255,255,.07)}
   .rtrunning .rtfrase{font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--muted);text-transform:none;line-height:1.1}
   .rtrunning .rtclock{display:flex;align-items:baseline;gap:1px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--cyan-2);transition:color .3s;line-height:1}
   .rtrunning .rtnum{font-size:46px;font-weight:700;letter-spacing:-.02em}
@@ -948,14 +956,21 @@ async function uploadFotoAluno(alunoId, file){
   }catch(e){ return {ok:false, erro:String(e.message||e)}; }
 }
 
+/* Rede caindo != banco recusando. iOS/Safari diz "Load failed" onde o Chrome diz
+   "Failed to fetch" — sem isso, uma queda de sinal no iPhone viraria "erro de dados". */
+function erroDeRede(e){
+  const m = String((e && e.message) || e || '');
+  if(!navigator.onLine) return true;
+  return /Failed to fetch|Load failed|NetworkError|network|timed? ?out|aborted|connection/i.test(m);
+}
 async function execOp(op){
   if(!sb) throw new Error('sem cliente');
   const T=op.tabela, D=op.dados;
-  if(op.tipo==='insert'){
-    const {error}=await sb.from(T).insert(D);
-    if(error) throw new Error(error.message);
-  }else if(op.tipo==='upsert'){
-    // conflito: lista de colunas do UNIQUE. Sem isso o Postgres usa a PK.
+  if(op.tipo==='insert' || op.tipo==='upsert'){
+    // SEMPRE upsert: com rede instável o request pode chegar no servidor e a
+    // resposta se perder. Um insert reenviado morreria em chave duplicada e
+    // travaria a fila inteira atrás dele. Todo insert nosso já leva `id` próprio,
+    // então regravar a mesma linha é inofensivo.
     const opts = op.conflito ? {onConflict:op.conflito} : undefined;
     const {error}=await sb.from(T).upsert(D, opts);
     if(error) throw new Error(error.message);
@@ -967,20 +982,47 @@ async function execOp(op){
     if(error) throw new Error(error.message);
   }
 }
-/* esvazia a fila em ordem; para no primeiro erro pra não furar dependência */
+/* quarentena: operações que o BANCO recusou repetidamente. Ficam guardadas para
+   inspeção em vez de bloquear todo o resto da fila para sempre. */
+const OPQ_MORTAS_KEY='idealis_presencial_opfila_mortas_v1';
+function loadOpMortas(){ if(!LS_OK) return []; try{const r=window.localStorage.getItem(OPQ_MORTAS_KEY);return r?JSON.parse(r):[];}catch(e){return [];} }
+function saveOpMortas(q){ if(!LS_OK)return; try{window.localStorage.setItem(OPQ_MORTAS_KEY,JSON.stringify(q.slice(-200)));}catch(e){} }
+/* esvazia a fila em ordem.
+   - erro de REDE  -> para e preserva tudo (a ordem importa, o dado está ok)
+   - erro de DADOS -> conta tentativas; na 3ª manda pra quarentena e SEGUE em frente,
+                      pra que um registro problemático não segure os outros 73 */
 async function flushOpQueue(){
   const q=loadOpQueue();
   if(!q.length) return {ok:true, enviados:0, vazia:true};
   if(!navigator.onLine) return {ok:false, offline:true, pend:q.length};
-  let i=0;
-  try{
-    for(; i<q.length; i++){ await execOp(q[i]); }
-    saveOpQueue(loadOpQueue().slice(i)); // remove os que subiram
-    return {ok:true, enviados:i};
-  }catch(err){
-    saveOpQueue(loadOpQueue().slice(i)); // preserva o que falhou em diante
-    return {ok:false, erro:String(err.message||err), enviados:i, pend:loadOpQueue().length};
+  const restantes=[];
+  let enviados=0, mortas=0, ultimoErro=null, caiuRede=false;
+  for(let i=0;i<q.length;i++){
+    const op=q[i];
+    if(caiuRede){ restantes.push(op); continue; }
+    try{
+      await execOp(op);
+      enviados++;
+    }catch(err){
+      ultimoErro=String(err.message||err);
+      if(erroDeRede(err)){ caiuRede=true; restantes.push(op); continue; }
+      op._erros=(op._erros||0)+1;
+      if(op._erros>=3){
+        const m=loadOpMortas();
+        m.push({op, erro:ultimoErro, em:new Date().toISOString()});
+        saveOpMortas(m);
+        mortas++;
+      }else{
+        restantes.push(op);
+      }
+    }
   }
+  // o que foi enfileirado DURANTE o flush entrou no fim: preserva
+  const agora=loadOpQueue();
+  saveOpQueue(restantes.concat(agora.slice(q.length)));
+  const pend=loadOpQueue().length;
+  return {ok:pend===0, enviados, mortas, pend,
+          erro:ultimoErro, offline:caiuRede, totalMortas:loadOpMortas().length};
 }
 
 /* ===== CAMADA 2: LEITURA DO SUPABASE =====
@@ -1544,7 +1586,7 @@ function CheckinSheet({seg,onResponder}){
     </div>
   </div>);
 }
-function RestTimerOverlay({timer}){
+function RestTimerOverlay({timer,voltar}){
   const {running,elapsed,faixa,exNome,cancel}=timer;
   if(!running || !faixa) return null;
   const {min,max}=faixa;
@@ -1569,6 +1611,8 @@ function RestTimerOverlay({timer}){
       <span className="rtpx">✕</span>
     </button>);
   return (<div className={'rtrunning '+cls} onClick={cancel}>
+    {voltar && <button className="rtvolta" aria-label="Voltar"
+      onClick={e=>{ e.stopPropagation(); voltar(); }}>‹</button>}
     <div className="rtcontent">
       <span className="rtfrase">{frase}</span>
       <span className="rtclock"><span className="rtnum">{numero}</span><span className="rtseg">{sufixo}</span></span>
@@ -1653,17 +1697,21 @@ function App({auth}){
   },[]);
   useEffect(()=>{ recarregar(); },[recarregar]);
   // motor da fila de escrita: sobe operações pendentes quando dá
-  const [fila,setFila]=useState({pend:loadOpQueue().length, estado:'idle'});
-  const flushOps=React.useCallback(async ()=>{
+  const [fila,setFila]=useState({pend:loadOpQueue().length, estado:'idle', mortas:loadOpMortas().length});
+  const flushOps=React.useCallback(async (manual)=>{
     const pend=loadOpQueue().length;
-    if(pend===0){ setFila({pend:0, estado:'idle'}); return; }
-    if(!navigator.onLine){ setFila({pend, estado:'offline'}); return; }
-    setFila({pend, estado:'enviando'});
+    if(pend===0){ setFila({pend:0, estado:'idle', mortas:loadOpMortas().length}); return; }
+    if(!navigator.onLine){ setFila({pend, estado:'offline', mortas:loadOpMortas().length}); return; }
+    setFila({pend, estado:'enviando', mortas:loadOpMortas().length});
     const r=await flushOpQueue();
     const restante=loadOpQueue().length;
-    if(r.ok) setFila({pend:restante, estado:restante?'idle':'ok'});
-    else setFila({pend:restante, estado:r.offline?'offline':'erro', erro:r.erro});
-  },[]);
+    const mortas=loadOpMortas().length;
+    if(r.erro) console.warn('[fila] última falha:', r.erro, r);
+    if(r.ok) setFila({pend:restante, estado:restante?'idle':'ok', mortas});
+    else setFila({pend:restante, estado:r.offline?'offline':'erro', erro:r.erro, mortas});
+    // só avisa quando o toque foi dele: o retry automático de 30s não pode virar spam
+    if(manual && r.erro && !r.offline) flash('Falha: '+String(r.erro).slice(0,90));
+  },[flash]);
   useEffect(()=>{
     window.__flushOps=()=>{ setFila(f=>({...f,pend:loadOpQueue().length})); flushOps(); };
     flushOps();
@@ -1706,6 +1754,12 @@ function App({auth}){
   else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash} ehAluno={ehAluno} onSair={auth?auth.sair:null}/>;
   else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio}/>;
   else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={ehAluno}/>;
+  // mesma ação do ‹ da .topbar de cada tela — a barra de descanso a cobre,
+  // então ela precisa oferecer o mesmo caminho de volta
+  const voltarDaTela = (
+    view.name==='treino'    ? ()=>nav({name:'student',studentId:view.studentId}) :
+    view.name==='evolution' ? ()=>nav(view.back||{name:'student',studentId:view.studentId}) :
+    view.name==='student'   ? (ehAluno?null:()=>nav({name:'students'})) : null);
   return (<React.Fragment>
     {!LS_OK && <div className="warnbar">⚠️ Modo temporário: os dados somem ao fechar. Abra pelo link do GitHub Pages para salvar.</div>}
     {auth && !ehAluno && <div className="rolebar">
@@ -1715,8 +1769,8 @@ function App({auth}){
       </div>
     </div>}
     {screen}
-    <NuvemBadge carga={carga} fila={fila} onRetry={()=>{flushOps();recarregar();}}/>
-    <RestTimerOverlay timer={timer}/>
+    <NuvemBadge carga={carga} fila={fila} onRetry={()=>{flushOps(true);recarregar();}}/>
+    <RestTimerOverlay timer={timer} voltar={voltarDaTela}/>
     {cardio.ativo && <CardioOverlay cardio={cardio}/>}
     {toast && <div className="toast">{toast}</div>}
   </React.Fragment>);
@@ -1726,12 +1780,14 @@ function NuvemBadge({carga,fila,onRetry}){
   const pend=fila?fila.pend:0;
   // prioridade: mostrar o que está pendente de subir
   if(fila && fila.estado==='enviando') return <button className="syncbadge sending" onClick={onRetry}>Salvando…</button>;
+  const mortas=fila?(fila.mortas||0):0;
   if(pend>0){
     const txt = (fila.estado==='offline') ? (pend+' p/ salvar (offline)')
               : (fila.estado==='erro') ? (pend+' p/ salvar · tocar p/ tentar')
               : (pend+' p/ salvar');
     return <button className={'syncbadge '+(fila.estado==='erro'?'err':'off')} onClick={onRetry}>{txt}</button>;
   }
+  if(mortas>0) return <button className="syncbadge err" onClick={onRetry}>{mortas+' recusado(s) pelo servidor'}</button>;
   if(estado==='carregando') return <button className="syncbadge sending" onClick={onRetry}>Carregando…</button>;
   if(estado==='offline') return <button className="syncbadge off" onClick={onRetry}>{quando?('Offline · dados de '+_hhmm(quando)):'Offline'}</button>;
   if(estado==='erro') return <button className="syncbadge err" onClick={onRetry}>Erro ao carregar · tocar p/ tentar</button>;
