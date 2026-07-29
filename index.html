@@ -592,6 +592,26 @@
     color:#04191a;font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer}
   .cdiniciar:active{filter:brightness(.92)}
   /* --- cardio: overlay em execução --- */
+  .tagbday{font-size:11.5px;font-weight:700;color:#dbff00;margin-left:5px;white-space:nowrap}
+  .tagfalta{font-size:9.5px;font-weight:700;color:var(--muted);background:var(--surface-2);
+    border:1px solid var(--line);border-radius:999px;padding:1px 7px;margin-left:6px;
+    letter-spacing:.03em;vertical-align:middle;white-space:nowrap}
+  /* ===== ARCO DE ZONAS (acima do timer; o timer NÃO muda de tamanho) ===== */
+  .czwrap{display:flex;flex-direction:column;align-items:center;width:100%;margin-bottom:2px}
+  .czbpm{font-size:14px;color:var(--muted);letter-spacing:.01em;margin-bottom:2px}
+  .czbpm b{font-size:20px;font-weight:800;color:var(--text)}
+  .czbpm .czsem{font-size:11.5px;opacity:.65}
+  .czarco{position:relative;width:min(252px,70vw);aspect-ratio:228/124}
+  .czarco svg{display:block}
+  /* encaixado DENTRO da concavidade, com o peso que o rótulo inferior tinha */
+  .czlabel{position:absolute;left:0;right:0;bottom:-2px;text-align:center;
+    font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+  @media (max-height:700px){
+    .czarco{width:min(206px,58vw)}
+    .czbpm{font-size:12.5px;margin-bottom:0}
+    .czbpm b{font-size:17px}
+    .czlabel{font-size:22px}
+  }
   .cdover{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;
     padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
   .cdtop{display:flex;align-items:center;gap:10px;flex:0 0 auto}
@@ -1057,7 +1077,7 @@ async function fetchDbFromSupabase(){
   try{
     // o RLS já filtra: treinador vê tudo, aluno vê só o dele
     const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce] = await Promise.all([
-      sb.from('alunos').select('id,nome,foto_url,academia').order('nome'),
+      sb.from('alunos').select('id,nome,foto_url,academia,nascimento,fc_max').order('nome'),
       sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data').order('ordem'),
       sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio').order('ordem'),
       sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor,variante,serie,extra').order('data,serie'),
@@ -1108,7 +1128,9 @@ async function fetchDbFromSupabase(){
       });
     });
     const students=(rAlunos.data||[]).map(a=>({
-      id:a.id, name:a.nome, foto: a.foto_url||'', academia: a.academia||'', treinos: treinosPorAluno[a.id]||[]
+      id:a.id, name:a.nome, foto: a.foto_url||'', academia: a.academia||'',
+      nascimento: a.nascimento||null, fcMax: a.fc_max||null,
+      treinos: treinosPorAluno[a.id]||[]
     }));
     return {ok:true, db:{students}};
   }catch(e){
@@ -1440,7 +1462,7 @@ function useCardioTimer(){
 function pontosCheckin(blocos){
   if(!blocos||!blocos.length) return [];
   const total=blocos.reduce((a,b)=>a+b.seg,0);
-  const ordem=['maximo','forte','moderado','leve'];
+  const ordem=['maximo','forte','moderado','leve','aquecimento'];
   const nivelMax=ordem.find(n=>blocos.some(b=>b.nivel===n));
   const fins=[]; let acc=0; blocos.forEach(b=>{ acc+=b.seg; fins.push(acc); });
   const idxs=blocos.map((b,i)=>({b,i})).filter(x=>x.b.nivel===nivelMax).map(x=>x.i);
@@ -1565,7 +1587,13 @@ function CardioOverlay({cardio}){
           onSalvar={(d)=>{ cardio.salvarLog && cardio.salvarLog(sessao, e, d); cardio.parar(); }}
           onFechar={()=>{ cardio.salvarLog && cardio.salvarLog(sessao, e, null); cardio.parar(); }}/>
       : <div className="cdmeio">
-          <div className="cdrot">{e.atual.rotulo}</div>
+          <ArcoZonas zona={nivelInfo(e.atual.nivel).zona} fcMax={cardio.fcMax}/>
+          {/* o rótulo do bloco cai no label do nível quando você não escreve um.
+              Nesse caso ele repetiria a palavra que já está no arco — some.
+              Rótulos próprios ("Sentado rápido") continuam aparecendo. */}
+          {e.atual.rotulo && e.atual.rotulo!==zonaInfo(nivelInfo(e.atual.nivel).zona).label
+            && e.atual.rotulo!==nivelInfo(e.atual.nivel).label
+            && <div className="cdrot">{e.atual.rotulo}</div>}
           <div className="cdnum">{fmtCrono(e.restanteBloco*1000)}</div>
           <div className="cdbar"><span style={{width:(e.progressoBloco*100)+'%'}}></span></div>
           <div className="cdsub">
@@ -1585,7 +1613,45 @@ function CardioOverlay({cardio}){
         onResponder={(d)=>cardio.responderCheckin(pendente,d)}/>}
   </div>);
 }
-/* folha de check-in: aparece por cima, NÃO pausa o cardio, some sozinha se ignorada */
+/* ===== ARCO DE ZONAS =====
+   Semicírculo de 5 segmentos. A zona prescrita fica acesa; as outras, apagadas.
+   Acima do arco: a faixa de bpm alvo. Encaixado na concavidade: o nome da zona. */
+function ArcoZonas({zona,fcMax}){
+  const Z=zonaInfo(zona);
+  const faixa=faixaBpm(fcMax,zona);
+  const W=228, H=124, cx=W/2, cy=112, R=88, esp=13;
+  const pol=(ang,r)=>[cx+r*Math.cos(Math.PI*(180-ang)/180), cy-r*Math.sin(Math.PI*(180-ang)/180)];
+  const arco=(a0,a1)=>{
+    const [x0,y0]=pol(a0,R), [x1,y1]=pol(a1,R);
+    return 'M '+x0+' '+y0+' A '+R+' '+R+' 0 0 1 '+x1+' '+y1;
+  };
+  const passo=180/5, gap=3.2;
+  return (<div className="czwrap">
+    <div className="czbpm">
+      {faixa
+        ? <React.Fragment><b>{faixa.de}–{faixa.ate}</b> bpm</React.Fragment>
+        : <span className="czsem">bpm alvo indisponível</span>}
+    </div>
+    <div className="czarco">
+      <svg viewBox={'0 0 '+W+' '+H} width="100%" height="100%" aria-hidden="true">
+        {ZONAS.map((z,i)=>{
+          const a0=i*passo+gap/2, a1=(i+1)*passo-gap/2, ativo=z.z===zona;
+          return <path key={z.z} d={arco(a0,a1)} fill="none"
+            stroke={ativo?z.cor:'rgba(255,255,255,.10)'}
+            strokeWidth={ativo?esp+4:esp} strokeLinecap="round"
+            style={ativo?{filter:'drop-shadow(0 0 7px '+z.cor+'aa)'}:null}/>;
+        })}
+        {ZONAS.map((z,i)=>{
+          const [tx,ty]=pol(i*passo+passo/2, R-esp-11);
+          return <text key={'t'+z.z} x={tx} y={ty+4} textAnchor="middle"
+            fontSize="12.5" fontWeight="700" fontFamily="Sora, sans-serif"
+            fill={z.z===zona?z.cor:'rgba(255,255,255,.22)'}>{z.z}</text>;
+        })}
+      </svg>
+      <div className="czlabel" style={{color:Z.cor}}>{Z.label}</div>
+    </div>
+  </div>);
+}
 function CheckinSheet({seg,onResponder}){
   const [bpm,setBpm]=useState(null);
   const [esf,setEsf]=useState(null);
@@ -1776,6 +1842,12 @@ function App({auth}){
   else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash} ehAluno={ehAluno} onSair={auth?auth.sair:null}/>;
   else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio}/>;
   else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={ehAluno}/>;
+  // FCmáx do aluno cuja tela está aberta (o cardio roda por cima de qualquer view)
+  const fcMaxDoAlunoEmFoco = (()=>{
+    const id = view.studentId || (ehAluno?meuAlunoId:null);
+    const a = id ? (db.students||[]).find(x=>x.id===id) : null;
+    return a ? fcMaxDe(a) : null;
+  })();
   // mesma ação do ‹ da .topbar de cada tela — a barra de descanso a cobre,
   // então ela precisa oferecer o mesmo caminho de volta
   const voltarDaTela = (
@@ -1793,7 +1865,7 @@ function App({auth}){
     {screen}
     <NuvemBadge carga={carga} fila={fila} onRetry={()=>{flushOps(true);recarregar();}}/>
     <RestTimerOverlay timer={timer} voltar={voltarDaTela}/>
-    {cardio.ativo && <CardioOverlay cardio={cardio}/>}
+    {cardio.ativo && <CardioOverlay cardio={{...cardio, fcMax:fcMaxDoAlunoEmFoco}}/>}
     {toast && <div className="toast">{toast}</div>}
   </React.Fragment>);
 }
@@ -2121,19 +2193,45 @@ function TopBar({title,sub,onBack,logo,onSair,right}){
   </div>);
 }
 /* menu reutilizável: editar nome + apagar (com confirmação) para aluno/treino/exercício */
-function RowMenu({label,currentName,onRename,onDelete,onClose,academia,onAcademia}){
-  const [mode,setMode]=useState('menu'); // menu | rename | confirm | academia
+function RowMenu({label,currentName,onRename,onDelete,onClose,academia,onAcademia,perfil,onPerfil}){
+  const [mode,setMode]=useState('menu'); // menu | rename | confirm | academia | perfil
   const [nome,setNome]=useState(currentName||'');
   const [acad,setAcad]=useState(academia||'');
+  const [nasc,setNasc]=useState((perfil&&perfil.nascimento)||'');
+  const [fcm,setFcm]=useState((perfil&&perfil.fcMax)?String(perfil.fcMax):'');
+  const idade=idadeDe(nasc);
+  const calc=idade!=null?Math.round(208-0.7*idade):null; // Tanaka
   return (<div className="backdrop" onClick={onClose}>
     <div className="sheet menusheet" onClick={e=>e.stopPropagation()}>
       {mode==='menu' && <React.Fragment>
         <h2>{currentName}</h2><div className="h2sub">O que deseja fazer?</div>
         <button className="opt" onClick={()=>setMode('rename')}>✎ Editar nome</button>
         {onAcademia && <button className="opt" onClick={()=>setMode('academia')}>🏋️ Academia{academia?' · '+academia:''}</button>}
+        {onPerfil && <button className="opt" onClick={()=>setMode('perfil')}>
+          🎂 Nascimento e FC máx{idade!=null?' · '+idade+' anos':' · faltando'}</button>}
         <button className="opt del" onClick={()=>setMode('confirm')}>🗑 Apagar {label}</button>
         <div className="sheetactions" style={{marginTop:16}}>
           <button className="btn ghost" onClick={onClose}>Fechar</button></div>
+      </React.Fragment>}
+      {mode==='perfil' && <React.Fragment>
+        <h2>Nascimento e FC máx</h2><div className="h2sub">Usado para calcular as zonas de cardio</div>
+        <div className="field"><label>Data de nascimento</label>
+          <input type="date" max={todayISO()} value={nasc} onChange={e=>setNasc(e.target.value)}/></div>
+        {idade!=null && <div className="h2sub" style={{marginTop:-6}}>
+          {idade} anos · FCmáx calculada (Tanaka): <b>{calc} bpm</b></div>}
+        <div className="field" style={{marginTop:12}}><label>FC máx medida (opcional)</label>
+          <input type="number" inputMode="numeric" min="100" max="230" value={fcm}
+            onChange={e=>setFcm(e.target.value)} placeholder={calc?('deixe vazio para usar '+calc):'ex: 188'}/></div>
+        <div className="h2sub" style={{marginTop:-6}}>
+          Toda fórmula erra ~10 bpm por pessoa. Se você observar o pico real dele em treino,
+          preencha aqui — esse valor passa a valer no lugar do cálculo.</div>
+        <div className="sheetactions">
+          <button className="btn ghost" onClick={()=>setMode('menu')}>Voltar</button>
+          <button className="btn" onClick={()=>{
+            const n=parseInt(fcm,10);
+            onPerfil({nascimento:nasc||null, fcMax:(n>=100&&n<=230)?n:null});
+            onClose();
+          }}>Salvar</button></div>
       </React.Fragment>}
       {mode==='academia' && <React.Fragment>
         <h2>Academia</h2><div className="h2sub">Onde {currentName} treina</div>
@@ -2224,6 +2322,10 @@ function Students({db,setDb,nav}){
     setDb(d=>({...d,students:d.students.map(x=>x.id===id?{...x,academia}:x)}));
     enqueueOp({tipo:'update',tabela:'alunos',id,dados:{academia:academia||null}});
   };
+  const setPerfil=(id,{nascimento,fcMax})=>{
+    setDb(d=>({...d,students:d.students.map(x=>x.id===id?{...x,nascimento,fcMax}:x)}));
+    enqueueOp({tipo:'update',tabela:'alunos',id,dados:{nascimento:nascimento||null, fc_max:fcMax||null}});
+  };
   const deleteStudent=(id)=>{
     setDb({...db,students:db.students.filter(x=>x.id!==id)});
     enqueueOp({tipo:'delete',tabela:'alunos',id});
@@ -2243,14 +2345,23 @@ function Students({db,setDb,nav}){
       </div>
       {list.length===0 && <div className="empty"><div className="big">🏋️</div>
         <p>{q?'Nenhum aluno com esse nome.':'Nenhum aluno ainda. Toque em “+ Aluno” para começar.'}</p></div>}
-      {list.map(s=>(
+      {list.map(s=>{
+        const dias=diasAteAniversario(s.nascimento);
+        const fazAniver = dias!=null && dias<=7;
+        return (
         <div key={s.id} className="card rowcard" onClick={()=>nav({name:'student',studentId:s.id})}>
           <Avatar nome={s.name} foto={s.foto} onPick={f=>trocarFoto(s,f)} busy={subindo===s.id}/>
-          <div className="meta"><div className="name">{s.name}</div>
+          <div className="meta"><div className="name">{s.name}
+            {/* 🎂 = aniversário de verdade. Data faltando usa marca própria,
+                pra não significar duas coisas no mesmo ícone. */}
+            {fazAniver && <span className="tagbday" title="Aniversário"> 🎂{dias===0?' hoje':' em '+dias+'d'}</span>}
+            {!s.nascimento && <span className="tagfalta" title="Sem data de nascimento">sem data</span>}
+          </div>
             <div className="desc">{(s.treinos||[]).length} {(s.treinos||[]).length===1?'treino':'treinos'}</div></div>
           <button className="menudot" onClick={e=>{e.stopPropagation();setMenu(s);}}>⋯</button>
           <div className="chev">›</div>
-        </div>))}
+        </div>);
+      })}
     </div>
     <button className="fab" onClick={()=>setAdding(true)}>＋ Aluno</button>
     {adding && <div className="backdrop" onClick={()=>setAdding(false)}>
@@ -2265,6 +2376,7 @@ function Students({db,setDb,nav}){
     {menu && <RowMenu label="aluno" currentName={menu.name}
       onRename={(novo)=>renameStudent(menu.id,novo)} onDelete={()=>deleteStudent(menu.id)}
       academia={menu.academia} onAcademia={(a)=>setAcademia(menu.id,a)}
+      perfil={{nascimento:menu.nascimento, fcMax:menu.fcMax}} onPerfil={(p)=>setPerfil(menu.id,p)}
       onClose={()=>setMenu(null)}/>}
   </React.Fragment>);
 }
@@ -2369,11 +2481,57 @@ function Scale({value,onChange,leftLabel,rightLabel}){
    nivel: 'leve' | 'moderado' | 'forte' | 'maximo'  (só cor/rótulo)
    `tempo` aceita "1min", "45s", "30" — mesmo parser do descanso. */
 const NIVEIS=[
-  {k:'leve',label:'Leve',cor:'#5ddb8b'},        // verde
-  {k:'moderado',label:'Moderado',cor:'#ffc247'}, // amarelo-alaranjado
-  {k:'forte',label:'Forte',cor:'#e57b7b'},       // vermelho dessaturado
-  {k:'maximo',label:'Máximo',cor:'#c9414f'},     // vermelho profundo
+  {k:'aquecimento',label:'Aquecimento',cor:'#54c8e0',zona:1}, // azul — Zona 1
+  {k:'leve',label:'Leve',cor:'#5ddb8b',zona:2},        // verde
+  {k:'moderado',label:'Moderado',cor:'#ffc247',zona:3}, // amarelo-alaranjado
+  {k:'forte',label:'Forte',cor:'#e57b7b',zona:4},       // vermelho dessaturado
+  {k:'maximo',label:'Máximo',cor:'#c9414f',zona:5},     // vermelho profundo
 ];
+/* ===== ZONAS DE FREQUÊNCIA CARDÍACA =====
+   FCmáx por Tanaka (208 - 0,7 x idade), não pela clássica 220-idade.
+   As duas se cruzam aos 40 anos: antes disso a clássica superestima, depois
+   subestima. Tanaka corrige esse viés — mas NÃO corrige a dispersão individual
+   (~10 bpm de desvio padrão nas duas). Por isso alunos.fc_max sobrepõe o cálculo. */
+const ZONAS=[
+  {z:1, min:.50, max:.60, label:'Aquecimento', cor:'#54c8e0'},
+  {z:2, min:.60, max:.70, label:'Leve',        cor:'#5ddb8b'},
+  {z:3, min:.70, max:.80, label:'Moderada',    cor:'#ffc247'},
+  {z:4, min:.80, max:.90, label:'Forte',       cor:'#e57b7b'},
+  {z:5, min:.90, max:1.0, label:'Máxima',      cor:'#c9414f'},
+];
+function idadeDe(nascimento){
+  if(!nascimento) return null;
+  const n=Date.parse(String(nascimento)+'T00:00:00');
+  if(isNaN(n)) return null;
+  const hoje=new Date(), d=new Date(n);
+  let i=hoje.getFullYear()-d.getFullYear();
+  const m=hoje.getMonth()-d.getMonth();
+  if(m<0 || (m===0 && hoje.getDate()<d.getDate())) i--;
+  return (i>=0 && i<=120)?i:null;
+}
+function fcMaxDe(aluno){
+  if(!aluno) return null;
+  if(aluno.fcMax) return aluno.fcMax;          // valor corrigido na mão vence
+  const i=idadeDe(aluno.nascimento);
+  if(i==null) return null;
+  return Math.round(208 - 0.7*i);              // Tanaka
+}
+const zonaInfo=(z)=>ZONAS.find(x=>x.z===z)||ZONAS[2];
+function faixaBpm(fcMax, z){
+  const Z=zonaInfo(z);
+  if(!fcMax) return null;
+  return {de:Math.round(fcMax*Z.min), ate:Math.round(fcMax*Z.max)};
+}
+/* dias até o próximo aniversário (para o 🎂 na lista do treinador) */
+function diasAteAniversario(nascimento){
+  if(!nascimento) return null;
+  const d=new Date(String(nascimento)+'T00:00:00');
+  if(isNaN(d.getTime())) return null;
+  const hoje=new Date(); hoje.setHours(0,0,0,0);
+  let alvo=new Date(hoje.getFullYear(), d.getMonth(), d.getDate());
+  if(alvo<hoje) alvo=new Date(hoje.getFullYear()+1, d.getMonth(), d.getDate());
+  return Math.round((alvo-hoje)/86400000);
+}
 const nivelInfo=(k)=>NIVEIS.find(n=>n.k===k)||NIVEIS[1];
 /* transforma a prescrição em lista linear de blocos com segundos */
 function expandirCardio(c){
