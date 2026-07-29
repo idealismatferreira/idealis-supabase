@@ -476,6 +476,27 @@
   .exrel .erdata{display:block;font-size:10.5px;font-weight:700;color:var(--cyan-2);
     letter-spacing:.03em;text-transform:uppercase;margin-bottom:2px}
   .exrel .ertxt{font-size:13px;line-height:1.5;color:var(--text);white-space:pre-wrap}
+  /* switch: input real por baixo, trilho e bolinha desenhados por CSS */
+  .swrow{display:flex;align-items:center;gap:11px;margin-top:14px;padding:11px 2px;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .swrow input{position:absolute;opacity:0;width:0;height:0}
+  .swtrack{flex:0 0 auto;position:relative;width:46px;height:27px;border-radius:999px;
+    background:var(--surface-2);border:1px solid var(--line);transition:background .18s,border-color .18s}
+  .swtrack::after{content:'';position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;
+    background:var(--muted);transition:transform .18s cubic-bezier(.3,1.3,.5,1),background .18s}
+  .swrow input:checked + .swtrack{background:rgba(0,201,204,.28);border-color:var(--cyan)}
+  .swrow input:checked + .swtrack::after{transform:translateX(19px);background:var(--cyan)}
+  .swtxt{min-width:0}
+  .swtit{display:block;font-size:13.5px;font-weight:700;color:var(--text)}
+  .swsub{display:block;font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:1px}
+  /* anotação fixada: recolhida por padrão — disponível quando ela quiser,
+     sem ser relida passivamente antes de executar o movimento */
+  .relfix{width:100%;display:flex;align-items:center;gap:8px;margin:8px 0 2px;padding:9px 12px;
+    border-radius:11px;background:rgba(0,201,204,.05);border:1px dashed rgba(0,201,204,.32);
+    font-family:inherit;font-size:12px;font-weight:600;color:var(--cyan-2);cursor:pointer;
+    text-align:left;-webkit-tap-highlight-color:transparent}
+  .relfix:active{background:rgba(0,201,204,.11)}
+  .relfix .rfseta{margin-left:auto;font-size:10px;opacity:.7}
   .exactions .rel.on{border-color:var(--cyan);background:rgba(0,201,204,.16);color:var(--cyan-2)}
   /* folha de relato */
   .rlwrap{padding:2px 2px 4px}
@@ -1041,7 +1062,7 @@ async function fetchDbFromSupabase(){
       sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio').order('ordem'),
       sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor,variante,serie,extra').order('data,serie'),
       sb.from('sessoes').select('id,aluno_id,treino_id,data,origem').order('data'),
-      sb.from('relatos').select('id,aluno_id,treino_id,exercicio_id,exercicio_nome,data,texto,created_at').order('created_at'),
+      sb.from('relatos').select('id,aluno_id,treino_id,exercicio_id,exercicio_nome,data,texto,fixado,created_at').order('created_at'),
       sb.from('acessos').select('id,aluno_id,treino_id,data,vezes').order('data')
     ]);
     const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error||rSess.error||rRel.error||rAce.error;
@@ -1070,7 +1091,8 @@ async function fetchDbFromSupabase(){
     const relPorTreino={};
     (rRel.data||[]).forEach(x=>{
       (relPorTreino[x.treino_id]=relPorTreino[x.treino_id]||[]).push({
-        id:x.id, data:x.data, exercicioId:x.exercicio_id||null, texto:x.texto||'', criadoEm:x.created_at||null
+        id:x.id, data:x.data, exercicioId:x.exercicio_id||null, texto:x.texto||'',
+        fixado:!!x.fixado, criadoEm:x.created_at||null
       });
     });
     const acePorTreino={};
@@ -1988,8 +2010,9 @@ function marcarAcessoLocal(treinoId){
   try{ if(LS_OK) window.localStorage.setItem(chaveAcesso(treinoId),'1'); }catch(e){}
 }
 /* folha de relato do aluno: um exercício específico, ou o relato geral do treino */
-function RelatoSheet({exNome,inicial,onSalvar,onApagar,onClose}){
+function RelatoSheet({exNome,inicial,fixadoInicial,onSalvar,onApagar,onClose}){
   const [txt,setTxt]=useState(inicial||'');
+  const [fixo,setFixo]=useState(!!fixadoInicial);
   const limpo=txt.trim();
   return (<div className="backdrop" onClick={onClose}>
     <div className="sheet" onClick={e=>e.stopPropagation()}>
@@ -2002,9 +2025,19 @@ function RelatoSheet({exNome,inicial,onSalvar,onApagar,onClose}){
         </div>
         <textarea className="obstext" autoFocus value={txt} onChange={e=>setTxt(e.target.value)}
           placeholder={exNome?'Ex: senti uma fisgada no ombro na 3ª série':'Ex: dormi mal, treino rendeu menos'}/>
+        {/* o toggle NÃO decide quem lê — a anotação sempre vai pro treinador.
+            decide só se ela continua aparecendo depois que o dia virar. */}
+        <label className="swrow">
+          <input type="checkbox" checked={fixo} onChange={e=>setFixo(e.target.checked)}/>
+          <span className="swtrack"></span>
+          <span className="swtxt">
+            <span className="swtit">📌 Manter fixo pra mim</span>
+            <span className="swsub">Continua salvo neste exercício pra você consultar depois.</span>
+          </span>
+        </label>
         <div className="rlbtns">
           <button onClick={onClose}>Cancelar</button>
-          <button className="ok" disabled={!limpo} onClick={()=>onSalvar(limpo)}>Salvar</button>
+          <button className="ok" disabled={!limpo} onClick={()=>onSalvar(limpo,fixo)}>Salvar</button>
         </div>
         {inicial && onApagar &&
           <button className="rlapaga" onClick={onApagar}>apagar esta anotação</button>}
@@ -3237,6 +3270,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   const [editingEx,setEditingEx]=useState(null);
   const [registering,setRegistering]=useState(null);
   const [relatando,setRelatando]=useState(null); // {exId|null, exNome|null, atual}
+  const [fixAberto,setFixAberto]=useState({});   // exId -> anotações fixadas expandidas
   const [finalizando,setFinalizando]=useState(false);
   // --- conclusão de treino: só confirmação MANUAL do aluno ---
   const abertoEmRef = React.useRef(marcarAberto(treinoId));
@@ -3311,21 +3345,24 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   const relatos = t.relatos||[];
   const relatosHoje = relatos.filter(r=>r.data===todayISO());
   const relatoDoEx = (exId)=>relatosHoje.find(r=>r.exercicioId===exId)||null;
+  // fixadas de OUTROS dias: o aluno pediu pra continuar vendo (recolhidas na tela)
+  const fixadasDoEx = (exId)=>relatos.filter(r=>r.exercicioId===exId && r.fixado && r.data!==todayISO());
   const nomePorEx = (t.exercises||[]).reduce((a,ex)=>{a[ex.id]=ex.name;return a;},{});
   const updRelatos=(lista)=>updTreino({relatos:lista});
-  const salvarRelato=(exId,texto)=>{
+  const salvarRelato=(exId,texto,fixado)=>{
+    const fix=!!fixado;
     const existente=relatosHoje.find(r=>r.exercicioId===(exId||null));
     if(existente){
-      updRelatos(relatos.map(r=>r.id===existente.id?{...r,texto}:r));
-      enqueueOp({tipo:'update',tabela:'relatos',id:existente.id,dados:{texto}});
+      updRelatos(relatos.map(r=>r.id===existente.id?{...r,texto,fixado:fix}:r));
+      enqueueOp({tipo:'update',tabela:'relatos',id:existente.id,dados:{texto,fixado:fix}});
     }else{
-      const novo={id:uid(), data:todayISO(), exercicioId:exId||null, texto, criadoEm:new Date().toISOString()};
+      const novo={id:uid(), data:todayISO(), exercicioId:exId||null, texto, fixado:fix, criadoEm:new Date().toISOString()};
       updRelatos([...relatos,novo]);
       // sobe AGORA. Não espera botão nenhum: a fila offline garante a entrega.
       enqueueOp({tipo:'insert',tabela:'relatos',dados:{
         id:novo.id, aluno_id:studentId, treino_id:treinoId,
         exercicio_id:exId||null, exercicio_nome:(exId?(nomePorEx[exId]||null):null),
-        data:novo.data, texto
+        data:novo.data, texto, fixado:fix
       }});
     }
     setRelatando(null);
@@ -3359,7 +3396,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     setFinalizando(true);           // a tela de fim decide o que perguntar
   };
   const confirmarConclusao=(textoGeral)=>{
-    if(textoGeral) salvarRelato(null,textoGeral);
+    if(textoGeral) salvarRelato(null,textoGeral,false); // relato geral não fixa: não pertence a um exercício
     setFinalizando(false);
     registrarSessao(todayISO(),'manual',true); // silencioso: a celebração é o feedback
     zerarCrono(treinoId); setInicio(null);     // treino acabou: relógio zera
@@ -3594,6 +3631,30 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
                 <span className="ertxt">{r.texto}</span>
               </span>
             </div>))}
+          {ehAluno && (()=>{
+            const fx=fixadasDoEx(ex.id);
+            if(!fx.length) return null;
+            // recolhida por padrão: disponível quando ela quiser, sem releitura
+            // automática da própria dor logo antes de executar o movimento
+            if(!fixAberto[ex.id]) return (
+              <button className="relfix" onClick={()=>setFixAberto(m=>({...m,[ex.id]:true}))}>
+                📌 {fx.length===1?'1 anotação sua':fx.length+' anotações suas'}
+                <span className="rfseta">▾ ver</span>
+              </button>);
+            return (<React.Fragment>
+              {fx.slice().reverse().map(r=>(
+                <div className="exrel" key={r.id}>
+                  <span className="erico">📌</span>
+                  <span className="erbody">
+                    <span className="erdata">{fmtDate(r.data)} · fixada por você</span>
+                    <span className="ertxt">{r.texto}</span>
+                  </span>
+                </div>))}
+              <button className="relfix" onClick={()=>setFixAberto(m=>({...m,[ex.id]:false}))}>
+                📌 esconder <span className="rfseta">▴</span>
+              </button>
+            </React.Fragment>);
+          })()}
           {(()=>{
             const todos=allLogsOfExercise(s,ex.name,ex.exerciseId);
             const ses=agruparSessoes(todos, varPadrao(s.academia));
@@ -3683,7 +3744,8 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     {editingEx && !ehAluno && <ExerciseSheet initial={editingEx==='new'?null:editingEx} onSave={saveEx} onClose={()=>setEditingEx(null)}/>}
     {relatando && <RelatoSheet exNome={relatando.exNome}
       inicial={relatando.atual?relatando.atual.texto:''}
-      onSalvar={(txt)=>salvarRelato(relatando.exId,txt)}
+      fixadoInicial={relatando.atual?relatando.atual.fixado:false}
+      onSalvar={(txt,fix)=>salvarRelato(relatando.exId,txt,fix)}
       onApagar={relatando.atual?()=>apagarRelato(relatando.atual.id):null}
       onClose={()=>setRelatando(null)}/>}
     {finalizando && <FimTreinoSheet relatosHoje={relatosHoje} nomePorEx={nomePorEx}
