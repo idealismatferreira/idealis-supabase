@@ -597,20 +597,19 @@
     border:1px solid var(--line);border-radius:999px;padding:1px 7px;margin-left:6px;
     letter-spacing:.03em;vertical-align:middle;white-space:nowrap}
   /* ===== ARCO DE ZONAS (acima do timer; o timer NÃO muda de tamanho) ===== */
-  .czwrap{display:flex;flex-direction:column;align-items:center;width:100%;margin-bottom:2px}
-  .czbpm{font-size:14px;color:var(--muted);letter-spacing:.01em;margin-bottom:2px}
+  .czwrap{display:flex;flex-direction:column;align-items:center;width:100%;margin-bottom:6px}
+  .czbpm{font-size:14px;color:var(--muted);letter-spacing:.01em;margin-bottom:4px}
   .czbpm b{font-size:20px;font-weight:800;color:var(--text)}
   .czbpm .czsem{font-size:11.5px;opacity:.65}
-  .czarco{position:relative;width:min(252px,70vw);aspect-ratio:228/124}
+  .czarco{position:relative;width:min(262px,72vw);aspect-ratio:260/142}
   .czarco svg{display:block}
-  /* encaixado DENTRO da concavidade, com o peso que o rótulo inferior tinha */
-  .czlabel{position:absolute;left:0;right:0;bottom:-2px;text-align:center;
-    font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+  /* dentro da concavidade, sem encostar nos números que agora ficam por fora */
+  .czlabel{position:absolute;left:12%;right:12%;bottom:0;text-align:center;
+    font-weight:800;letter-spacing:-.02em;line-height:1.1;white-space:nowrap}
   @media (max-height:700px){
-    .czarco{width:min(206px,58vw)}
-    .czbpm{font-size:12.5px;margin-bottom:0}
+    .czarco{width:min(214px,60vw)}
+    .czbpm{font-size:12.5px;margin-bottom:1px}
     .czbpm b{font-size:17px}
-    .czlabel{font-size:22px}
   }
   .cdover{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;
     padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
@@ -618,7 +617,9 @@
   .cdnome{flex:1;font-size:13.5px;font-weight:600;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cdsair{width:34px;height:34px;border-radius:11px;border:1px solid var(--line);background:var(--surface-2);
     color:var(--muted);font-family:inherit;font-size:14px;cursor:pointer}
-  .cdmeio{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}
+  /* conjunto na região superior: sobrava um vazio grande acima do arco */
+  .cdmeio{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding-bottom:16vh;gap:6px;text-align:center}
   .cdrot{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--cd);line-height:1.1}
   .cdnum{font-size:88px;font-weight:700;line-height:1;letter-spacing:-.04em;
     font-variant-numeric:tabular-nums;color:var(--cd)}
@@ -679,7 +680,11 @@
     font-size:11.5px;text-decoration:underline;cursor:pointer}
   /* com o check-in aberto, o contador SOBE mas NÃO encolhe:
      a ênfase continua no relógio (a medição é opcional). Só o texto de apoio cede espaço. */
-  .cdover.ckon .cdmeio{justify-content:center;padding-bottom:44vh;gap:4px;min-height:0}
+  /* com o check-in aberto o arco sai, mas a FAIXA ALVO fica: é exatamente o que
+     ela precisa saber no momento em que vai medir o próprio pulso */
+  .cdover.ckon .cdmeio{justify-content:center;padding-bottom:42vh;gap:4px;min-height:0}
+  .cdover.ckon .czarco{display:none}
+  .cdover.ckon .czwrap{margin-bottom:0}
   .cdover.ckon .cdnum{font-size:88px}            /* mantido igual ao estado normal */
   .cdover.ckon .cdrot{font-size:22px}
   .cdover.ckon .cdbar{margin-top:6px}
@@ -1619,13 +1624,16 @@ function CardioOverlay({cardio}){
 function ArcoZonas({zona,fcMax}){
   const Z=zonaInfo(zona);
   const faixa=faixaBpm(fcMax,zona);
-  const W=228, H=124, cx=W/2, cy=112, R=88, esp=13;
+  // números FORA da faixa: dentro eles colidiam com o rótulo na concavidade
+  const W=260, H=142, cx=W/2, cy=126, R=90, esp=14, rNum=R+esp/2+11;
   const pol=(ang,r)=>[cx+r*Math.cos(Math.PI*(180-ang)/180), cy-r*Math.sin(Math.PI*(180-ang)/180)];
   const arco=(a0,a1)=>{
     const [x0,y0]=pol(a0,R), [x1,y1]=pol(a1,R);
     return 'M '+x0+' '+y0+' A '+R+' '+R+' 0 0 1 '+x1+' '+y1;
   };
-  const passo=180/5, gap=3.2;
+  const passo=180/5, gap=3.4;
+  // "Aquecimento" tem 11 caracteres e não cabe no mesmo corpo que "Leve"
+  const tam = Z.label.length>=10 ? 20 : (Z.label.length>=8 ? 23 : 26);
   return (<div className="czwrap">
     <div className="czbpm">
       {faixa
@@ -1642,13 +1650,13 @@ function ArcoZonas({zona,fcMax}){
             style={ativo?{filter:'drop-shadow(0 0 7px '+z.cor+'aa)'}:null}/>;
         })}
         {ZONAS.map((z,i)=>{
-          const [tx,ty]=pol(i*passo+passo/2, R-esp-11);
+          const [tx,ty]=pol(i*passo+passo/2, rNum);
           return <text key={'t'+z.z} x={tx} y={ty+4} textAnchor="middle"
-            fontSize="12.5" fontWeight="700" fontFamily="Sora, sans-serif"
-            fill={z.z===zona?z.cor:'rgba(255,255,255,.22)'}>{z.z}</text>;
+            fontSize="12" fontWeight="700" fontFamily="Sora, sans-serif"
+            fill={z.z===zona?z.cor:'rgba(255,255,255,.24)'}>{z.z}</text>;
         })}
       </svg>
-      <div className="czlabel" style={{color:Z.cor}}>{Z.label}</div>
+      <div className="czlabel" style={{color:Z.cor,fontSize:tam+'px'}}>{Z.label}</div>
     </div>
   </div>);
 }
@@ -2921,17 +2929,21 @@ function ExerciseSheet({initial,onSave,onClose}){
           <div className="autolist"><div className="hint">Nenhum no Cardápio — será salvo como texto livre ✍️</div></div>}
       </div>
       <div className="field">
-        <label>Cardio</label>
-        {!cardio
-          ? <div className="metrow">
-              <span className="metatual">Não é cardio</span>
-              <button type="button" className="metbtn" onClick={()=>setEscolhendoCard(true)}>🏃 Definir cardio</button>
-            </div>
-          : <div className="metrow">
-              <span className="metatual on">🏃 {cardio.blocos.length} blocos · {fmtMin(totalCardioSeg(cardio))}</span>
-              <button type="button" className="metbtn" onClick={()=>setEscolhendoCard(true)}>Trocar</button>
-              <button type="button" className="metbtn del" onClick={()=>setCardio(null)}>Remover</button>
-            </div>}
+        {/* toggle no lugar de "Não é cardio / Definir cardio": o estado fica
+            legível de relance e a linha ocupa metade do espaço */}
+        <label className="swrow" style={{margin:0}}>
+          <input type="checkbox" checked={!!cardio}
+            onChange={e=>{ if(e.target.checked) setEscolhendoCard(true); else { setCardio(null); setEscolhendoCard(false); } }}/>
+          <span className="swtrack"></span>
+          <span className="swtxt">
+            <span className="swtit">🏃 Cardio</span>
+            <span className="swsub">{cardio
+              ? cardio.blocos.length+' blocos · '+fmtMin(totalCardioSeg(cardio))
+              : 'Ative se este exercício for cardio'}</span>
+          </span>
+          {cardio && <button type="button" className="metbtn" style={{marginLeft:'auto'}}
+            onClick={e=>{e.preventDefault();e.stopPropagation();setEscolhendoCard(true);}}>Trocar</button>}
+        </label>
         {escolhendoCard && <div className="metlista">
           <input className="metbusca" autoFocus value={buscaCard} placeholder="🔍 Buscar cardio (ex: hiit 60, sit bike)"
             onChange={e=>setBuscaCard(e.target.value)}/>
