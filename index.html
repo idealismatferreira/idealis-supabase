@@ -1043,9 +1043,16 @@ async function execOp(op){
   if(op.tipo==='insert' || op.tipo==='upsert'){
     // SEMPRE upsert: com rede instável o request pode chegar no servidor e a
     // resposta se perder. Um insert reenviado morreria em chave duplicada e
-    // travaria a fila inteira atrás dele. Todo insert nosso já leva `id` próprio,
-    // então regravar a mesma linha é inofensivo.
-    const opts = op.conflito ? {onConflict:op.conflito} : undefined;
+    // travaria a fila inteira atrás dele. Todo insert nosso já leva `id` próprio.
+    //
+    // ignoreDuplicates -> ON CONFLICT DO NOTHING (e não DO UPDATE).
+    // Isso importa por RLS: o caminho DO UPDATE exige policy de UPDATE com
+    // USING, que tabelas como `sessoes` não dão ao aluno — e o reenvio morria
+    // com "violates row-level security policy (USING expression)".
+    // DO NOTHING também é a semântica certa aqui: se a linha já existe, ela é
+    // idêntica à que estamos reenviando (mesmo id, mesmos dados).
+    const opts = {ignoreDuplicates:true};
+    if(op.conflito) opts.onConflict = op.conflito;
     const {error}=await sb.from(T).upsert(D, opts);
     if(error) throw new Error(error.message);
   }else if(op.tipo==='update'){
@@ -1918,13 +1925,13 @@ function App({auth}){
       </div>
     </div>}
     {screen}
-    <NuvemBadge carga={carga} fila={fila} onRetry={()=>{flushOps(true);recarregar();}}/>
+    <NuvemBadge carga={carga} fila={fila} ehAluno={ehAluno} onRetry={()=>{flushOps(true);recarregar();}}/>
     <RestTimerOverlay timer={timer} voltar={voltarDaTela}/>
     {cardio.ativo && <CardioOverlay cardio={{...cardio, fcMax:fcMaxDoAlunoEmFoco}}/>}
     {toast && <div className="toast">{toast}</div>}
   </React.Fragment>);
 }
-function NuvemBadge({carga,fila,onRetry}){
+function NuvemBadge({carga,fila,onRetry,ehAluno}){
   const {estado,quando}=carga;
   const pend=fila?fila.pend:0;
   // prioridade: mostrar o que está pendente de subir
@@ -1936,7 +1943,9 @@ function NuvemBadge({carga,fila,onRetry}){
               : (pend+' p/ salvar');
     return <button className={'syncbadge '+(fila.estado==='erro'?'err':'off')} onClick={onRetry}>{txt}</button>;
   }
-  if(mortas>0) return <button className="syncbadge err" onClick={onRetry}
+  // quarentena é diagnóstico do TREINADOR. Pro aluno é só um alarme que ele não
+  // pode resolver — e que sugere perda de treino quando não houve perda nenhuma.
+  if(mortas>0 && !ehAluno) return <button className="syncbadge err" onClick={onRetry}
     title="Tocar para ver o motivo; tocar de novo para descartar">{mortas+' recusado(s) · ver'}</button>;
   if(estado==='carregando') return <button className="syncbadge sending" onClick={onRetry}>Carregando…</button>;
   if(estado==='offline') return <button className="syncbadge off" onClick={onRetry}>{quando?('Offline · dados de '+_hhmm(quando)):'Offline'}</button>;
