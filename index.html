@@ -1802,9 +1802,27 @@ function App({auth}){
   useEffect(()=>{ recarregar(); },[recarregar]);
   // motor da fila de escrita: sobe operações pendentes quando dá
   const [fila,setFila]=useState({pend:loadOpQueue().length, estado:'idle', mortas:loadOpMortas().length});
+  const vistoRef=React.useRef(false); // quarentena já exibida? próximo toque descarta
   const flushOps=React.useCallback(async (manual)=>{
     const pend=loadOpQueue().length;
-    if(pend===0){ setFila({pend:0, estado:'idle', mortas:loadOpMortas().length}); return; }
+    if(pend===0){
+      const m=loadOpMortas();
+      setFila({pend:0, estado:'idle', mortas:m.length});
+      // a quarentena guardava o erro mas não tinha caminho pra ele aparecer
+      if(manual && m.length){
+        const u=m[m.length-1];
+        console.warn('[fila] quarentena:', u);
+        if(vistoRef.current){            // segundo toque: já mostrou, agora limpa
+          saveOpMortas([]); vistoRef.current=false;
+          setFila({pend:0, estado:'idle', mortas:0});
+          flash('Descartado.');
+        }else{
+          vistoRef.current=true;
+          flash((u.op?('['+u.op.tabela+' '+u.op.tipo+'] '):'')+String(u.erro||'sem detalhe').slice(0,120));
+        }
+      }
+      return;
+    }
     if(!navigator.onLine){ setFila({pend, estado:'offline', mortas:loadOpMortas().length}); return; }
     setFila({pend, estado:'enviando', mortas:loadOpMortas().length});
     const r=await flushOpQueue();
@@ -1897,7 +1915,8 @@ function NuvemBadge({carga,fila,onRetry}){
               : (pend+' p/ salvar');
     return <button className={'syncbadge '+(fila.estado==='erro'?'err':'off')} onClick={onRetry}>{txt}</button>;
   }
-  if(mortas>0) return <button className="syncbadge err" onClick={onRetry}>{mortas+' recusado(s) pelo servidor'}</button>;
+  if(mortas>0) return <button className="syncbadge err" onClick={onRetry}
+    title="Tocar para ver o motivo; tocar de novo para descartar">{mortas+' recusado(s) · ver'}</button>;
   if(estado==='carregando') return <button className="syncbadge sending" onClick={onRetry}>Carregando…</button>;
   if(estado==='offline') return <button className="syncbadge off" onClick={onRetry}>{quando?('Offline · dados de '+_hhmm(quando)):'Offline'}</button>;
   if(estado==='erro') return <button className="syncbadge err" onClick={onRetry}>Erro ao carregar · tocar p/ tentar</button>;
