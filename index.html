@@ -604,6 +604,23 @@
   .tagfalta{font-size:9.5px;font-weight:700;color:var(--muted);background:var(--surface-2);
     border:1px solid var(--line);border-radius:999px;padding:1px 7px;margin-left:6px;
     letter-spacing:.03em;vertical-align:middle;white-space:nowrap}
+  .dorbox{margin-top:12px;padding:12px;border-radius:12px;background:rgba(229,123,123,.06);
+    border:1px solid rgba(229,123,123,.26)}
+  .dorlab{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:9px}
+  .dorchips{display:flex;flex-wrap:wrap;gap:7px}
+  .dorchip{padding:11px 14px;border-radius:11px;background:var(--bg);border:1px solid var(--line);
+    color:var(--text);font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .dorchip.sel{border-color:#e57b7b;background:rgba(229,123,123,.2);color:#ffd9d9;font-weight:800}
+  .dorchip.mais{border-style:dashed;color:var(--muted);font-weight:600}
+  .dorlados{display:flex;gap:7px;margin-top:9px}
+  .dorlados .dorlado{flex:1;padding:10px;border-radius:10px;background:var(--bg);
+    border:1px solid var(--line);color:var(--muted);font-family:inherit;font-size:13px;
+    font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .dorlados .dorlado.sel{border-color:#e57b7b;background:rgba(229,123,123,.2);color:#ffd9d9}
+  .dortag{font-size:10.5px;font-weight:800;color:#ffd9d9;background:rgba(229,123,123,.2);
+    border:1px solid rgba(229,123,123,.4);border-radius:999px;padding:1px 8px;margin-left:6px;
+    white-space:nowrap;vertical-align:middle}
   /* ===== ARCO DE ZONAS (acima do timer; o timer NÃO muda de tamanho) ===== */
   .czwrap{display:flex;flex-direction:column;align-items:center;width:100%;margin-bottom:6px}
   .czbpm{font-size:14px;color:var(--muted);letter-spacing:.01em;margin-bottom:4px}
@@ -939,8 +956,11 @@ function agruparSessoes(logs, base){
     s.series=s.series.map((l,i)=>({...l, serieN:(l.serie!=null?l.serie:i+1)}));
     const prim=s.series.find(x=>x.intensidade!=null)||s.series[0];
     s.intensidade=prim?prim.intensidade:null;
-    const pd=s.series.find(x=>x.dor!=null)||s.series[0];
+    const pd=s.series.find(x=>x.dor!=null && x.dor>=1)||s.series.find(x=>x.dor!=null)||s.series[0];
     s.dor=pd?pd.dor:null;
+    const pl=s.series.find(x=>x.dorLocal);   // primeira série que informou onde
+    s.dorLocal=pl?pl.dorLocal:null;
+    s.dorLado=pl?pl.dorLado:null;
     return s;
   }).sort((a,b)=>a.date.localeCompare(b.date));
 }
@@ -1093,7 +1113,7 @@ async function fetchDbFromSupabase(){
       sb.from('alunos').select('id,nome,foto_url,academia,nascimento,fc_max').order('nome'),
       sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data').order('ordem'),
       sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio').order('ordem'),
-      sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor,variante,serie,extra').order('data,serie'),
+      sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor,dor_local,dor_lado,variante,serie,extra').order('data,serie'),
       sb.from('sessoes').select('id,aluno_id,treino_id,data,origem').order('data'),
       sb.from('relatos').select('id,aluno_id,treino_id,exercicio_id,exercicio_nome,data,texto,fixado,created_at').order('created_at'),
       sb.from('acessos').select('id,aluno_id,treino_id,data,vezes').order('data')
@@ -1105,7 +1125,8 @@ async function fetchDbFromSupabase(){
     (rLogs.data||[]).forEach(l=>{
       (logsPorEx[l.exercicio_id]=logsPorEx[l.exercicio_id]||[]).push({
         id:l.id, date:l.data, carga:l.carga||'', reps:l.reps||'',
-        intensidade:l.intensidade, dor:l.dor, variante:l.variante||'', serie:(l.serie!=null?l.serie:null),
+        intensidade:l.intensidade, dor:l.dor, dorLocal:l.dor_local||null, dorLado:l.dor_lado||null,
+        variante:l.variante||'', serie:(l.serie!=null?l.serie:null),
         extra:l.extra||null
       });
     });
@@ -2527,6 +2548,49 @@ const NIVEIS=[
    As duas se cruzam aos 40 anos: antes disso a clássica superestima, depois
    subestima. Tanaka corrige esse viés — mas NÃO corrige a dispersão individual
    (~10 bpm de desvio padrão nas duas). Por isso alunos.fc_max sobrepõe o cálculo. */
+/* ===== DOR ARTICULAR: ONDE =====
+   Vocabulário canônico do ecossistema Idealis. Os códigos batem com a constraint
+   em logs.dor_local — mudar aqui exige mudar lá também. */
+const REGIOES=[
+  {k:'cervical', label:'Cervical / Nuca'},
+  {k:'ombro',    label:'Ombro'},
+  {k:'cotovelo', label:'Cotovelo'},
+  {k:'punho',    label:'Punho / Mão'},
+  {k:'toracica', label:'Torácica'},
+  {k:'lombar',   label:'Lombar'},
+  {k:'quadril',  label:'Quadril'},
+  {k:'joelho',   label:'Joelho'},
+  {k:'tornozelo',label:'Tornozelo / Pé'},
+  {k:'outro',    label:'Outro'},
+];
+const regiaoLabel=(k)=>{const r=REGIOES.find(x=>x.k===k); return r?r.label:k;};
+const LADOS=[{k:'e',label:'Esq.'},{k:'d',label:'Dir.'},{k:'ambos',label:'Ambos'}];
+/* O exercício já elimina a maioria das respostas: um supino não dói no tornozelo.
+   Mostrar 3-4 chips em vez de 10 é o que torna a coleta viável entre séries.
+   Derivado do `grupo` do Catálogo — zero preenchimento nos 709 exercícios. */
+const DOR_POR_GRUPO=[
+  {re:/peito|peitoral/,                 r:['ombro','cotovelo','punho']},
+  {re:/dorsal|costas|latissimo/,        r:['ombro','cotovelo','lombar']},
+  {re:/trapezio|trapézio/,              r:['cervical','ombro','toracica']},
+  {re:/deltoide|deltóide|ombro/,        r:['ombro','cervical','cotovelo']},
+  {re:/biceps|bíceps/,                  r:['cotovelo','punho','ombro']},
+  {re:/triceps|tríceps/,                r:['cotovelo','ombro','punho']},
+  {re:/antebra|punho/,                  r:['punho','cotovelo']},
+  {re:/quadriceps|quadríceps|coxa/,     r:['joelho','quadril','lombar']},
+  {re:/posterior|isquio|ísquio/,        r:['joelho','quadril','lombar']},
+  {re:/gluteo|glúteo/,                  r:['quadril','lombar','joelho']},
+  {re:/adutor|abdutor/,                 r:['quadril','joelho']},
+  {re:/panturrilha|sural/,              r:['tornozelo','joelho']},
+  {re:/abdomen|abdômen|abdominal|core/, r:['lombar','cervical','quadril']},
+  {re:/lombar|eretor|paravertebral/,    r:['lombar','toracica','quadril']},
+  {re:/terap|mobilid/,                  r:['lombar','ombro','quadril','cervical']},
+];
+function regioesSugeridas(grupo){
+  const g=String(grupo||'').toLowerCase();
+  const hit=DOR_POR_GRUPO.find(x=>x.re.test(g));
+  // grupo desconhecido ou vazio: as articulações mais reclamadas
+  return hit ? hit.r : ['ombro','lombar','joelho'];
+}
 const ZONAS=[
   {z:1, min:.50, max:.60, label:'Aquecimento', cor:'#54c8e0'},
   {z:2, min:.60, max:.70, label:'Leve',        cor:'#5ddb8b'},
@@ -3290,6 +3354,14 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
     return i<0?Math.max(0,lista.length-1):i;
   };
   const [ativa,setAtiva]=useState(()=>primeiraPendente(series)); // começa na primeira pendente
+  const [todasRegioes,setTodasRegioes]=useState(false); // "outro…" abre as 10
+  // grupo vem do Catálogo em cache; sem ele os chips caem na lista genérica
+  const grupoDoEx=(()=>{
+    const cid=exercicio&&exercicio.exerciseId;
+    if(cid==null) return '';
+    const c=loadCatalogo().find(x=>String(x.id)===String(cid));
+    return c?c.grupo:'';
+  })();
   const at=series[Math.min(ativa,series.length-1)]||{carga:'',reps:''};
   const setAt=(patch)=>setSerie(Math.min(ativa,series.length-1),patch);
   const serieCompleta=(sr)=>!!(sr && String(sr.carga||'').trim() && String(sr.reps||'').trim());
@@ -3328,7 +3400,10 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
     if(pend.includes(variante)) salvarVarPend(alunoId,exName,pend.filter(v=>v!==variante));
     onSave({
       series: feitas.map(sr=>({serie:sr.i+1, carga:sr.carga.trim(), reps:sr.reps.trim(),
-        intensidade:(sr.intensidade!=null?sr.intensidade:null), dor:(sr.dor!=null?sr.dor:null)})),
+        intensidade:(sr.intensidade!=null?sr.intensidade:null), dor:(sr.dor!=null?sr.dor:null),
+        // constraint no banco: local só existe com dor >= 1
+        dorLocal:(sr.dor!=null && sr.dor>=1 && sr.dorLocal)?sr.dorLocal:null,
+        dorLado:(sr.dor!=null && sr.dor>=1 && sr.dorLocal && sr.dorLado)?sr.dorLado:null})),
       variante:(variante===base?'':variante),
       marcarSerie: marcarSerie===true ? Math.max(...feitas.map(sr=>sr.i+1)) : null
     });
@@ -3453,7 +3528,34 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
       <div className="field"><label className="reglab">Esforço <span className="reghint">(opcional)</span></label>
         <Scale value={at.intensidade!=null?at.intensidade:null} onChange={(v)=>setAt({intensidade:v})} leftLabel="Leve" rightLabel="Máxima"/></div>
       <div className="field"><label className="reglab">Dor Articular <span className="reghint">(opcional)</span></label>
-        <Scale value={at.dor!=null?at.dor:null} onChange={(v)=>setAt({dor:v})} leftLabel="Sem dor" rightLabel="Dor forte"/></div>
+        <Scale value={at.dor!=null?at.dor:null} onChange={(v)=>setAt({dor:v})} leftLabel="Sem dor" rightLabel="Dor forte"/>
+        {/* abre em dor >= 1, mas NUNCA obrigatório: exigir preenchimento aqui
+            faria o aluno marcar 0 pra escapar, estragando o campo principal. */}
+        {at.dor!=null && at.dor>=1 && (()=>{
+          const sug=regioesSugeridas(grupoDoEx);
+          const extra = at.dorLocal && sug.indexOf(at.dorLocal)<0 ? [at.dorLocal] : [];
+          const lista = todasRegioes ? REGIOES.map(r=>r.k) : sug.concat(extra);
+          return (<div className="dorbox">
+            <div className="dorlab">Onde? <span className="reghint">(pode pular)</span></div>
+            <div className="dorchips">
+              {lista.map(k=>(
+                <button type="button" key={k}
+                  className={'dorchip'+(at.dorLocal===k?' sel':'')}
+                  onClick={()=>setAt({dorLocal: at.dorLocal===k?null:k, dorLado: at.dorLocal===k?null:at.dorLado})}>
+                  {regiaoLabel(k)}
+                </button>))}
+              {!todasRegioes &&
+                <button type="button" className="dorchip mais" onClick={()=>setTodasRegioes(true)}>outro…</button>}
+            </div>
+            {at.dorLocal && <div className="dorlados">
+              {LADOS.map(l=>(
+                <button type="button" key={l.k}
+                  className={'dorlado'+(at.dorLado===l.k?' sel':'')}
+                  onClick={()=>setAt({dorLado: at.dorLado===l.k?null:l.k})}>{l.label}</button>))}
+            </div>}
+          </div>);
+        })()}
+      </div>
       {!isEdit && series.length>1 && ativa<series.length-1 &&
         <button type="button" className="btnprox" onClick={()=>setAtiva(ativa+1)}>
           Próxima série ({ativa+2}ª) →
@@ -3666,7 +3768,8 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
       const ja=existentes.find(l=>l.serie===sr.serie);
       const base={serie:sr.serie, carga:sr.carga, reps:sr.reps,
         intensidade:(sr.intensidade!=null?sr.intensidade:null),
-        dor:(sr.dor!=null?sr.dor:null), variante:varData};
+        dor:(sr.dor!=null?sr.dor:null),
+        dorLocal:(sr.dorLocal||null), dorLado:(sr.dorLado||null), variante:varData};
       if(ja) atualizados.push({...ja, ...base});
       else inseridos.push({id:uid(), date:hoje, ...base});
     });
@@ -3680,11 +3783,13 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
       id:log.id, exercicio_id:ex.id, data:log.date, serie:log.serie,
       carga:log.carga||null, reps:log.reps||null,
       intensidade:log.intensidade, dor:log.dor,
+      dor_local:log.dorLocal||null, dor_lado:log.dorLado||null,
       variante:log.variante||null
     }}));
     atualizados.forEach(log=>enqueueOp({tipo:'update',tabela:'logs',id:log.id,dados:{
       serie:log.serie, carga:log.carga||null, reps:log.reps||null,
       intensidade:log.intensidade, dor:log.dor,
+      dor_local:log.dorLocal||null, dor_lado:log.dorLado||null,
       variante:log.variante||null
     }}));
     const n=atualizados.length+inseridos.length;
@@ -3864,7 +3969,12 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
             const ult=ses.length?ses[ses.length-1]:null;
             if(!ult) return <div className="exlast"><span className="lastnote">Ainda sem registro — toque em “Registrar Carga”.</span></div>;
             return <div className="exlast">
-              <span className="lastnote">Última sessão · {fmtDate(ult.date)}</span>
+              <span className="lastnote">Última sessão · {fmtDate(ult.date)}
+                {ult.dorLocal && <span className="dortag">
+                  🔴 {regiaoLabel(ult.dorLocal)}{ult.dorLado?' '+(ult.dorLado==='ambos'?'(ambos)':(ult.dorLado==='d'?'(dir.)':'(esq.)')):''}
+                  {ult.dor!=null?' · '+ult.dor+'/10':''}
+                </span>}
+              </span>
               <div className="ultseries">
                 {ult.series.map((sr,i)=>(
                   <span className="uspill" key={sr.id}>
