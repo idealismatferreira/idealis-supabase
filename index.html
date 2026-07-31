@@ -2560,6 +2560,66 @@ const NIVEIS=[
 /* ===== DOR ARTICULAR: ONDE =====
    Vocabulário canônico do ecossistema Idealis. Os códigos batem com a constraint
    em logs.dor_local — mudar aqui exige mudar lá também. */
+/* ===== RESGATE DO ESPELHO LOCAL =====
+   Vive DENTRO do app de propósito: no iOS, o PWA da tela inicial pode ter
+   armazenamento separado do Safari, e lá dentro não existe barra de endereço
+   para abrir uma página de backup. Esta é a única via confiável. */
+function ResgateLocal(){
+  const [info,setInfo]=useState(null);
+  const coletar=()=>{
+    const chaves={};
+    try{
+      for(let i=0;i<window.localStorage.length;i++){
+        const k=window.localStorage.key(i);
+        if(k && k.toLowerCase().indexOf('idealis')>=0) chaves[k]=window.localStorage.getItem(k);
+      }
+    }catch(e){}
+    let alunos=0, treinos=0, logs=0;
+    try{
+      const d=JSON.parse(chaves[DB_KEY]||'null');
+      if(d && d.students){
+        alunos=d.students.length;
+        d.students.forEach(s=>(s.treinos||[]).forEach(t=>{
+          treinos++;
+          (t.exercises||[]).forEach(e=>{ logs+=((e.logs||[]).length); });
+        }));
+      }
+    }catch(e){}
+    const txt=JSON.stringify({gerado_em:new Date().toISOString(),
+      ua:navigator.userAgent, chaves},null,1);
+    setInfo({alunos,treinos,logs,txt,kb:(txt.length/1024).toFixed(0)});
+  };
+  const baixar=()=>{
+    const d=new Date(), p=n=>(n<10?'0':'')+n;
+    const nome='idealis-resgate-'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+'.json';
+    try{
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([info.txt],{type:'application/json'}));
+      a.download=nome; document.body.appendChild(a); a.click();
+      setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+    }catch(e){ alert('Falha ao baixar. Use o botão de copiar.'); }
+  };
+  const copiar=()=>{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(info.txt).then(
+        ()=>alert('Copiado! Cole nas Notas e envie para o Matheus.'),
+        ()=>alert('Não consegui copiar automaticamente.'));
+    }else{ alert('Use o botão de baixar.'); }
+  };
+  if(!info) return <button className="btn ghost" style={{marginBottom:10}}
+    onClick={coletar}>🛟 Salvar meus dados deste aparelho</button>;
+  return (<div style={{marginBottom:12,padding:13,borderRadius:12,textAlign:'left',
+      background:'rgba(0,218,239,.07)',border:'1px solid rgba(0,218,239,.35)'}}>
+    <div style={{fontSize:13,fontWeight:800,marginBottom:6}}>
+      {info.alunos>0?'✅ Cópia encontrada neste aparelho':'⚠️ Nada encontrado aqui'}
+    </div>
+    <div style={{fontSize:12.5,color:'var(--muted)',lineHeight:1.5,marginBottom:11}}>
+      {info.alunos} aluno(s) · {info.treinos} treino(s) · <b>{info.logs} registros de carga</b> · {info.kb} KB
+    </div>
+    <button className="btn" style={{marginBottom:8}} onClick={baixar}>⬇️ Baixar arquivo</button>
+    <button className="btn ghost" onClick={copiar}>📋 Copiar</button>
+  </div>);
+}
 const REGIOES=[
   {k:'cervical', label:'Cervical / Nuca'},
   {k:'ombro',    label:'Ombro'},
@@ -4266,6 +4326,7 @@ function Root(){
     <LoginHeader/>
     <div className="loginsub">Login sem perfil vinculado.<br/>Fale com seu treinador.</div>
     {auth.erro && <div className="loginerro">{auth.erro}</div>}
+    <ResgateLocal/>
     <button className="btn ghost" onClick={auth.sair}>Sair</button>
   </div></div>;
   // TEMP camada 1: mostra papel detectado + o app atual (treinador).
