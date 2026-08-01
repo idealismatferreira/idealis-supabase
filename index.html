@@ -61,6 +61,7 @@
     --lime-bg:rgba(221,255,0,.07); --lime-line:rgba(221,255,0,.28);
     --lime-chip:rgba(221,255,0,.1); --lime-chip-line:rgba(221,255,0,.45);
     --lime-chip-on:rgba(221,255,0,.26); --lime-chip-fg:var(--lime);
+    --topbar:rgba(11,31,31,.92); --topbar-line:var(--line);
   }
   /* toggle deslizante: pílula com dois ícones fixos e um "polegar" que corre.
      Fica só na home do aluno, à esquerda — onde a seta ‹ não existe. */
@@ -105,6 +106,7 @@
     --lime-bg:rgba(166,192,0,.10); --lime-line:rgba(166,192,0,.38);
     /* no claro, translúcido some: o chip precisa de fundo e borda sólidos */
     --lime-chip:#eef7c4; --lime-chip-line:#7d9200; --lime-chip-on:#e2f0a0;
+    --topbar:rgba(187,239,242,.94); --topbar-line:#93d6db;
     --lime-chip-fg:#5c6b00;   /* texto do chip: mais escuro que o lime geral */
     background:var(--bg); color:var(--text);
   }
@@ -126,6 +128,7 @@
     --lime:#ddff00; --lime-bg:rgba(221,255,0,.07); --lime-line:rgba(221,255,0,.28);
     --lime-chip:rgba(221,255,0,.1); --lime-chip-line:rgba(221,255,0,.45);
     --lime-chip-on:rgba(221,255,0,.26); --lime-chip-fg:#ddff00;
+    --topbar:rgba(11,31,31,.92); --topbar-line:var(--line);
     color:var(--text);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -136,11 +139,11 @@
   input,textarea{font-family:inherit}
   ::placeholder{color:var(--muted)}
   .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;
-    padding:14px 16px;background:rgba(11,31,31,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+    padding:14px 16px;background:var(--topbar);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
   /* topbar clara: cinza levemente azulado, mais claro que as superfícies.
      Precisa vir DEPOIS da regra base, que tem background fixo. */
   /* teal claro da marca: separa a topbar do fundo sem chapar com as superfícies */
-  .tema-claro .topbar{background:rgba(187,239,242,.94);border-bottom-color:#93d6db}
+  .topbar{border-bottom-color:var(--topbar-line)}
   /* o logo é MARCA, não sinalização: escurecê-lo apaga a identidade.
      No claro ele carrega o próprio fundo escuro e mantém o #ddff00 original. */
   .tema-claro .logoid{color:#ddff00;background:#0e1618;border-radius:50%;
@@ -415,8 +418,9 @@
   .rtpx{font-size:11px;opacity:.6;margin-left:2px}
   /* volta ao topo, mas agora com seta própria: a .topbar (z-index 20) fica coberta,
      então a barra precisa carregar o próprio caminho de volta. */
-  .rtrunning{position:fixed;top:0;left:0;right:0;z-index:70;background:var(--surface-2);
-    border-bottom:1px solid var(--line);padding:11px 16px 0;cursor:pointer;transition:border-color .3s}
+  .rtrunning{position:fixed;top:0;left:0;right:0;z-index:70;background:var(--topbar);
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--topbar-line);padding:11px 16px 0;cursor:pointer;transition:border-color .3s}
   .rtrunning.inicial{border-bottom-color:var(--cyan)}
   .rtrunning.liberado{border-bottom-color:var(--lime)}
   .rtrunning.fim{border-bottom-color:var(--line)}
