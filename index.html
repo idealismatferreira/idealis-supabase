@@ -27,6 +27,23 @@
 //# sourceMappingURL=Recharts.js.map
 </script>
 <style>
+  /* ===== SPLASH ===== */
+  #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:18px;background:#0b0f10;
+    opacity:1;transition:opacity .45s ease}
+  #splash.sai{opacity:0;pointer-events:none}
+  #splash .spmark{width:min(180px,46vw);height:min(180px,46vw);color:#ddff00;
+    animation:sppulso 1.5s ease-in-out infinite}
+  #splash .spmark svg{width:100%;height:100%;display:block}
+  #splash .spnome{font-family:Sora,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:12px;font-weight:600;letter-spacing:.3em;text-indent:.3em;color:#eef7f8;
+    opacity:.72;text-align:center}
+  @keyframes sppulso{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.62;transform:scale(.94)}}
+  /* respeita quem pediu menos movimento no sistema */
+  @media (prefers-reduced-motion:reduce){
+    #splash .spmark{animation:none}
+    #splash{transition:opacity .2s linear}
+  }
   :root{
     /* superfícies — neutros com profundidade progressiva */
     --bg:#090b0c; --surface:#131718; --surface-2:#1b2123; --line:#2c3436;
@@ -944,6 +961,15 @@
 </style>
 </head>
 <body>
+<!-- Splash: HTML+CSS puros, pintados antes de React/Babel carregarem.
+     Não usa animação de layout (só opacity/transform), que é o que roda
+     na GPU e não trava em aparelho antigo. -->
+<div id="splash">
+  <div class="spmark">
+    <svg viewBox="0 0 1920 1920" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g transform="translate(0,1920) scale(0.1,-0.1)" fill="currentColor"><path d="M9155 19019 c-1338 -64 -2627 -404 -3810 -1004 -1587 -805 -2919 -2044 -3831 -3565 -1023 -1705 -1477 -3667 -1308 -5655 216 -2544 1447 -4874 3434 -6500 1265 -1036 2787 -1726 4398 -1994 2550 -425 5147 204 7202 1744 1979 1482 3301 3672 3674 6085 151 979 153 1931 5 2910 -367 2424 -1692 4627 -3679 6115 -908 681 -1919 1183 -3035 1508 -957 280 -2035 405 -3050 356z m925 -1004 c968 -52 1917 -273 2810 -652 2215 -941 3936 -2797 4699 -5068 498 -1484 576 -3070 225 -4595 -638 -2770 -2650 -5045 -5324 -6020 -1155 -421 -2348 -579 -3620 -480 -357 28 -943 125 -1300 215 -1753 441 -3316 1424 -4464 2810 -557 672 -1021 1454 -1343 2265 -1021 2569 -710 5499 825 7790 832 1240 1949 2220 3282 2879 848 419 1730 685 2670 805 500 63 1002 80 1540 51z M10017 14913 c-758 -1027 -1374 -1869 -1369 -1871 7 -2 2971 945 2980 953 5 5 -223 2785 -228 2785 -3 0 -625 -840 -1383 -1867z M9365 12571 l-1480 -488 -41 -54 c-23 -30 -574 -781 -1224 -1669 -651 -888 -1188 -1618 -1194 -1622 -6 -4 891 -8 1994 -9 1103 0 2015 -4 2026 -7 19 -6 -22 -67 -404 -587 -233 -319 -1046 -1428 -1805 -2465 -758 -1037 -1390 -1895 -1404 -1907 l-24 -23 2525 0 2526 0 1123 616 c617 338 1128 621 1135 628 22 21 -552 25 -2418 19 l-1705 -6 26 34 c14 19 637 860 1384 1869 1535 2074 1467 1983 1958 2610 l364 465 -291 6 c-160 3 -1087 4 -2060 1 -1307 -4 -1768 -2 -1765 6 2 6 488 665 1079 1463 591 799 1101 1488 1133 1531 43 58 53 78 40 77 -10 0 -684 -220 -1498 -488z"/></g></svg>
+  </div>
+  <div class="spnome">MATHEUS FERREIRA</div>
+</div>
 <div id="root"></div>
 <script type="text/babel">
 const {useState,useEffect,useMemo} = React;
@@ -4500,6 +4526,14 @@ function Root(){
   return <App auth={auth}/>;
 }
 ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
+/* tira o splash só depois que o React pintou de verdade (2 frames),
+   senão a tela pisca preta entre o splash sumir e o app aparecer */
+requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  const sp=document.getElementById('splash');
+  if(!sp) return;
+  sp.classList.add('sai');
+  setTimeout(()=>{ if(sp.parentNode) sp.parentNode.removeChild(sp); }, 600);
+}));
 /* Service Worker: guarda o casco do app para funcionar sem rede.
    Registrado DEPOIS do render para não competir com a primeira pintura.
 
