@@ -77,10 +77,11 @@
   .temasw .tsknob{position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;
     background:var(--cyan);box-shadow:0 2px 6px var(--sombra-2);z-index:1;
     transition:transform .24s cubic-bezier(.3,1.25,.5,1),background .2s}
-  .temasw.claro .tsknob{transform:translateX(36px)}
-  /* o ícone que está sob o polegar inverte para o texto de contraste */
-  .temasw.escuro .tsico.sol{color:var(--on-cyan)}
-  .temasw.claro  .tsico.lua{color:var(--on-cyan)}
+  /* o polegar marca o ESTADO ATUAL, não o destino:
+     tema claro -> polegar no sol (esquerda) · tema escuro -> na lua (direita) */
+  .temasw.escuro .tsknob{transform:translateX(36px)}
+  .temasw.claro  .tsico.sol{color:var(--on-cyan)}
+  .temasw.escuro .tsico.lua{color:var(--on-cyan)}
   /* ===== TEMA CLARO — só nas telas do ALUNO =====
      Não é inversão: é uma segunda paleta. O cyan escurece para manter contraste
      sobre branco (o #00c9cc original some no claro), e o amarelo-lime de conquista
