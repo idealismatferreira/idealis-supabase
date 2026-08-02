@@ -31,14 +31,18 @@
   #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:18px;background:#0b0f10;
     opacity:1;transition:opacity .45s ease}
+  /* o Android mostra o splash NATIVO (ícone do manifest) antes deste.
+     A pulsação começa suave para a passagem de um ao outro não ter corte. */
+  #splash .spmark,#splash .spnome{animation-fill-mode:both}
   #splash.sai{opacity:0;pointer-events:none}
   #splash .spmark{width:min(180px,46vw);height:min(180px,46vw);color:#ddff00;
-    animation:sppulso 1.5s ease-in-out infinite}
+    animation:sppulso 1.5s ease-in-out .25s infinite}
   #splash .spmark svg{width:100%;height:100%;display:block}
   #splash .spnome{font-family:Sora,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     font-size:12px;font-weight:600;letter-spacing:.3em;text-indent:.3em;color:#eef7f8;
-    opacity:.72;text-align:center}
+    opacity:.72;text-align:center;animation:spentra .5s ease both}
   @keyframes sppulso{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.62;transform:scale(.94)}}
+  @keyframes spentra{from{opacity:0}to{opacity:1}}
   /* respeita quem pediu menos movimento no sistema */
   @media (prefers-reduced-motion:reduce){
     #splash .spmark{animation:none}
