@@ -998,11 +998,18 @@ function useAuth(){
             if(rf && rf.session && rf.session.user) return carregarPerfil(rf.session.user, 1);
           }catch(e){}
         }
-        // sem internet: mantém o que já está na tela em vez de expulsar
+        // SEM REDE: usa o papel da última sessão em vez de expulsar.
+        // A sessão do Supabase já está no aparelho; só a leitura de `perfis` falhou.
+        const salvo=loadPerfilCache(user.id);
+        if(salvo && (!navigator.onLine || erroDeRede(error.message))){
+          setEstado({loading:false, user, perfil:salvo, offline:true});
+          return;
+        }
         if(!navigator.onLine){ setEstado(e0=>({...e0, loading:false, user})); return; }
         setEstado({loading:false, user, perfil:null, erro:'Erro ao ler perfil: '+error.message});
         return;
       }
+      if(data) savePerfilCache(user.id, data);   // guarda para a próxima abertura offline
       setEstado({loading:false, user, perfil:data||null});
     }
     sb.auth.getSession().then(({data})=>{ carregarPerfil(data.session?data.session.user:null); });
@@ -1015,12 +1022,32 @@ function useAuth(){
     if(error) return {ok:false, erro:_traduzErro(error.message)};
     return {ok:true};
   };
-  const sair=async ()=>{ if(sb) await sb.auth.signOut(); };
+  const sair=async ()=>{ savePerfilCache(null,null); if(sb) await sb.auth.signOut(); };
   return {...estado, entrar, sair};
 }
 
 const DB_KEY = 'idealis_presencial_v2';
 const TEMA_KEY = 'idealis_tema_v1';
+/* Perfil da última sessão. Sem isto o app abre offline (o Service Worker
+   entrega o casco) mas cai em "sem perfil vinculado", porque a leitura de
+   `perfis` precisa de servidor. É cache de PAPEL, não credencial: o RLS
+   continua sendo quem autoriza, e sem token válido nada é lido do banco. */
+const PERFIL_KEY = 'idealis_perfil_v1';
+function loadPerfilCache(userId){
+  if(!LS_OK || !userId) return null;
+  try{
+    const r=JSON.parse(window.localStorage.getItem(PERFIL_KEY)||'null');
+    return (r && r.user_id===userId && r.perfil) ? r.perfil : null;
+  }catch(e){ return null; }
+}
+function savePerfilCache(userId, perfil){
+  if(!LS_OK) return;
+  try{
+    if(userId && perfil) window.localStorage.setItem(PERFIL_KEY,
+      JSON.stringify({user_id:userId, perfil, em:new Date().toISOString()}));
+    else window.localStorage.removeItem(PERFIL_KEY);
+  }catch(e){}
+}
 let LS_OK = false;
 try{ const t='__it__'; window.localStorage.setItem(t,'1'); window.localStorage.removeItem(t); LS_OK=true; }catch(e){ LS_OK=false; }
 let memDB = {students:[]};
