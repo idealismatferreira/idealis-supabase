@@ -132,6 +132,8 @@
     color:var(--text);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  /* a Sora vem do Google Fonts; se não carregar (offline na 1ª visita),
+     a pilha abaixo mantém o app legível em vez de cair num serifado */
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
     font-family:'Sora',system-ui,sans-serif;overscroll-behavior-y:none}
   #root{max-width:520px;margin:0 auto;min-height:100vh;min-height:100dvh;position:relative}
@@ -4470,6 +4472,34 @@ function Root(){
   return <App auth={auth}/>;
 }
 ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
+/* Service Worker: guarda o casco do app para funcionar sem rede.
+   Registrado DEPOIS do render para não competir com a primeira pintura.
+
+   SAÍDA DE EMERGÊNCIA: abrir com ?sw=off desregistra o SW e limpa os caches.
+   Existe porque um sw.js com defeito fica instalado no aparelho e passa a
+   servir conteúdo velho — e o conserto teria que passar pelo próprio SW
+   defeituoso. Com isto, basta mandar o link ao aluno em vez de pedir
+   que ele desinstale o app. */
+if('serviceWorker' in navigator){
+  const desligar = /[?&]sw=off\b/.test(location.search);
+  if(desligar){
+    navigator.serviceWorker.getRegistrations()
+      .then(rs=>Promise.all(rs.map(r=>r.unregister())))
+      .then(()=>caches.keys())
+      .then(ks=>Promise.all(ks.filter(k=>k.startsWith('idealis-')).map(k=>caches.delete(k))))
+      .then(()=>{
+        try{ document.title='Cache limpo'; }catch(e){}
+        alert('Cache do app limpo. Vou recarregar a versão mais recente.');
+        location.replace(location.pathname); // sai da URL com ?sw=off
+      })
+      .catch(e=>{ console.warn('[sw] falha ao desligar', e);
+        alert('Não consegui limpar. Feche e abra o app novamente.'); });
+  }else{
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('sw.js').catch(e=>console.warn('[sw]', e));
+    });
+  }
+}
 </script>
 </body>
 </html>
