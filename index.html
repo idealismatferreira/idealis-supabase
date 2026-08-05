@@ -124,7 +124,14 @@
   .faseitem{margin:0 4px 10px;padding:13px 14px;border-radius:13px;background:var(--surface);
     border:1px solid var(--line);cursor:pointer}
   .faseitem.atual{border-color:var(--cyan)}
-  .faseper{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .faseper{font-size:11.5px;color:var(--muted);margin-top:7px}
+  .fasedt{display:flex;gap:8px;margin-top:9px}
+  .fasedt label{flex:1;min-width:0;font-size:10.5px;font-weight:700;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.04em}
+  .fasedt input{width:100%;margin-top:3px;padding:8px 9px;border-radius:9px;
+    background:var(--bg);border:1px solid var(--line);color:var(--text);
+    font-family:inherit;font-size:12.5px;font-weight:600}
+  .fasedt input:focus{outline:none;border-color:var(--cyan)}
   .fasetag{font-size:10px;font-weight:800;border-radius:999px;padding:2px 8px;margin-left:7px;
     text-transform:uppercase;letter-spacing:.03em}
   .fasetag.ativa{color:var(--on-cyan);background:var(--cyan)}
@@ -2902,6 +2909,13 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
     setEditandoFase(null); setFaseSel(nova);
     flash(novosTreinos.length?('Fase criada com '+novosTreinos.length+' treinos ✓'):'Fase criada ✓');
   };
+  const mudarDataFase=(f,campo,valor)=>{
+    if(campo==='inicio' && f.fim && valor>f.fim){ flash('Início não pode ser depois do fim'); return; }
+    if(campo==='fim' && valor<f.inicio){ flash('Fim não pode ser antes do início'); return; }
+    updStudent({fases:(s.fases||[]).map(x=>x.id===f.id?{...x,[campo]:valor}:x)});
+    enqueueOp({tipo:'update',tabela:'fases',id:f.id,dados:{[campo]:valor}});
+    flash('Data atualizada ✓');
+  };
   const apagarFase=(f)=>{
     updStudent({fases:(s.fases||[]).filter(x=>x.id!==f.id),
                 treinos:treinos.map(t=>t.faseId===f.id?{...t,faseId:null}:t)});
@@ -2982,19 +2996,33 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
                 <div className="faselinha">
                   <span className="fasenome">{f.nome}
                     <span className={'fasetag '+sit}>{sit}</span></span>
-                  <button className="mini" onClick={e=>{e.stopPropagation();setEditandoFase(f);}}>\u270e</button>
-                  <button className="mini" onClick={e=>{e.stopPropagation();apagarFase(f);}}>\ud83d\uddd1</button>
+                  <button className="mini" onClick={e=>{e.stopPropagation();setEditandoFase(f);}}>✎</button>
+                  <button className="mini" onClick={e=>{e.stopPropagation();apagarFase(f);}}>🗑</button>
                 </div>
                 {f.objetivo && <div className="faseobj">{f.objetivo}</div>}
+                {/* datas editáveis direto no card: ajustar prazo é a operação
+                    mais frequente aqui e não deveria exigir abrir a folha */}
+                <div className="fasedt" onClick={e=>e.stopPropagation()}>
+                  <label>Início
+                    <input type="date" value={f.inicio}
+                      onChange={e=>e.target.value && mudarDataFase(f,'inicio',e.target.value)}/>
+                  </label>
+                  <label>Fim
+                    <input type="date" min={f.inicio} value={f.fim}
+                      onChange={e=>e.target.value && mudarDataFase(f,'fim',e.target.value)}/>
+                  </label>
+                </div>
                 <div className="faseper">
-                  {fmtDate(f.inicio)} \u2192 {fmtDate(f.fim)} \u00b7 {n} {n===1?'treino':'treinos'}
-                  {sit==='ativa' && dias!=null && ' \u00b7 faltam '+dias+'d'}
+                  {n} {n===1?'treino':'treinos'}
+                  {sit==='ativa' && dias!=null && ' · faltam '+dias+' dias'}
+                  {sit==='vencida' && ' · encerrada'}
+                  {sit==='futura' && ' · começa em '+fmtDate(f.inicio)}
                 </div>
               </div>);
             })}
         <button className="agbtn" onClick={()=>setEditandoFase('nova')}>+ Nova fase</button>
         <button className="agbtn" onClick={()=>nav({name:'agenda',studentId})}>
-          \ud83d\udcc5 Agenda de {primeiroNome(s.name)}</button>
+          📅 Agenda de {primeiroNome(s.name)}</button>
         {faseEmFoco && <div className="secaotit">Treinos de {faseEmFoco.nome}</div>}
       </React.Fragment>}
       {treinos.length===0 && <div className="empty"><div className="big">📋</div>
