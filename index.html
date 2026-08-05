@@ -103,6 +103,51 @@
   .temasw.escuro .tsknob{transform:translateX(36px)}
   .temasw.claro  .tsico.sol{color:var(--on-cyan)}
   .temasw.escuro .tsico.lua{color:var(--on-cyan)}
+  /* ===== FASES ===== */
+  .fasebox{margin:0 4px 14px;padding:12px 14px;border-radius:13px;
+    background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--cyan)}
+  .fasebox.venc{border-left-color:var(--lime);background:var(--lime-bg)}
+  .faselinha{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .fasenome{font-size:14.5px;font-weight:800;color:var(--text);flex:1;min-width:0}
+  .fasedias{font-size:11.5px;font-weight:700;color:var(--muted);background:var(--surface-2);
+    border:1px solid var(--line);border-radius:999px;padding:3px 10px;white-space:nowrap}
+  .fasedias.perto{color:var(--on-accent);background:var(--lime);border-color:var(--lime)}
+  .faseobj{font-size:12.5px;color:var(--muted);line-height:1.45;margin-top:5px}
+  .fasemsg{font-size:13px;color:var(--text);line-height:1.5;margin-top:5px}
+  .fasetabs{display:flex;gap:6px;margin:0 4px 14px}
+  .fasetabs button{flex:1;padding:10px 6px;border-radius:11px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--muted);font-family:inherit;font-size:12.5px;
+    font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .fasetabs button.on{border-color:var(--cyan);background:rgba(0,201,204,.14);color:var(--cyan-2)}
+  .faseitem{margin:0 4px 10px;padding:13px 14px;border-radius:13px;background:var(--surface);
+    border:1px solid var(--line);cursor:pointer}
+  .faseitem.atual{border-color:var(--cyan)}
+  .faseper{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .fasetag{font-size:10px;font-weight:800;border-radius:999px;padding:2px 8px;margin-left:7px;
+    text-transform:uppercase;letter-spacing:.03em}
+  .fasetag.ativa{color:var(--on-cyan);background:var(--cyan)}
+  .fasetag.vencida{color:var(--on-accent);background:var(--lime)}
+  .fasetag.futura{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  /* ===== AGENDA ===== */
+  .agmes{font-size:13px;font-weight:800;color:var(--text);margin:18px 4px 10px;
+    text-transform:capitalize}
+  .agdia{display:flex;align-items:center;gap:12px;margin:0 4px 7px;padding:11px 13px;
+    border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+  .agdia.conc{border-left:3px solid var(--lime)}
+  .agdia.aces{border-left:3px solid var(--muted-2);opacity:.75}
+  .agdata{flex:0 0 auto;font-size:13.5px;font-weight:800;color:var(--text);
+    font-variant-numeric:tabular-nums;min-width:52px}
+  .agtxt{flex:1;font-size:13px;color:var(--muted);min-width:0}
+  .agtxt b{color:var(--text);font-weight:700}
+  .agbtn{width:100%;margin:2px 0 16px;padding:13px;border-radius:13px;border:1px solid var(--line);
+    background:var(--surface);color:var(--text);font-family:inherit;font-size:14px;
+    font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .agbtn:active{background:var(--surface-2)}
+  .agresumo{display:flex;gap:8px;margin:0 4px 6px}
+  .agcard{flex:1;padding:13px;border-radius:13px;background:var(--surface-2);
+    border:1px solid var(--line);text-align:center}
+  .agnum{font-size:24px;font-weight:800;color:var(--text);line-height:1}
+  .aglab{font-size:11px;color:var(--muted);margin-top:4px}
   /* ===== TEMA CLARO — só nas telas do ALUNO =====
      Não é inversão: é uma segunda paleta. O cyan escurece para manter contraste
      sobre branco (o #00c9cc original some no claro), e o amarelo-lime de conquista
@@ -1058,6 +1103,88 @@ function useAuth(){
 }
 
 const DB_KEY = 'idealis_presencial_v2';
+/* ===== MINHA AGENDA =====
+   Aluno vê só o que ele CONFIRMOU (sessões manuais). Treinador vê também os
+   acessos — "abriu o treino" é dado dele, não do aluno: para o aluno seria
+   ruído ("por que apareceu esse dia se eu não treinei?"). */
+function Agenda({db,nav,studentId,ehAluno}){
+  const s=db.students.find(x=>x.id===studentId);
+  if(!s) return <div className="screen"><div className="empty"><p>Aluno não encontrado.</p></div></div>;
+  const dias={};
+  (s.treinos||[]).forEach(t=>{
+    (t.sessoes||[]).forEach(x=>{
+      if(ehAluno && x.origem!=='manual') return;
+      const d=(dias[x.data]=dias[x.data]||{treinos:[],acesso:[]});
+      if(d.treinos.indexOf(t.nome)<0) d.treinos.push(t.nome);
+    });
+    if(!ehAluno) (t.acessos||[]).forEach(x=>{
+      const d=(dias[x.data]=dias[x.data]||{treinos:[],acesso:[]});
+      if(d.acesso.indexOf(t.nome)<0) d.acesso.push(t.nome);
+    });
+  });
+  const lista=Object.keys(dias).sort().reverse();
+  const hoje=todayISO();
+  const nMes=lista.filter(d=>d.slice(0,7)===hoje.slice(0,7) && dias[d].treinos.length).length;
+  const total=lista.filter(d=>dias[d].treinos.length).length;
+  const MES=['janeiro','fevereiro','março','abril','maio','junho','julho',
+             'agosto','setembro','outubro','novembro','dezembro'];
+  const rotuloMes=(iso)=>MES[parseInt(iso.slice(5,7),10)-1]+' de '+iso.slice(0,4);
+  let mesAtual='';
+  return (<React.Fragment>
+    <TopBar title="Minha agenda" sub={ehAluno?'Seus treinos concluídos':s.name}
+      onBack={()=>nav({name:'student',studentId})}/>
+    <div className="screen">
+      <div className="agresumo">
+        <div className="agcard"><div className="agnum">{nMes}</div><div className="aglab">este mês</div></div>
+        <div className="agcard"><div className="agnum">{total}</div><div className="aglab">no total</div></div>
+      </div>
+      {lista.length===0
+        ? <div className="empty"><div className="big">📅</div>
+            <p>{ehAluno?'Nenhum treino concluído ainda. Toque em "Finalizar Treino" ao terminar.':'Nada registrado ainda.'}</p></div>
+        : lista.map(d=>{
+            const m=rotuloMes(d), novoMes=(m!==mesAtual); if(novoMes) mesAtual=m;
+            const x=dias[d], concluiu=x.treinos.length>0;
+            return (<React.Fragment key={d}>
+              {novoMes && <div className="agmes">{m}</div>}
+              <div className={'agdia '+(concluiu?'conc':'aces')}>
+                <span className="agdata">{d.slice(8,10)}/{d.slice(5,7)}</span>
+                <span className="agtxt">
+                  {concluiu
+                    ? <React.Fragment>✅ <b>{x.treinos.join(', ')}</b>{d===hoje?' · hoje':''}</React.Fragment>
+                    : <React.Fragment>👀 abriu {x.acesso.join(', ')} · sem confirmar</React.Fragment>}
+                </span>
+              </div>
+            </React.Fragment>);
+          })}
+    </div>
+  </React.Fragment>);
+}
+/* ===== FASES DE TREINO =====
+   Uma fase agrupa os treinos de um ciclo. Regra central: fase vencida NÃO
+   bloqueia nada — o aluno continua treinando e recebe um aviso amigável.
+   A data existe para avisar o TREINADOR, não para punir o aluno. */
+function faseSituacao(f){
+  if(!f) return 'nenhuma';
+  const hoje=todayISO();
+  if(f.inicio>hoje) return 'futura';
+  if(f.fim && f.fim<hoje) return 'vencida';
+  return 'ativa';
+}
+function diasRestantes(f){
+  if(!f || !f.fim) return null;
+  const a=Date.parse(f.fim+'T00:00:00'), b=Date.parse(todayISO()+'T00:00:00');
+  if(isNaN(a)||isNaN(b)) return null;
+  return Math.round((a-b)/86400000);
+}
+/* a fase que cobre hoje; se não houver, a mais recente já iniciada */
+function faseVigente(s){
+  const fs=(s&&s.fases)||[]; const hoje=todayISO();
+  const cobre=fs.find(f=>f.inicio<=hoje && (!f.fim || f.fim>=hoje));
+  if(cobre) return cobre;
+  const passadas=fs.filter(f=>f.inicio<=hoje).sort((a,b)=>b.inicio.localeCompare(a.inicio));
+  return passadas[0]||null;
+}
+const MSG_FASE_VENCIDA='Fim de ciclo por aqui! 💪🏼 Vou te chamar pra conversar sobre como foi e montar a próxima fase.';
 const TEMA_KEY = 'idealis_tema_v1';
 /* Perfil da última sessão. Sem isto o app abre offline (o Service Worker
    entrega o casco) mas cai em "sem perfil vinculado", porque a leitura de
@@ -1277,16 +1404,17 @@ async function fetchDbFromSupabase(){
   if(!sb) return {ok:false, erro:'Sem conexão com o servidor.'};
   try{
     // o RLS já filtra: treinador vê tudo, aluno vê só o dele
-    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce] = await Promise.all([
+    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas] = await Promise.all([
       sb.from('alunos').select('id,nome,foto_url,academia,nascimento,fc_max').order('nome'),
-      sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data').order('ordem'),
+      sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data,fase_id').order('ordem'),
       sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio').order('ordem'),
       sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor,dor_local,dor_lado,variante,serie,extra').order('data,serie'),
       sb.from('sessoes').select('id,aluno_id,treino_id,data,origem').order('data'),
       sb.from('relatos').select('id,aluno_id,treino_id,exercicio_id,exercicio_nome,data,texto,fixado,created_at').order('created_at'),
-      sb.from('acessos').select('id,aluno_id,treino_id,data,vezes').order('data')
+      sb.from('acessos').select('id,aluno_id,treino_id,data,vezes').order('data'),
+      sb.from('fases').select('id,aluno_id,nome,objetivo,inicio,fim').order('inicio')
     ]);
-    const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error||rSess.error||rRel.error||rAce.error;
+    const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error||rSess.error||rRel.error||rAce.error||rFas.error;
     if(err) return {ok:false, erro:err.message};
 
     const logsPorEx={};
@@ -1324,14 +1452,21 @@ async function fetchDbFromSupabase(){
     const treinosPorAluno={};
     (rTreinos.data||[]).forEach(t=>{
       (treinosPorAluno[t.aluno_id]=treinosPorAluno[t.aluno_id]||[]).push({
-        id:t.id, nome:t.nome, concluidoData:t.concluido_data,
+        id:t.id, nome:t.nome, concluidoData:t.concluido_data, faseId:t.fase_id||null,
         sessoes: sessPorTreino[t.id]||[], exercises: exPorTreino[t.id]||[],
         relatos: relPorTreino[t.id]||[], acessos: acePorTreino[t.id]||[]
+      });
+    });
+    const fasesPorAluno={};
+    (rFas.data||[]).forEach(f=>{
+      (fasesPorAluno[f.aluno_id]=fasesPorAluno[f.aluno_id]||[]).push({
+        id:f.id, nome:f.nome, objetivo:f.objetivo||'', inicio:f.inicio, fim:f.fim||null
       });
     });
     const students=(rAlunos.data||[]).map(a=>({
       id:a.id, name:a.nome, foto: a.foto_url||'', academia: a.academia||'',
       nascimento: a.nascimento||null, fcMax: a.fc_max||null,
+      fases: fasesPorAluno[a.id]||[],
       treinos: treinosPorAluno[a.id]||[]
     }));
     return {ok:true, db:{students}};
@@ -2085,6 +2220,7 @@ function App({auth}){
 
   let screen;
   if(view.name==='students') screen=<Students db={db} setDb={setDb} nav={nav}/>;
+  else if(view.name==='agenda') screen=<Agenda db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
   else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash} ehAluno={ehAluno} onSair={auth?auth.sair:null}/>;
   else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio}/>;
   else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={ehAluno}/>;
@@ -2099,6 +2235,7 @@ function App({auth}){
   const voltarDaTela = (
     view.name==='treino'    ? ()=>nav({name:'student',studentId:view.studentId}) :
     view.name==='evolution' ? ()=>nav(view.back||{name:'student',studentId:view.studentId}) :
+    view.name==='agenda'    ? ()=>nav({name:'student',studentId:view.studentId}) :
     view.name==='student'   ? (ehAluno?null:()=>nav({name:'students'})) : null);
   return (<div className={claroAtivo?'tema-claro':''}>
     {!LS_OK && <div className="warnbar">⚠️ Modo temporário: os dados somem ao fechar. Abra pelo link do GitHub Pages para salvar.</div>}
@@ -2686,7 +2823,25 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
             <div className="frasedia">{fraseDoDia(studentId)}</div>
           </div>
         </div>
+        <button className="agbtn" onClick={()=>nav({name:'agenda',studentId})}>
+          📅 Minha agenda</button>
         {treinos.length>0 && <div className="secaotit">Seus treinos</div>}
+        {(()=>{
+          const f=faseVigente(s); if(!f) return null;
+          const sit=faseSituacao(f), dias=diasRestantes(f);
+          if(sit==='vencida') return (<div className="fasebox venc">
+            <div className="fasenome">{f.nome}</div>
+            <div className="fasemsg">{MSG_FASE_VENCIDA}</div>
+          </div>);
+          return (<div className="fasebox">
+            <div className="faselinha">
+              <span className="fasenome">{f.nome}</span>
+              {dias!=null && <span className={'fasedias'+(dias<=7?' perto':'')}>
+                {dias<=0?'Último dia':(dias===1?'Falta 1 dia':'Faltam '+dias+' dias')}</span>}
+            </div>
+            {f.objetivo && <div className="faseobj">{f.objetivo}</div>}
+          </div>);
+        })()}
       </React.Fragment>}
       {treinos.length===0 && <div className="empty"><div className="big">📋</div>
         <p>{ehAluno?'Nenhum treino montado ainda. Fale com seu treinador.':'Nenhum treino ainda. Crie o '}{!ehAluno && <b>Treino A</b>}{!ehAluno && ' e adicione os exercícios — ele fica fixo pelas próximas semanas.'}</p></div>}
