@@ -114,6 +114,8 @@
   .fasedias.perto{color:var(--on-accent);background:var(--lime);border-color:var(--lime)}
   .faseobj{font-size:12.5px;color:var(--muted);line-height:1.45;margin-top:5px}
   .fasemsg{font-size:13px;color:var(--text);line-height:1.5;margin-top:5px}
+  .fasedatas{display:flex;gap:10px}
+  .fasedatas .field{flex:1;min-width:0}
   .fasetabs{display:flex;gap:6px;margin:0 4px 14px}
   .fasetabs button{flex:1;padding:10px 6px;border-radius:11px;border:1px solid var(--line);
     background:var(--surface-2);color:var(--muted);font-family:inherit;font-size:12.5px;
@@ -1103,6 +1105,57 @@ function useAuth(){
 }
 
 const DB_KEY = 'idealis_presencial_v2';
+/* folha de fase: criar ou editar. Datas obrigatórias — é o prazo que faz
+   "vencida" existir, e sem isso o alerta de renovação nunca dispararia. */
+function FaseSheet({inicial,podeDuplicar,onSalvar,onClose}){
+  const ed=!!inicial;
+  const [nome,setNome]=useState(ed?inicial.nome:'');
+  const [obj,setObj]=useState(ed?(inicial.objetivo||''):'');
+  const [ini,setIni]=useState(ed?inicial.inicio:todayISO());
+  const [fim,setFim]=useState(ed?inicial.fim:(()=>{
+    const d=new Date(); d.setDate(d.getDate()+30);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  })());
+  const [dup,setDup]=useState(false);
+  const ok = nome.trim() && ini && fim && fim>=ini;
+  return (<div className="backdrop" onClick={onClose}>
+    <div className="sheet" onClick={e=>e.stopPropagation()}>
+      <h2>{ed?'Editar fase':'Nova fase'}</h2>
+      <div className="h2sub">Um ciclo de treino com início e fim definidos.</div>
+      <div className="field"><label>Nome</label>
+        <input autoFocus={!ed} value={nome} onChange={e=>setNome(e.target.value)}
+          placeholder="Ex: Fase de Ativação"/></div>
+      <div className="field"><label>Objetivo <span className="obscount">o aluno vê</span></label>
+        <textarea className="obstext" value={obj} onChange={e=>setObj(e.target.value)}
+          placeholder="Ex: estabilidade de core e reduzir dor lombar"/></div>
+      <div className="fasedatas">
+        <div className="field"><label>Início</label>
+          <input type="date" value={ini} onChange={e=>setIni(e.target.value)}/></div>
+        <div className="field"><label>Fim</label>
+          <input type="date" min={ini} value={fim} onChange={e=>setFim(e.target.value)}/></div>
+      </div>
+      {ini && fim && fim>=ini &&
+        <div className="h2sub" style={{marginTop:-6}}>
+          Duração: {Math.round((Date.parse(fim)-Date.parse(ini))/86400000)+1} dias</div>}
+      {fim && ini && fim<ini &&
+        <div className="loginerro">A data de fim não pode ser antes do início.</div>}
+      {!ed && podeDuplicar &&
+        <label className="swrow">
+          <input type="checkbox" checked={dup} onChange={e=>setDup(e.target.checked)}/>
+          <span className="swtrack"></span>
+          <span className="swtxt">
+            <span className="swtit">📋 Copiar treinos da fase atual</span>
+            <span className="swsub">Traz exercícios, séries, métodos e suas observações. As marcações de "feito" não vêm.</span>
+          </span>
+        </label>}
+      <div className="sheetactions">
+        <button className="btn ghost" onClick={onClose}>Cancelar</button>
+        <button className="btn" disabled={!ok}
+          onClick={()=>onSalvar({nome:nome.trim(), objetivo:obj.trim()||null, inicio:ini, fim, duplicar:dup})}>
+          {ed?'Salvar':'Criar fase'}</button>
+      </div>
+    </div></div>);
+}
 /* ===== MINHA AGENDA =====
    Aluno vê só o que ele CONFIRMOU (sessões manuais). Treinador vê também os
    acessos — "abriu o treino" é dado dele, não do aluno: para o aluno seria
@@ -2795,6 +2848,67 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
     flash('Foto atualizada ✓');
   };
   const treinos=s.treinos||[];
+  const fases=(s.fases||[]).slice().sort((a,b)=>b.inicio.localeCompare(a.inicio));
+  const [abaFase,setAbaFase]=useState('atual');   // anteriores | atual | futuros
+  const [faseSel,setFaseSel]=useState(null);      // fase aberta na lista
+  const [editandoFase,setEditandoFase]=useState(null); // 'nova' | objeto
+  const hojeISO=todayISO();
+  const grupoFases={
+    atual:      fases.filter(f=>f.inicio<=hojeISO && f.fim>=hojeISO),
+    anteriores: fases.filter(f=>f.fim<hojeISO),
+    futuros:    fases.filter(f=>f.inicio>hojeISO)
+  };
+  const faseAtual=grupoFases.atual[0]||null;
+  // treinador navega por fase; aluno vê sempre a vigente
+  const faseEmFoco = ehAluno ? faseVigente(s) : (faseSel || faseAtual);
+  const treinosVisiveis = ehAluno
+    ? treinos.filter(t=>!faseEmFoco || !t.faseId || t.faseId===faseEmFoco.id)
+    : (faseEmFoco ? treinos.filter(t=>t.faseId===faseEmFoco.id) : treinos.filter(t=>!t.faseId));
+  const salvarFase=(dados)=>{
+    if(editandoFase && editandoFase!=='nova'){
+      const id=editandoFase.id;
+      updStudent({fases:(s.fases||[]).map(f=>f.id===id?{...f,...dados}:f)});
+      enqueueOp({tipo:'update',tabela:'fases',id,dados:{
+        nome:dados.nome, objetivo:dados.objetivo, inicio:dados.inicio, fim:dados.fim}});
+      setEditandoFase(null); flash('Fase atualizada ✓'); return;
+    }
+    const nova={id:uid(), nome:dados.nome, objetivo:dados.objetivo||'', inicio:dados.inicio, fim:dados.fim};
+    const novosTreinos=[];
+    if(dados.duplicar && faseAtual){
+      // done_date NÃO vem: a fase nova começaria com exercícios já marcados.
+      // Observações VÊM: redigitar dica técnica em 87 alunos vira trabalho braçal.
+      treinos.filter(t=>t.faseId===faseAtual.id).forEach((t,i)=>{
+        const tid=uid();
+        const exs=(t.exercises||[]).map((ex,j)=>{
+          const eid=uid();
+          const copia={...ex, id:eid, doneDate:null, logs:[]};
+          enqueueOp({tipo:'insert',tabela:'exercicios',dados:{
+            id:eid, treino_id:tid, nome:ex.name, series:ex.series,
+            cardapio_id:ex.exerciseId!=null?ex.exerciseId:null, ordem:j,
+            done_date:null, descanso:ex.descanso||null, filmar:!!ex.filmar,
+            observacao:ex.observacao||null, metodo:ex.metodo||null, cardio:ex.cardio||null}});
+          return copia;
+        });
+        const novoT={id:tid, nome:t.nome, faseId:nova.id, exercises:exs, sessoes:[], relatos:[], acessos:[]};
+        novosTreinos.push(novoT);
+        enqueueOp({tipo:'insert',tabela:'treinos',dados:{
+          id:tid, aluno_id:studentId, nome:t.nome, ordem:i, fase_id:nova.id}});
+      });
+    }
+    updStudent({fases:[...(s.fases||[]),nova], treinos:[...treinos,...novosTreinos]});
+    enqueueOp({tipo:'insert',tabela:'fases',dados:{
+      id:nova.id, aluno_id:studentId, nome:nova.nome,
+      objetivo:nova.objetivo||null, inicio:nova.inicio, fim:nova.fim}});
+    setEditandoFase(null); setFaseSel(nova);
+    flash(novosTreinos.length?('Fase criada com '+novosTreinos.length+' treinos ✓'):'Fase criada ✓');
+  };
+  const apagarFase=(f)=>{
+    updStudent({fases:(s.fases||[]).filter(x=>x.id!==f.id),
+                treinos:treinos.map(t=>t.faseId===f.id?{...t,faseId:null}:t)});
+    enqueueOp({tipo:'delete',tabela:'fases',id:f.id});
+    if(faseSel && faseSel.id===f.id) setFaseSel(null);
+    flash('Fase removida · os treinos foram mantidos');
+  };
   const updStudent=(patch)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,...patch}:x)});
   const renameTreino=(id,novo)=>{
     updStudent({treinos:treinos.map(t=>t.id===id?{...t,nome:novo}:t)});
@@ -2806,9 +2920,11 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
   };
   const sugestaoNome='Treino '+String.fromCharCode(65+treinos.length);
   const addTreino=()=>{
-    const novo={id:uid(),nome:(nome.trim()||sugestaoNome),exercises:[]};
+    const fid=faseEmFoco?faseEmFoco.id:null;
+    const novo={id:uid(),nome:(nome.trim()||sugestaoNome),exercises:[],faseId:fid};
     updStudent({treinos:[...treinos,novo]});
-    enqueueOp({tipo:'insert',tabela:'treinos',dados:{id:novo.id,aluno_id:studentId,nome:novo.nome,ordem:treinos.length}});
+    enqueueOp({tipo:'insert',tabela:'treinos',dados:{
+      id:novo.id,aluno_id:studentId,nome:novo.nome,ordem:treinos.length,fase_id:fid}});
     setNome('');setAdding(false);
   };
   return (<React.Fragment>
@@ -2843,9 +2959,47 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
           </div>);
         })()}
       </React.Fragment>}
+      {!ehAluno && <React.Fragment>
+        <div className="fasetabs">
+          <button className={abaFase==='anteriores'?'on':''}
+            onClick={()=>{setAbaFase('anteriores');setFaseSel(null);}}>Anteriores</button>
+          <button className={abaFase==='atual'?'on':''}
+            onClick={()=>{setAbaFase('atual');setFaseSel(null);}}>Atuais</button>
+          <button className={abaFase==='futuros'?'on':''}
+            onClick={()=>{setAbaFase('futuros');setFaseSel(null);}}>Futuros</button>
+        </div>
+        {grupoFases[abaFase].length===0
+          ? <div className="empty" style={{padding:'18px 8px'}}>
+              <p>{abaFase==='atual'?'Nenhuma fase cobrindo hoje.'
+                 :abaFase==='anteriores'?'Nenhuma fase encerrada ainda.'
+                 :'Nenhuma fase programada.'}</p></div>
+          : grupoFases[abaFase].map(f=>{
+              const sit=faseSituacao(f), dias=diasRestantes(f);
+              const n=treinos.filter(t=>t.faseId===f.id).length;
+              const aberta=faseEmFoco && faseEmFoco.id===f.id;
+              return (<div key={f.id} className={'faseitem'+(aberta?' atual':'')}
+                onClick={()=>setFaseSel(aberta?null:f)}>
+                <div className="faselinha">
+                  <span className="fasenome">{f.nome}
+                    <span className={'fasetag '+sit}>{sit}</span></span>
+                  <button className="mini" onClick={e=>{e.stopPropagation();setEditandoFase(f);}}>\u270e</button>
+                  <button className="mini" onClick={e=>{e.stopPropagation();apagarFase(f);}}>\ud83d\uddd1</button>
+                </div>
+                {f.objetivo && <div className="faseobj">{f.objetivo}</div>}
+                <div className="faseper">
+                  {fmtDate(f.inicio)} \u2192 {fmtDate(f.fim)} \u00b7 {n} {n===1?'treino':'treinos'}
+                  {sit==='ativa' && dias!=null && ' \u00b7 faltam '+dias+'d'}
+                </div>
+              </div>);
+            })}
+        <button className="agbtn" onClick={()=>setEditandoFase('nova')}>+ Nova fase</button>
+        <button className="agbtn" onClick={()=>nav({name:'agenda',studentId})}>
+          \ud83d\udcc5 Agenda de {primeiroNome(s.name)}</button>
+        {faseEmFoco && <div className="secaotit">Treinos de {faseEmFoco.nome}</div>}
+      </React.Fragment>}
       {treinos.length===0 && <div className="empty"><div className="big">📋</div>
         <p>{ehAluno?'Nenhum treino montado ainda. Fale com seu treinador.':'Nenhum treino ainda. Crie o '}{!ehAluno && <b>Treino A</b>}{!ehAluno && ' e adicione os exercícios — ele fica fixo pelas próximas semanas.'}</p></div>}
-      {treinos.map(t=>{
+      {treinosVisiveis.map(t=>{
         const letra=(t.nome.match(/\b([A-Z])\b/)||[])[1] || t.nome.slice(0,1).toUpperCase();
         return (<div key={t.id} className="treino" onClick={()=>nav({name:'treino',studentId,treinoId:t.id})}>
           <div className="tag">{letra}</div>
@@ -4474,6 +4628,10 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
       </div>}
     </div>
     {!ehAluno && <button className="fab" onClick={()=>setEditingEx('new')}>＋ Exercício</button>}
+    {editandoFase && !ehAluno && <FaseSheet
+      inicial={editandoFase==='nova'?null:editandoFase}
+      podeDuplicar={!!faseAtual && treinos.some(t=>t.faseId===faseAtual.id)}
+      onSalvar={salvarFase} onClose={()=>setEditandoFase(null)}/>}
     {editingEx && !ehAluno && <ExerciseSheet initial={editingEx==='new'?null:editingEx} onSave={saveEx} onClose={()=>setEditingEx(null)}/>}
     {relatando && <RelatoSheet exNome={relatando.exNome}
       inicial={relatando.atual?relatando.atual.texto:''}
