@@ -4955,7 +4955,22 @@ if('serviceWorker' in navigator){
         alert('Não consegui limpar. Feche e abra o app novamente.'); });
   }else{
     window.addEventListener('load', ()=>{
-      navigator.serviceWorker.register('sw.js').catch(e=>console.warn('[sw]', e));
+      // updateViaCache:'none' impede o navegador de cachear o PRÓPRIO sw.js —
+      // sem isso, um Service Worker com defeito se perpetua por até 24h.
+      navigator.serviceWorker.register('sw.js', {updateViaCache:'none'})
+        .then(reg=>{
+          reg.update();                       // checa versão nova a cada abertura
+          // SW novo pronto? assume na hora, em vez de esperar todas as abas fecharem
+          reg.addEventListener('updatefound', ()=>{
+            const novo=reg.installing; if(!novo) return;
+            novo.addEventListener('statechange', ()=>{
+              if(novo.state==='installed' && navigator.serviceWorker.controller){
+                novo.postMessage({tipo:'assumir'});
+              }
+            });
+          });
+        })
+        .catch(e=>console.warn('[sw]', e));
     });
   }
 }

@@ -13,7 +13,7 @@
    - FONTE: stale-while-revalidate. Usa o cache na hora e atualiza atrás.
    ===================================================================== */
 
-const VERSAO = 'idealis-v1';
+const VERSAO = 'idealis-v2';
 const CASCO  = VERSAO + '-casco';
 const RUNTIME = VERSAO + '-runtime';
 
@@ -96,7 +96,9 @@ self.addEventListener('fetch', (e) => {
   if (req.mode === 'navigate') {
     e.respondWith((async () => {
       try {
-        const res = await fetch(req);
+        // cache:'no-store' evita o cache HTTP do navegador entregar uma cópia
+        // velha ANTES de chegar aqui — foi assim que um deploy não apareceu.
+        const res = await fetch(new Request(req.url, {cache:'no-store'}));
         if (res && res.ok) (await caches.open(CASCO)).put('./index.html', res.clone());
         return res;
       } catch (err) {
@@ -122,4 +124,9 @@ self.addEventListener('fetch', (e) => {
       }
     })());
   }
+});
+
+/* o app pede para o SW novo assumir sem esperar todas as abas fecharem */
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.tipo === 'assumir') self.skipWaiting();
 });
