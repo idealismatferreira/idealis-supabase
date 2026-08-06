@@ -668,6 +668,7 @@
   .audiodel{background:none;border:none;color:var(--danger);font-family:inherit;
     font-size:12px;text-decoration:underline;cursor:pointer;padding:6px 4px}
   .audiodica{font-size:11.5px;color:var(--muted)}
+  .audioexp{font-size:11px;color:var(--muted-2);line-height:1.45;margin-top:8px}
   .exrel{display:flex;gap:9px;align-items:flex-start;margin:8px 0 2px;padding:11px 13px;border-radius:11px;
     background:rgba(0,201,204,.07);border:1px solid rgba(0,201,204,.3);border-left:3px solid var(--cyan)}
   .exrel .erico{flex:0 0 auto;font-size:13px;line-height:1.5}
@@ -1282,6 +1283,35 @@ async function apagarAudio(url){
     if(!m) return;
     await sb.storage.from('audios').remove([decodeURIComponent(m[1].split('?')[0])]);
   }catch(e){ console.warn('[audio] não removeu antigo', e); }
+}
+/* Limpeza dos áudios vencidos.
+   Roda no app porque a Supabase bloqueia `delete from storage.objects` — só a
+   Storage API remove arquivo, e a alternativa (pg_cron + service key no banco)
+   guardaria uma credencial de administrador dentro do Postgres.
+   Só o TREINADOR executa, e só uma vez por dia. */
+const LIMPEZA_KEY='idealis_limpeza_audio_v1';
+async function limparAudiosVencidos(dias){
+  if(!sb || !navigator.onLine) return {ok:false, pulou:true};
+  try{
+    const hoje=todayISO();
+    try{ if(LS_OK && window.localStorage.getItem(LIMPEZA_KEY)===hoje) return {ok:true, jaRodou:true}; }catch(e){}
+    const {data,error}=await sb.rpc('audios_expirados',{p_dias:(dias||30)});
+    if(error) return {ok:false, erro:error.message};
+    const lista=data||[];
+    try{ if(LS_OK) window.localStorage.setItem(LIMPEZA_KEY,hoje); }catch(e){}
+    if(!lista.length) return {ok:true, n:0};
+    const arquivos=lista.map(x=>x.arquivo).filter(Boolean);
+    if(arquivos.length){
+      const {error:e2}=await sb.storage.from('audios').remove(arquivos);
+      if(e2) console.warn('[audio] remoção parcial', e2.message);
+    }
+    // só limpa a referência DEPOIS de tentar remover o arquivo: se inverter,
+    // um erro aqui deixaria arquivos sem dono e sem rastro de quem eram
+    const ids=lista.map(x=>x.exercicio_id);
+    const {error:e3}=await sb.from('exercicios').update({audio_url:null}).in('id', ids);
+    if(e3) return {ok:false, erro:e3.message};
+    return {ok:true, n:lista.length};
+  }catch(e){ return {ok:false, erro:String(e)}; }
 }
 /* botão de gravação: um toque começa, outro encerra e sobe */
 function GravadorAudio({exId,valor,onMudar,flash}){
@@ -2331,6 +2361,19 @@ function App({auth}){
       document.body.style.background = claroAtivo?'#f4f7f8':'';
     }catch(e){}
   },[claroAtivo]);
+  // limpeza de áudios vencidos: 1x por dia, só no login de treinador,
+  // e atrasada para não competir com o carregamento inicial
+  useEffect(()=>{
+    if(ehAluno) return;
+    const id=setTimeout(async ()=>{
+      const r=await limparAudiosVencidos(30);
+      if(r && r.ok && r.n) {
+        console.info('[audio] '+r.n+' áudio(s) vencido(s) removido(s)');
+        recarregar();
+      }
+    }, 8000);
+    return ()=>clearTimeout(id);
+  },[ehAluno]);
   const vistoRef=React.useRef(false); // quarentena já exibida? próximo toque descarta
   const flushOps=React.useCallback(async (manual)=>{
     const pend=loadOpQueue().length;
@@ -4016,6 +4059,8 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
         <label>Dica em áudio <span className="obscount">o aluno ouve</span></label>
         <GravadorAudio exId={initial?initial.id:('novo_'+Date.now())} valor={audioUrl}
           onMudar={setAudioUrl} flash={flash}/>
+        <div className="audioexp">⏳ Áudios são apagados 30 dias após o fim da fase.
+          Se a dica for permanente, escreva também na observação acima.</div>
       </div>
       <div className="field">
         <button type="button" className={'filmtoggle'+(filmar?' on':'')} onClick={()=>setFilmar(f=>!f)}>
