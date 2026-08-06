@@ -651,6 +651,23 @@
     color:var(--text);font-family:inherit;font-size:14px;line-height:1.5;resize:vertical;min-height:76px}
   .obstext:focus{outline:none;border-color:var(--cyan)}
   /* ===== RELATO DO ALUNO (✍️) — voz do aluno; o 💬 continua sendo a voz do treinador ===== */
+  .exaudio{display:flex;align-items:center;gap:9px;margin:9px 0 2px;padding:9px 11px;
+    border-radius:11px;background:var(--lime-bg);border:1px solid var(--lime-line);
+    border-left:3px solid var(--lime)}
+  .exaudio .eaico{flex:0 0 auto;font-size:15px}
+  .audioplayer{flex:1;min-width:0;width:100%;height:36px}
+  .audiobox{display:flex;flex-direction:column;gap:9px}
+  .audioacts{display:flex;gap:8px;align-items:center}
+  .audiobtn{flex:1;padding:13px;border-radius:12px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--text);font-family:inherit;font-size:14px;
+    font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .audiobtn.rec{border-color:var(--danger);background:rgba(255,92,108,.16);color:#ff9ba3;
+    animation:audiopulso 1.4s ease-in-out infinite}
+  .audiobtn.off{opacity:.55;cursor:default}
+  @keyframes audiopulso{0%,100%{opacity:1}50%{opacity:.62}}
+  .audiodel{background:none;border:none;color:var(--danger);font-family:inherit;
+    font-size:12px;text-decoration:underline;cursor:pointer;padding:6px 4px}
+  .audiodica{font-size:11.5px;color:var(--muted)}
   .exrel{display:flex;gap:9px;align-items:flex-start;margin:8px 0 2px;padding:11px 13px;border-radius:11px;
     background:rgba(0,201,204,.07);border:1px solid rgba(0,201,204,.3);border-left:3px solid var(--cyan)}
   .exrel .erico{flex:0 0 auto;font-size:13px;line-height:1.5}
@@ -1223,6 +1240,106 @@ function Agenda({db,nav,studentId,ehAluno}){
     </div>
   </React.Fragment>);
 }
+/* ===== ÁUDIO DO TREINADOR =====
+   Grava com o microfone PADRÃO DO SISTEMA — no desktop pega o microfone
+   externo sem configurar nada.
+   Armadilha tratada: Safari/iOS grava em audio/mp4, Chrome/Android em
+   audio/webm. Gravar num e não declarar o formato certo faz o áudio
+   simplesmente não tocar no outro aparelho. */
+function formatoSuportado(){
+  const tenta=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/aac','audio/ogg'];
+  if(typeof MediaRecorder==='undefined') return null;
+  for(const m of tenta){ try{ if(MediaRecorder.isTypeSupported(m)) return m; }catch(e){} }
+  return '';   // deixa o navegador escolher
+}
+const extDoMime=(m)=>{
+  const s=String(m||'');
+  if(s.indexOf('webm')>=0) return 'webm';
+  if(s.indexOf('mp4')>=0 || s.indexOf('aac')>=0) return 'm4a';
+  if(s.indexOf('ogg')>=0) return 'ogg';
+  if(s.indexOf('mpeg')>=0) return 'mp3';
+  return 'webm';
+};
+async function uploadAudio(exId, blob, mime){
+  if(!sb) return {ok:false, erro:'sem conexão'};
+  try{
+    const ext=extDoMime(mime);
+    const path='ex/'+String(exId)+'_'+Date.now()+'.'+ext;
+    const {error}=await sb.storage.from('audios')
+      .upload(path, blob, {contentType:mime||('audio/'+ext), upsert:true});
+    if(error) return {ok:false, erro:error.message};
+    const {data}=sb.storage.from('audios').getPublicUrl(path);
+    return {ok:true, url:(data&&data.publicUrl)||''};
+  }catch(e){ return {ok:false, erro:String(e)}; }
+}
+/* Apaga o arquivo antigo ao regravar/remover. Sem isto, cada regravação
+   deixa um órfão no Storage que nada mais referencia — não estoura cota,
+   mas vira sujeira que ninguém rastreia. */
+async function apagarAudio(url){
+  if(!sb || !url) return;
+  try{
+    const m=String(url).match(/\/audios\/(.+)$/);
+    if(!m) return;
+    await sb.storage.from('audios').remove([decodeURIComponent(m[1].split('?')[0])]);
+  }catch(e){ console.warn('[audio] não removeu antigo', e); }
+}
+/* botão de gravação: um toque começa, outro encerra e sobe */
+function GravadorAudio({exId,valor,onMudar,flash}){
+  const [grav,setGrav]=useState(false);
+  const [seg,setSeg]=useState(0);
+  const [subindo,setSubindo]=useState(false);
+  const recRef=React.useRef(null), pedRef=React.useRef([]), tickRef=React.useRef(null);
+  useEffect(()=>()=>{ // limpa se a tela fechar no meio da gravação
+    try{ if(recRef.current && recRef.current.state==='recording') recRef.current.stop(); }catch(e){}
+    if(tickRef.current) clearInterval(tickRef.current);
+  },[]);
+  const iniciar=async ()=>{
+    if(typeof MediaRecorder==='undefined'){ flash('Este navegador não grava áudio'); return; }
+    try{
+      const st=await navigator.mediaDevices.getUserMedia({audio:{
+        echoCancellation:true, noiseSuppression:true, autoGainControl:true}});
+      const mime=formatoSuportado();
+      const rec=mime?new MediaRecorder(st,{mimeType:mime}):new MediaRecorder(st);
+      pedRef.current=[];
+      rec.ondataavailable=e=>{ if(e.data && e.data.size) pedRef.current.push(e.data); };
+      rec.onstop=async ()=>{
+        st.getTracks().forEach(t=>t.stop());
+        if(tickRef.current) clearInterval(tickRef.current);
+        const tipo=rec.mimeType||mime||'audio/webm';
+        const blob=new Blob(pedRef.current,{type:tipo});
+        if(blob.size<800){ flash('Gravação muito curta'); setSubindo(false); return; }
+        setSubindo(true);
+        const anterior=valor;
+        const r=await uploadAudio(exId, blob, tipo);
+        setSubindo(false);
+        if(r.ok){ if(anterior) apagarAudio(anterior); onMudar(r.url); flash('Áudio salvo ✓'); }
+        else flash('Falha ao enviar: '+String(r.erro).slice(0,60));
+      };
+      recRef.current=rec; rec.start();
+      setGrav(true); setSeg(0);
+      tickRef.current=setInterval(()=>setSeg(s=>{
+        if(s>=120){ try{rec.stop();}catch(e){} setGrav(false); return s; } // teto de 2min
+        return s+1;
+      }),1000);
+    }catch(e){ flash('Não consegui acessar o microfone'); }
+  };
+  const parar=()=>{ try{ recRef.current && recRef.current.stop(); }catch(e){} setGrav(false); };
+  const mmss=(n)=>String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
+  return (<div className="audiobox">
+    {valor && !grav && <audio className="audioplayer" controls preload="none" src={valor}/>}
+    <div className="audioacts">
+      {!grav
+        ? <button type="button" className={'audiobtn'+(subindo?' off':'')} disabled={subindo}
+            onClick={iniciar}>{subindo?'⏳ enviando…':(valor?'🎤 Regravar':'🎤 Gravar dica')}</button>
+        : <button type="button" className="audiobtn rec" onClick={parar}>
+            ⏹ Parar · {mmss(seg)}</button>}
+      {valor && !grav && !subindo &&
+        <button type="button" className="audiodel"
+          onClick={()=>{ apagarAudio(valor); onMudar(''); }}>remover</button>}
+    </div>
+    {grav && <div className="audiodica">Falando… toque em Parar quando terminar.</div>}
+  </div>);
+}
 /* ===== FASES DE TREINO =====
    Uma fase agrupa os treinos de um ciclo. Regra central: fase vencida NÃO
    bloqueia nada — o aluno continua treinando e recebe um aviso amigável.
@@ -1471,7 +1588,7 @@ async function fetchDbFromSupabase(){
     const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas] = await Promise.all([
       sb.from('alunos').select('id,nome,foto_url,academia,nascimento,fc_max').order('nome'),
       sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data,fase_id').order('ordem'),
-      sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio').order('ordem'),
+      sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio,audio_url').order('ordem'),
       sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor,dor_local,dor_lado,variante,serie,extra').order('data,serie'),
       sb.from('sessoes').select('id,aluno_id,treino_id,data,origem').order('data'),
       sb.from('relatos').select('id,aluno_id,treino_id,exercicio_id,exercicio_nome,data,texto,fixado,created_at').order('created_at'),
@@ -1495,6 +1612,7 @@ async function fetchDbFromSupabase(){
       (exPorTreino[e.treino_id]=exPorTreino[e.treino_id]||[]).push({
         id:e.id, name:e.nome, series:e.series||'',
         exerciseId:e.cardapio_id, doneDate:e.done_date, descanso:e.descanso||'', filmar:!!e.filmar, observacao:e.observacao||'', metodo:e.metodo||null, cardio:e.cardio||null,
+        audioUrl:e.audio_url||'',
         logs: logsPorEx[e.id]||[]
       });
     });
@@ -2892,7 +3010,10 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
         const tid=uid();
         const exs=(t.exercises||[]).map((ex,j)=>{
           const eid=uid();
-          const copia={...ex, id:eid, doneDate:null, logs:[]};
+          // audioUrl não vem: dois exercícios apontando para o mesmo arquivo faria
+          // "remover" em um quebrar o outro. E dica de ciclo anterior costuma
+          // não valer para o novo — melhor regravar de propósito.
+          const copia={...ex, id:eid, doneDate:null, logs:[], audioUrl:''};
           enqueueOp({tipo:'insert',tabela:'exercicios',dados:{
             id:eid, treino_id:tid, nome:ex.name, series:ex.series,
             cardapio_id:ex.exerciseId!=null?ex.exerciseId:null, ordem:j,
@@ -3473,7 +3594,7 @@ function resumoMetodo(m){
   return iguais ? (n+' × '+(m.series[0].reps||'—')) : (n+' séries · varia');
 }
 
-function ExerciseSheet({initial,onSave,onClose}){
+function ExerciseSheet({initial,onSave,onClose,flash}){
   const [name,setName]=useState(initial?initial.name:'');
   const [exerciseId,setExerciseId]=useState(initial&&initial.exerciseId!=null?initial.exerciseId:null);
   const [showAuto,setShowAuto]=useState(false);
@@ -3496,6 +3617,7 @@ function ExerciseSheet({initial,onSave,onClose}){
   const [descManual,setDescManual]=useState(false);
   const [filmar,setFilmar]=useState(initial?!!initial.filmar:false);
   const [observacao,setObservacao]=useState(initial?(initial.observacao||''):'');
+  const [audioUrl,setAudioUrl]=useState(initial?(initial.audioUrl||''):'');
   const [metodo,setMetodo]=useState(initial&&initial.metodo?initial.metodo:null);
   const [cardio,setCardio]=useState(initial&&initial.cardio?initial.cardio:null);
   const [erroEx,setErroEx]=useState('');
@@ -3619,7 +3741,7 @@ function ExerciseSheet({initial,onSave,onClose}){
     }
     setErroEx('');
     const combined = (sets.trim()&&reps.trim()) ? `${sets.trim()} × ${reps.trim()}` : (sets.trim()||reps.trim()||'');
-    onSave({name:name.trim(), series:combined, exerciseId, descanso:descanso.trim(), filmar, observacao:observacao.trim(), metodo, cardio});
+    onSave({name:name.trim(), series:combined, exerciseId, descanso:descanso.trim(), filmar, observacao:observacao.trim(), metodo, cardio, audioUrl});
   };
   return (<div className="backdrop" onClick={onClose}>
     <div className="sheet" onClick={e=>e.stopPropagation()}>
@@ -3889,6 +4011,11 @@ function ExerciseSheet({initial,onSave,onClose}){
         <textarea className="obstext" rows={3} maxLength={500} value={observacao}
           onChange={e=>setObservacao(e.target.value)}
           placeholder="Ex: pirâmide — aumente a carga a cada série (12/10/8/6). Segure 2s embaixo."/>
+      </div>
+      <div className="field">
+        <label>Dica em áudio <span className="obscount">o aluno ouve</span></label>
+        <GravadorAudio exId={initial?initial.id:('novo_'+Date.now())} valor={audioUrl}
+          onMudar={setAudioUrl} flash={flash}/>
       </div>
       <div className="field">
         <button type="button" className={'filmtoggle'+(filmar?' on':'')} onClick={()=>setFilmar(f=>!f)}>
@@ -4243,29 +4370,32 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   const updExercises=(exs)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,treinos:x.treinos.map(tt=>tt.id===treinoId?{...tt,exercises:exs}:tt)}:x)});
   const saveEx=(data)=>{
     if(editingEx==='new'){
-      const novo={id:uid(),name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,observacao:data.observacao||'',metodo:data.metodo||null,cardio:data.cardio||null,logs:[]};
+      const novo={id:uid(),name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,observacao:data.observacao||'',metodo:data.metodo||null,cardio:data.cardio||null, audioUrl:data.audioUrl||'',logs:[]};
       updExercises([...(t.exercises||[]),novo]);
       enqueueOp({tipo:'insert',tabela:'exercicios',dados:{
         id:novo.id, treino_id:treinoId, nome:novo.name, series:novo.series||null,
         cardapio_id:novo.exerciseId!=null?novo.exerciseId:null, ordem:(t.exercises||[]).length,
         descanso:novo.descanso||null, filmar:!!novo.filmar, observacao:novo.observacao||null,
-        metodo:novo.metodo||null, cardio:novo.cardio||null
+        metodo:novo.metodo||null, cardio:novo.cardio||null, audio_url:novo.audioUrl||null
       }});
       const herda=lastLogOfExercise(s,data.name,data.exerciseId);
       flash(herda?('Adicionado — última carga '+herda.carga+' disponível ✓'):'Exercício adicionado ✓');
     }else{
-      updExercises(t.exercises.map(e=>e.id===editingEx.id?{...e,name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,observacao:data.observacao||'',metodo:data.metodo||null,cardio:data.cardio||null}:e));
+      updExercises(t.exercises.map(e=>e.id===editingEx.id?{...e,name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,observacao:data.observacao||'',metodo:data.metodo||null,cardio:data.cardio||null,audioUrl:data.audioUrl||''}:e));
       enqueueOp({tipo:'update',tabela:'exercicios',id:editingEx.id,dados:{
         nome:data.name, series:data.series||null,
         cardapio_id:data.exerciseId!=null?data.exerciseId:null,
         descanso:data.descanso||null, filmar:!!data.filmar, observacao:data.observacao||null,
-        metodo:data.metodo||null, cardio:data.cardio||null
+        metodo:data.metodo||null, cardio:data.cardio||null, audio_url:data.audioUrl||null
       }});
       flash('Atualizado ✓');
     }
     setEditingEx(null);
   };
   const delEx=(id)=>{
+    const alvo=(t.exercises||[]).find(e=>e.id===id);
+    // o áudio é arquivo, não linha: o cascade do banco não alcança o Storage
+    if(alvo && alvo.audioUrl) apagarAudio(alvo.audioUrl);
     updExercises(t.exercises.filter(e=>e.id!==id));
     enqueueOp({tipo:'delete',tabela:'exercicios',id});
   };
@@ -4582,6 +4712,10 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
             </div>
           </div>}
           {ex.observacao && <div className="exobs"><span className="eoico">💬</span><span className="eotxt">{ex.observacao}</span></div>}
+          {ex.audioUrl && <div className="exaudio">
+            <span className="eaico">🎧</span>
+            <audio className="audioplayer" controls preload="none" src={ex.audioUrl}/>
+          </div>}
           {/* aluno: só HOJE (some na virada do dia). Reler a própria dor toda semana,
               logo antes de executar o movimento, é priming de expectativa — nocebo.
               Treinador: histórico, que é quem precisa enxergar o padrão. */}
@@ -4711,7 +4845,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
       </div>}
     </div>
     {!ehAluno && <button className="fab" onClick={()=>setEditingEx('new')}>＋ Exercício</button>}
-    {editingEx && !ehAluno && <ExerciseSheet initial={editingEx==='new'?null:editingEx} onSave={saveEx} onClose={()=>setEditingEx(null)}/>}
+    {editingEx && !ehAluno && <ExerciseSheet initial={editingEx==='new'?null:editingEx} onSave={saveEx} onClose={()=>setEditingEx(null)} flash={flash}/>}
     {relatando && <RelatoSheet exNome={relatando.exNome}
       inicial={relatando.atual?relatando.atual.texto:''}
       fixadoInicial={relatando.atual?relatando.atual.fixado:false}
