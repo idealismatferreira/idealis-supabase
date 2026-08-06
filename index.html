@@ -4134,16 +4134,20 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
       }else{
         // sessão anterior: carga E repetições como sugestão. Repetir o número
         // de reps é o caso comum; alterar é um toque no +1/-1.
+        // `sugerida`: veio da sessão anterior, o aluno ainda NÃO confirmou.
+        // Sem esta marca, carga+reps pré-preenchidos fazem a série parecer
+        // feita — e ela seria salva sem ninguém ter treinado.
         out.push({carga:(ref?ref.carga:(fallback?fallback.carga:''))||'',
                   reps:(ref?ref.reps:(fallback?fallback.reps:''))||'',
-                  intensidade:null, dor:null});
+                  intensidade:null, dor:null, sugerida:true});
       }
     }
     return out;
   };
   const [series,setSeries]=useState(()=>montarSeries(variantInicial));
   const primeiraPendente=(lista)=>{
-    const i=lista.findIndex(sr=>!(String(sr.carga||'').trim() && String(sr.reps||'').trim()));
+    const i=lista.findIndex(sr=>!(!sr.sugerida
+      && String(sr.carga||'').trim() && String(sr.reps||'').trim()));
     return i<0?Math.max(0,lista.length-1):i;
   };
   const [ativa,setAtiva]=useState(()=>primeiraPendente(series)); // começa na primeira pendente
@@ -4157,9 +4161,12 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
   })();
   const at=series[Math.min(ativa,series.length-1)]||{carga:'',reps:''};
   const setAt=(patch)=>setSerie(Math.min(ativa,series.length-1),patch);
-  const serieCompleta=(sr)=>!!(sr && String(sr.carga||'').trim() && String(sr.reps||'').trim());
+  const serieCompleta=(sr)=>!!(sr && !sr.sugerida
+    && String(sr.carga||'').trim() && String(sr.reps||'').trim());
   const serieIniciada=(sr)=>!!(sr && (String(sr.carga||'').trim() || String(sr.reps||'').trim()));
-  const setSerie=(i,patch)=>setSeries(a=>a.map((x,k)=>k===i?{...x,...patch}:x));
+  // qualquer edição do aluno confirma a série: deixa de ser sugestão.
+  // É isto que faz "pré-preenchido" e "feito" voltarem a ser coisas diferentes.
+  const setSerie=(i,patch)=>setSeries(a=>a.map((x,k)=>k===i?{...x,...patch,sugerida:false}:x));
   const aplicarCargaTodas=()=>{ const c=(series[ativa]||series[0]).carga; setSeries(a=>a.map(x=>({...x,carga:c}))); };
   const [erro,setErro]=useState('');
   // separa número e sufixo (ex "40kg" -> 40 + "kg"); preserva unidade ao operar
@@ -4187,7 +4194,8 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
   const save=(marcarSerie)=>{
     // registro independente: salva SÓ as séries completas (carga + reps).
     // As demais ficam de fora sem bloquear — a carga pré-preenchida sozinha não conta como iniciada.
-    const feitas=series.map((sr,i)=>({...sr,i})).filter(sr=>String(sr.carga||'').trim() && String(sr.reps||'').trim());
+    const feitas=series.map((sr,i)=>({...sr,i}))
+      .filter(sr=>!sr.sugerida && String(sr.carga||'').trim() && String(sr.reps||'').trim());
     if(!feitas.length){ setErro('Preencha carga e repetições de ao menos uma série.'); return; }
     const pend=lerVarPend(alunoId,exName);
     if(pend.includes(variante)) salvarVarPend(alunoId,exName,pend.filter(v=>v!==variante));
@@ -4364,7 +4372,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
           // em Cancelar perdia tudo. saveLog é idempotente (atualiza a série do
           // dia em vez de duplicar), então salvar a cada avanço é seguro.
           const feitas=series.map((sr,i)=>({...sr,i}))
-            .filter(sr=>String(sr.carga||'').trim() && String(sr.reps||'').trim());
+            .filter(sr=>!sr.sugerida && String(sr.carga||'').trim() && String(sr.reps||'').trim());
           if(feitas.length) onSave({
             variante:(variante===base?'':variante),
             manterAberto: true,
