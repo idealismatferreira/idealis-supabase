@@ -3960,8 +3960,11 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
           intensidade:(ref.intensidade!=null?ref.intensidade:null),
           dor:(ref.dor!=null?ref.dor:null)});
       }else{
-        // sessão anterior: só a carga como sugestão
-        out.push({carga:(ref?ref.carga:(fallback?fallback.carga:''))||'', reps:'', intensidade:null, dor:null});
+        // sessão anterior: carga E repetições como sugestão. Repetir o número
+        // de reps é o caso comum; alterar é um toque no +1/-1.
+        out.push({carga:(ref?ref.carga:(fallback?fallback.carga:''))||'',
+                  reps:(ref?ref.reps:(fallback?fallback.reps:''))||'',
+                  intensidade:null, dor:null});
       }
     }
     return out;
@@ -4111,7 +4114,16 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
           </span>))}
       </div>}
       <div className="field"><label className="reglab">Carga{!isEdit && series.length>1?' · '+(ativa+1)+'ª série':''}</label>
-        <input value={at.carga} inputMode="decimal" onChange={e=>{setAt({carga:e.target.value});setErro('');}} placeholder="Ex: 40kg"/>
+        <input value={at.carga} inputMode="decimal"
+          onChange={e=>{setAt({carga:e.target.value});setErro('');}}
+          onBlur={e=>{
+            // número puro digitado no teclado vira "12kg". Sem isto convivem
+            // "12" e "12kg" no mesmo exercício, e a leitura do gráfico fica
+            // inconsistente entre séries.
+            const v=String(e.target.value||'').trim();
+            if(v && /^[\d]+([.,][\d]+)?$/.test(v)) setAt({carga:v.replace(',','.')+'kg'});
+          }}
+          placeholder="Ex: 40kg"/>
         <div className="reprow">
           {[10,20,40,50,80,100].map(v=>(
             <button type="button" key={v} className={'rpreset'+(parseCarga(at.carga).num===v?' sel':'')}
