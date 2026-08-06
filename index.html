@@ -4187,8 +4187,24 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
         })()}
       </div>
       {!isEdit && series.length>1 && ativa<series.length-1 &&
-        <button type="button" className="btnprox" onClick={()=>setAtiva(ativa+1)}>
-          Próxima série ({ativa+2}ª) →
+        <button type="button" className="btnprox" onClick={()=>{
+          // avançar TAMBÉM salva: antes, quem preenchia 3 séries e depois tocava
+          // em Cancelar perdia tudo. saveLog é idempotente (atualiza a série do
+          // dia em vez de duplicar), então salvar a cada avanço é seguro.
+          const feitas=series.map((sr,i)=>({...sr,i}))
+            .filter(sr=>String(sr.carga||'').trim() && String(sr.reps||'').trim());
+          if(feitas.length) onSave({
+            variante:(variante===base?'':variante),
+            manterAberto: true,
+            series: feitas.map(sr=>({serie:sr.i+1, carga:sr.carga.trim(), reps:sr.reps.trim(),
+              intensidade:(sr.intensidade!=null?sr.intensidade:null),
+              dor:(sr.dor!=null?sr.dor:null),
+              dorLocal:(sr.dor!=null && sr.dor>=1 && sr.dorLocal)?sr.dorLocal:null,
+              dorLado:(sr.dor!=null && sr.dor>=1 && sr.dorLocal && sr.dorLado)?sr.dorLado:null}))
+          });
+          setAtiva(ativa+1);
+        }}>
+          Salvar e ir para a {ativa+2}ª →
         </button>}
       {erro && <div style={{color:'var(--danger)',fontSize:13,marginBottom:12}}>{erro}</div>}
       <div className="sheetactions">
@@ -4445,7 +4461,9 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     }else{
       flash(n>1?(n+' séries registradas ✓'):'Carga registrada ✓');
     }
-    setRegistering(null);
+    // manterAberto: veio do "Salvar e ir para a próxima" — a folha continua
+    // aberta para o aluno seguir preenchendo, sem perder o que já registrou.
+    if(!data.manterAberto) setRegistering(null);
   };
   // progresso de séries — vem do App (sobrevive à navegação)
   const avancarSerie=(ex)=>{
