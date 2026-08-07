@@ -4130,15 +4130,26 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
     const ses=agruparSessoes((historico||[]).filter(l=>(((l.variante||'').trim()||base)===v), base), base);
     return ses.length?ses[ses.length-1]:null;
   };
+  /* última sessão ANTERIOR a hoje: é dela que vem a sugestão de cada série.
+     Antes eu usava a última sessão em geral — quando já havia registro hoje,
+     a 3ª série sugeria a 2ª de HOJE em vez da 3ª do treino passado. */
+  const sessaoAnterior=(v)=>{
+    const ses=agruparSessoes((historico||[]).filter(l=>(((l.variante||'').trim()||base)===v), base), base)
+      .filter(x=>x.date!==todayISO());
+    return ses.length?ses[ses.length-1]:null;
+  };
   const montarSeries=(v)=>{
     if(isEdit) return [{carga:editLog.carga||'', reps:editLog.reps||'',
       intensidade:(editLog.intensidade!=null?editLog.intensidade:null), dor:(editLog.dor!=null?editLog.dor:null)}];
     const ult=ultimaSessao(v);
     const deHoje = ult && ult.date===todayISO();
+    const ant=sessaoAnterior(v);
     const out=[];
     for(let i=0;i<nSeries;i++){
       const ref=ult&&ult.series[i];
-      const fallback=ult&&ult.series.length?ult.series[ult.series.length-1]:null;
+      // sugestão vem da série DE MESMO NÚMERO do treino anterior. Sem
+      // correspondente, fica vazia: repetir a série errada é pior que nada.
+      const antRef=ant&&ant.series[i];
       if(deHoje && ref){
         // série já registrada HOJE: volta completa (✓) — salvar de novo atualiza, não duplica
         out.push({carga:ref.carga||'', reps:ref.reps||'',
@@ -4150,9 +4161,9 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
         // `sugerida`: veio da sessão anterior, o aluno ainda NÃO confirmou.
         // Sem esta marca, carga+reps pré-preenchidos fazem a série parecer
         // feita — e ela seria salva sem ninguém ter treinado.
-        out.push({carga:(ref?ref.carga:(fallback?fallback.carga:''))||'',
-                  reps:(ref?ref.reps:(fallback?fallback.reps:''))||'',
-                  intensidade:null, dor:null, sugerida:true});
+        out.push({carga:(antRef?antRef.carga:'')||'',
+                  reps:(antRef?antRef.reps:'')||'',
+                  intensidade:null, dor:null, sugerida:!!antRef});
       }
     }
     return out;
@@ -4207,8 +4218,11 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
   const save=(marcarSerie)=>{
     // registro independente: salva SÓ as séries completas (carga + reps).
     // As demais ficam de fora sem bloquear — a carga pré-preenchida sozinha não conta como iniciada.
+    // apertar Salvar É a confirmação da série ativa: se os valores sugeridos
+    // já estavam certos, o aluno não tem por que editar nada para gravá-los.
     const feitas=series.map((sr,i)=>({...sr,i}))
-      .filter(sr=>!sr.sugerida && String(sr.carga||'').trim() && String(sr.reps||'').trim());
+      .filter(sr=>(!sr.sugerida || sr.i===ativa)
+                  && String(sr.carga||'').trim() && String(sr.reps||'').trim());
     if(!feitas.length){ setErro('Preencha carga e repetições de ao menos uma série.'); return; }
     const pend=lerVarPend(alunoId,exName);
     if(pend.includes(variante)) salvarVarPend(alunoId,exName,pend.filter(v=>v!==variante));
@@ -4390,7 +4404,8 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
           // em Cancelar perdia tudo. saveLog é idempotente (atualiza a série do
           // dia em vez de duplicar), então salvar a cada avanço é seguro.
           const feitas=series.map((sr,i)=>({...sr,i}))
-            .filter(sr=>!sr.sugerida && String(sr.carga||'').trim() && String(sr.reps||'').trim());
+            .filter(sr=>(!sr.sugerida || sr.i===ativa)
+                        && String(sr.carga||'').trim() && String(sr.reps||'').trim());
           if(feitas.length) onSave({
             variante:(variante===base?'':variante),
             manterAberto: true,
@@ -4400,6 +4415,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
               dorLocal:(sr.dor!=null && sr.dor>=1 && sr.dorLocal)?sr.dorLocal:null,
               dorLado:(sr.dor!=null && sr.dor>=1 && sr.dorLocal && sr.dorLado)?sr.dorLado:null}))
           });
+          setSeries(a=>a.map((x,k)=>k===ativa?{...x,sugerida:false}:x));
           setAtiva(ativa+1);
         }}>
           Salvar e ir para a {ativa+2}ª →
