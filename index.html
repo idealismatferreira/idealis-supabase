@@ -761,7 +761,20 @@
   .uspill{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--text);
     background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
   .uspill .usn{font-size:10.5px;font-weight:800;color:var(--cyan-2)}
+  .hsmeta{display:inline-flex;gap:4px;align-items:center;margin-right:6px;flex:0 0 auto}
+  .srchip.sug{border-style:dashed;opacity:.62;font-style:italic}
+  .srchip .srsug{display:block;font-size:8.5px;font-weight:700;font-style:normal;
+    text-transform:uppercase;letter-spacing:.06em;opacity:.8;margin-top:1px}
   .exlastmeta{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+  /* esforço e dor de CADA série, dentro do próprio chip */
+  .uspill .usmeta{display:inline-flex;gap:3px;margin-left:6px;padding-left:6px;
+    border-left:1px solid var(--line);align-items:center}
+  .usdot{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;
+    font-size:9.5px;font-weight:800;color:#0b0f10;line-height:1;flex:0 0 auto}
+  .usdot.dor{background:transparent;border:1.5px solid var(--line)}
+  .uslegenda{display:flex;align-items:center;gap:5px;margin-top:6px;
+    font-size:10.5px;color:var(--muted-2)}
+  .uslegenda .usdot{width:12px;height:12px}
   .hsessao{margin-bottom:10px;padding:10px 11px;border-radius:13px;background:var(--surface);border:1px solid var(--line)}
   .hstopo{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:8px}
   .hstopo .hdate{font-size:13.5px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
@@ -4289,8 +4302,13 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
       </div>}
       {!isEdit && series.length>1 && <div className="serieresumo">
         {series.map((sr,i)=>(
-          <span key={i} className={'srchip'+(ativa===i?' sel':'')+(serieIniciada(sr)?'':' vazia')}>
+          // chip sugerido (valor da sessão anterior, ainda não confirmado)
+          // precisa PARECER diferente do registrado: idênticos, o aluno acha
+          // que salvou e sai do exercício sem confirmar a série.
+          <span key={i} className={'srchip'+(ativa===i?' sel':'')
+              +(serieIniciada(sr)?'':' vazia')+(sr.sugerida?' sug':'')}>
             {i+1}ª {serieIniciada(sr)?((sr.carga||'—')+(sr.reps?' × '+sr.reps:'')):'—'}
+            {sr.sugerida && serieIniciada(sr) && <span className="srsug">anterior</span>}
           </span>))}
       </div>}
       <div className="field"><label className="reglab">Carga{!isEdit && series.length>1?' · '+(ativa+1)+'ª série':''}</label>
@@ -4820,17 +4838,32 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
                 </span>}
               </span>
               <div className="ultseries">
+                {/* esforço e dor viram pontinhos DENTRO do chip da série:
+                    antes, o card mostrava um único valor por dia (o da primeira
+                    série que tivesse), e os das demais sumiam da tela. */}
                 {ult.series.map((sr,i)=>(
                   <span className="uspill" key={sr.id}>
                     <span className="usn">{sr.serieN+'ª'}</span>
                     {sr.carga||'—'}{sr.reps?' × '+sr.reps:''}
+                    {(sr.intensidade!=null || (sr.dor!=null && sr.dor>0)) &&
+                      <span className="usmeta">
+                        {sr.intensidade!=null &&
+                          <span className="usdot" title={'Esforço '+sr.intensidade+'/10'}
+                            style={{background:scaleColor(sr.intensidade)}}>{sr.intensidade}</span>}
+                        {sr.dor!=null && sr.dor>0 &&
+                          <span className="usdot dor" title={'Dor '+sr.dor+'/10'}
+                            style={{borderColor:scaleColor(sr.dor),color:scaleColor(sr.dor)}}>{sr.dor}</span>}
+                      </span>}
                   </span>
                 ))}
               </div>
-              <div className="exlastmeta">
-                {ult.intensidade!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(ult.intensidade)}}></span><span className="k">Esforço</span>{ult.intensidade}</span>}
-                {ult.dor!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(ult.dor)}}></span><span className="k">Dor art.</span>{ult.dor}</span>}
-              </div>
+              {/* legenda dos pontinhos; o resumo por DIA saiu daqui porque
+                  colapsava várias séries num valor só */}
+              {ult.series.some(x=>x.intensidade!=null || (x.dor!=null && x.dor>0)) &&
+                <div className="uslegenda">
+                  <span className="usdot" style={{background:'var(--muted-2)'}}></span> esforço
+                  <span className="usdot dor" style={{borderColor:'var(--muted-2)',color:'var(--muted-2)'}}></span> dor
+                </div>}
             </div>;
           })()}
           <div className="exactions">
@@ -5042,14 +5075,23 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
         <div key={ses.date+ses.variante} className="hsessao">
           <div className="hstopo">
             <span className="hdate">{fmtDate(ses.date)}</span>
-            {ses.intensidade!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(ses.intensidade)}}></span>Esforço {ses.intensidade}</span>}
-            {ses.dor!=null && <span className="pill dot"><span className="swatch" style={{background:scaleColor(ses.dor)}}></span>Dor art. {ses.dor}</span>}
             {temVarias && <span className="pill vpill">{ses.variante}</span>}
           </div>
+          {/* esforço e dor por SÉRIE. No cabeçalho do dia, o valor da 1ª série
+              escondia os das demais — esforço 7 na 1ª e 10 na 2ª virava só "7". */}
           {ses.series.map(e=>(
             <div key={e.id} className="hserie">
               <span className="hsn">{e.serieN+'ª'}</span>
               <span className="hsv">{e.carga||'—'}{e.reps?' × '+e.reps+' reps':''}</span>
+              {(e.intensidade!=null || (e.dor!=null && e.dor>0)) &&
+                <span className="hsmeta">
+                  {e.intensidade!=null &&
+                    <span className="usdot" title={'Esforço '+e.intensidade+'/10'}
+                      style={{background:scaleColor(e.intensidade)}}>{e.intensidade}</span>}
+                  {e.dor!=null && e.dor>0 &&
+                    <span className="usdot dor" title={'Dor '+e.dor+'/10'}
+                      style={{borderColor:scaleColor(e.dor),color:scaleColor(e.dor)}}>{e.dor}</span>}
+                </span>}
               <button className="hedit" onClick={()=>setEditing(e)}>✎</button>
               <button className="hdel" onClick={()=>delLog(e.id)}>🗑</button>
             </div>))}
