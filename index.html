@@ -236,7 +236,7 @@
   .iconbtn:active{background:var(--surface-2)}
   .screen{padding:16px 16px 120px}
   .search{width:100%;padding:14px 16px;background:var(--surface);border:1px solid var(--line);
-    border-radius:14px;color:var(--text);font-size:16px;margin-bottom:14px;outline:none}
+    border-radius:14px;color:var(--text);font-size:16px;margin-bottom:18px;outline:none}
   .search:focus{border-color:var(--cyan)}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px}
   .rowcard{display:flex;align-items:center;gap:14px}
@@ -409,7 +409,9 @@
   .autolist div.opt{display:flex;justify-content:space-between;align-items:center;gap:8px}
   .autolist .optgrp{font-size:11px;color:var(--muted);flex-shrink:0}
   .vinculado{font-size:12px;color:var(--soft-green);margin-top:6px;font-weight:600}
-  .catrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius)}
+  .catrow{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin:0 0 16px;padding:12px 14px;background:var(--surface);
+    border:1px solid var(--line);border-radius:var(--radius)}
   .catinfo{font-size:12px;color:var(--muted)}
   .catwhen{opacity:.7}
   .catbtn{flex-shrink:0;font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);background:var(--ctrl-bg);border:1px solid var(--ctrl-line);border-radius:10px;padding:8px 12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -813,6 +815,28 @@
     color:var(--on-cyan);font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer}
   .cdiniciar:active{filter:brightness(.92)}
   /* --- cardio: overlay em execução --- */
+  .statusfiltro{display:flex;gap:6px;margin:0 4px 20px}
+  .statusfiltro button{flex:1;padding:9px 6px;border-radius:10px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--muted);font-family:inherit;font-size:12.5px;
+    font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .statusfiltro button.on{border-color:var(--cyan);background:rgba(0,201,204,.14);color:var(--cyan-2)}
+  .famtit{font-size:10.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;
+    letter-spacing:.09em;margin:20px 6px 10px}
+  .modtit{display:flex;align-items:center;gap:8px;width:100%;margin:0 0 10px;
+    padding:9px 8px;border:1px solid transparent;border-radius:11px;background:none;
+    font-family:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .modtit:active{background:var(--surface-2)}
+  .modseta{font-size:15px;color:var(--muted);line-height:1;flex:0 0 auto;
+    transition:transform .2s ease}
+  .modseta.fechado{transform:rotate(-90deg)}
+  .moddot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .modnome{font-size:13.5px;font-weight:800;color:var(--text);flex:1;min-width:0}
+  .modn{font-size:11px;font-weight:700;color:var(--muted);background:var(--surface-2);
+    border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+  .rowcard.inativo{opacity:.5}
+  .tagstatus{font-size:9.5px;font-weight:800;color:var(--muted);background:var(--surface-2);
+    border:1px solid var(--line);border-radius:999px;padding:1px 7px;margin-left:6px;
+    text-transform:uppercase;letter-spacing:.04em;vertical-align:middle}
   .tagbday{font-size:11.5px;font-weight:700;color:var(--lime);margin-left:5px;white-space:nowrap}
   .tagfalta{font-size:9.5px;font-weight:700;color:var(--muted);background:var(--surface-2);
     border:1px solid var(--line);border-radius:999px;padding:1px 7px;margin-left:6px;
@@ -1410,6 +1434,7 @@ function faseVigente(s){
 }
 const MSG_FASE_VENCIDA='Fim de ciclo por aqui! 💪🏼 Vou te chamar pra conversar sobre como foi e montar a próxima fase.';
 const TEMA_KEY = 'idealis_tema_v1';
+const GRUPOS_KEY = 'idealis_grupos_recolhidos_v1';
 /* Perfil da última sessão. Sem isto o app abre offline (o Service Worker
    entrega o casco) mas cai em "sem perfil vinculado", porque a leitura de
    `perfis` precisa de servidor. É cache de PAPEL, não credencial: o RLS
@@ -1628,7 +1653,7 @@ async function fetchDbFromSupabase(){
   if(!sb) return {ok:false, erro:'Sem conexão com o servidor.'};
   try{
     // o RLS já filtra: treinador vê tudo, aluno vê só o dele
-    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas] = await Promise.all([
+    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg] = await Promise.all([
       sb.from('alunos').select('id,nome,foto_url,academia,nascimento,fc_max').order('nome'),
       sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data,fase_id').order('ordem'),
       sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio,audio_url').order('ordem'),
@@ -1636,10 +1661,14 @@ async function fetchDbFromSupabase(){
       sb.from('sessoes').select('id,aluno_id,treino_id,data,origem').order('data'),
       sb.from('relatos').select('id,aluno_id,treino_id,exercicio_id,exercicio_nome,data,texto,fixado,created_at').order('created_at'),
       sb.from('acessos').select('id,aluno_id,treino_id,data,vezes').order('data'),
-      sb.from('fases').select('id,aluno_id,nome,objetivo,inicio,fim').order('inicio')
+      sb.from('fases').select('id,aluno_id,nome,objetivo,inicio,fim').order('inicio'),
+      sb.from('modalidades').select('id,nome,familia,ordem,cor').eq('ativa',true).order('ordem'),
+      sb.from('vw_alunos_segmentados').select('id,status,modalidade_id,modalidade,familia,ordem,cor')
     ]);
     const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error||rSess.error||rRel.error||rAce.error||rFas.error;
     if(err) return {ok:false, erro:err.message};
+    // segmentação é informação de GESTÃO: se falhar, a lista continua funcionando sem grupos
+    if(rMod.error||rSeg.error) console.warn('[segmentacao]', (rMod.error||rSeg.error).message);
 
     const logsPorEx={};
     (rLogs.data||[]).forEach(l=>{
@@ -1688,13 +1717,26 @@ async function fetchDbFromSupabase(){
         id:f.id, nome:f.nome, objetivo:f.objetivo||'', inicio:f.inicio, fim:f.fim||null
       });
     });
-    const students=(rAlunos.data||[]).map(a=>({
-      id:a.id, name:a.nome, foto: a.foto_url||'', academia: a.academia||'',
-      nascimento: a.nascimento||null, fcMax: a.fc_max||null,
-      fases: fasesPorAluno[a.id]||[],
-      treinos: treinosPorAluno[a.id]||[]
+    const segPorAluno={};
+    (rSeg.data||[]).forEach(x=>{ segPorAluno[x.id]=x; });
+    const students=(rAlunos.data||[]).map(a=>{
+      const g=segPorAluno[a.id]||{};
+      return {
+        id:a.id, name:a.nome, foto: a.foto_url||'', academia: a.academia||'',
+        nascimento: a.nascimento||null, fcMax: a.fc_max||null,
+        // vem da view; o app só LÊ — a troca de formato acontece na dashboard
+        status: g.status||'ativo',
+        modalidadeId: g.modalidade_id||null,
+        modalidade: g.modalidade||'', familia: g.familia||'',
+        ordemMod: (g.ordem!=null?g.ordem:9999), corMod: g.cor||'',
+        fases: fasesPorAluno[a.id]||[],
+        treinos: treinosPorAluno[a.id]||[]
+      };
+    });
+    const modalidades=(rMod.data||[]).map(m=>({
+      id:m.id, nome:m.nome, familia:m.familia||'', ordem:m.ordem, cor:m.cor||''
     }));
-    return {ok:true, db:{students}};
+    return {ok:true, db:{students, modalidades}};
   }catch(e){
     return {ok:false, erro:String(e)};
   }
@@ -2943,6 +2985,36 @@ function Students({db,setDb,nav}){
     setTimeout(()=>setCatStatus(''),4000);
   };
   const list=db.students.filter(s=>s.name.toLowerCase().includes(q.toLowerCase()));
+  const [statusFiltro,setStatusFiltro]=useState('ativo'); // ativo | inativo | todos
+  /* grupos recolhíveis. A escolha fica no localStorage: com 44 alunos num
+     grupo, reabrir tudo a cada visita seria pior que o problema. */
+  const [recolhidos,setRecolhidos]=useState(()=>{
+    try{ return (LS_OK && JSON.parse(window.localStorage.getItem(GRUPOS_KEY)||'{}'))||{}; }
+    catch(e){ return {}; }
+  });
+  const alternarGrupo=(k)=>setRecolhidos(m=>{
+    const novo={...m,[k]:!m[k]};
+    try{ if(LS_OK) window.localStorage.setItem(GRUPOS_KEY, JSON.stringify(novo)); }catch(e){}
+    return novo;
+  });
+  const listaFiltrada=list.filter(s=>
+    statusFiltro==='todos' ? true :
+    statusFiltro==='ativo' ? (s.status||'ativo')==='ativo' : (s.status||'ativo')!=='ativo');
+  /* Agrupa por família -> modalidade, na ordem que vem do banco.
+     Nada de lista fixa no código: formato novo criado na dashboard aparece
+     aqui sozinho, sem alterar o app. */
+  const grupos=(()=>{
+    const mods=(db.modalidades||[]).slice().sort((a,b)=>a.ordem-b.ordem);
+    const out=[];
+    mods.forEach(m=>{
+      const alunos=listaFiltrada.filter(s=>s.modalidadeId===m.id);
+      if(alunos.length) out.push({chave:m.id, nome:m.nome, familia:m.familia, cor:m.cor, alunos});
+    });
+    const semFormato=listaFiltrada.filter(s=>!s.modalidadeId);
+    if(semFormato.length) out.push({chave:'__sem__', nome:'Sem formato definido',
+      familia:'', cor:'var(--muted-2)', alunos:semFormato});
+    return out;
+  })();
   const add=()=>{
     if(!name.trim())return;
     const novo={id:uid(),name:name.trim(),treinos:[]};
@@ -2969,7 +3041,6 @@ function Students({db,setDb,nav}){
   return (<React.Fragment>
     <TopBar title="Idealis Presencial" sub="Seus alunos"/>
     <div className="screen">
-      <input className="search" placeholder="Buscar aluno…" value={q} onChange={e=>setQ(e.target.value)}/>
       <div className="catrow">
         <div className="catinfo">
           🔗 Cardápio: {catMeta?`${catMeta.total} exercícios`:'não baixado'}
@@ -2979,25 +3050,48 @@ function Students({db,setDb,nav}){
           {catStatus==='baixando'?'Baixando…':catStatus.startsWith('ok:')?('✓ '+catStatus.slice(3)):catStatus==='offline'?'Sem internet':catStatus==='erro'?'Erro — tentar':'Atualizar'}
         </button>
       </div>
-      {list.length===0 && <div className="empty"><div className="big">🏋️</div>
-        <p>{q?'Nenhum aluno com esse nome.':'Nenhum aluno ainda. Toque em “+ Aluno” para começar.'}</p></div>}
-      {list.map(s=>{
-        const dias=diasAteAniversario(s.nascimento);
-        const fazAniver = dias!=null && dias<=7;
-        return (
-        <div key={s.id} className="card rowcard" onClick={()=>nav({name:'student',studentId:s.id})}>
-          <Avatar nome={s.name} foto={s.foto} onPick={f=>trocarFoto(s,f)} busy={subindo===s.id}/>
-          <div className="meta"><div className="name">{s.name}
-            {/* 🎂 = aniversário de verdade. Data faltando usa marca própria,
-                pra não significar duas coisas no mesmo ícone. */}
-            {fazAniver && <span className="tagbday" title="Aniversário"> 🎂{dias===0?' hoje':' em '+dias+'d'}</span>}
-            {!s.nascimento && <span className="tagfalta" title="Sem data de nascimento">sem data</span>}
-          </div>
-            <div className="desc">{(s.treinos||[]).length} {(s.treinos||[]).length===1?'treino':'treinos'}</div></div>
-          <button className="menudot" onClick={e=>{e.stopPropagation();setMenu(s);}}>⋯</button>
-          <div className="chev">›</div>
-        </div>);
-      })}
+      <input className="search" placeholder="Buscar aluno…" value={q} onChange={e=>setQ(e.target.value)}/>
+      <div className="statusfiltro">
+        {[['ativo','Ativos'],['inativo','Inativos'],['todos','Todos']].map(([k,rot])=>(
+          <button key={k} className={statusFiltro===k?'on':''}
+            onClick={()=>setStatusFiltro(k)}>{rot}</button>))}
+      </div>
+      {listaFiltrada.length===0 && <div className="empty"><div className="big">🏋️</div>
+        <p>{q?'Nenhum aluno com esse nome.'
+             :(statusFiltro==='ativo'?'Nenhum aluno ativo. Toque em “+ Aluno” para começar.'
+                                     :'Nenhum aluno neste filtro.')}</p></div>}
+      {grupos.map((g,gi)=>(
+        <React.Fragment key={g.chave}>
+          {(gi===0 || grupos[gi-1].familia!==g.familia) && g.familia &&
+            <div className="famtit">{g.familia}</div>}
+          <button className="modtit" onClick={()=>alternarGrupo(g.chave)}
+            aria-expanded={!recolhidos[g.chave]}>
+            <span className="moddot" style={{background:g.cor}}></span>
+            <span className="modnome">{g.nome}</span>
+            <span className="modn">{g.alunos.length}</span>
+            <span className={'modseta'+(recolhidos[g.chave]?' fechado':'')}>⌄</span>
+          </button>
+          {!recolhidos[g.chave] && g.alunos.map(s=>{
+            const dias=diasAteAniversario(s.nascimento);
+            const fazAniver = dias!=null && dias<=7;
+            const inativo=(s.status||'ativo')!=='ativo';
+            return (
+            <div key={s.id} className={'card rowcard'+(inativo?' inativo':'')}
+              onClick={()=>nav({name:'student',studentId:s.id})}>
+              <Avatar nome={s.name} foto={s.foto} onPick={f=>trocarFoto(s,f)} busy={subindo===s.id}/>
+              <div className="meta"><div className="name">{s.name}
+                {inativo && <span className="tagstatus">{s.status}</span>}
+                {/* 🎂 = aniversário de verdade. Data faltando usa marca própria,
+                    pra não significar duas coisas no mesmo ícone. */}
+                {fazAniver && <span className="tagbday" title="Aniversário"> 🎂{dias===0?' hoje':' em '+dias+'d'}</span>}
+                {!s.nascimento && <span className="tagfalta" title="Sem data de nascimento">sem data</span>}
+              </div>
+                <div className="desc">{(s.treinos||[]).length} {(s.treinos||[]).length===1?'treino':'treinos'}</div></div>
+              <button className="menudot" onClick={e=>{e.stopPropagation();setMenu(s);}}>⋯</button>
+              <div className="chev">›</div>
+            </div>);
+          })}
+        </React.Fragment>))}
     </div>
     <button className="fab" onClick={()=>setAdding(true)}>＋ Aluno</button>
     {adding && <div className="backdrop" onClick={()=>setAdding(false)}>
