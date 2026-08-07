@@ -152,6 +152,30 @@
     font-variant-numeric:tabular-nums;min-width:52px}
   .agtxt{flex:1;font-size:13px;color:var(--muted);min-width:0}
   .agtxt b{color:var(--text);font-weight:700}
+  .pgtopo{display:flex;gap:10px;margin:0 4px 14px}
+  .pgcard{flex:1;padding:16px 12px;border-radius:14px;background:var(--surface);
+    border:1px solid var(--line);text-align:center}
+  .pgcard.destaque{border-color:var(--cyan);background:rgba(0,201,204,.07)}
+  .pgnum{font-size:30px;font-weight:800;color:var(--text);line-height:1;letter-spacing:-.02em}
+  .pglab{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.35}
+  .pgcomp{font-size:10.5px;font-weight:700;color:var(--cyan-2);margin-top:7px;line-height:1.35}
+  .pgnota{font-size:12.5px;color:var(--muted);margin:0 6px 16px;text-align:center}
+  .pglinha{display:flex;align-items:center;gap:10px;margin:0 4px 7px;padding:11px 13px;
+    border-radius:11px;background:var(--surface);border:1px solid var(--line)}
+  .pgnome{flex:1;min-width:0;font-size:13.5px;color:var(--text);font-weight:600}
+  .pgvalor{font-size:13px;color:var(--muted);white-space:nowrap}
+  .pgvalor b{color:var(--cyan-2);font-weight:800}
+  .sheet.retro{max-height:88vh;overflow:auto}
+  .rtselo{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--on-cyan);background:var(--cyan);
+    border-radius:999px;padding:4px 11px;margin-bottom:11px}
+  .rttit{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.2}
+  .rtsub{font-size:13px;color:var(--muted);margin-top:4px}
+  .rtsec{font-size:12.5px;font-weight:800;color:var(--text);margin:20px 4px 9px}
+  .rtok{font-size:13px;color:var(--cyan-2);background:rgba(0,201,204,.09);
+    border:1px solid rgba(0,201,204,.3);border-radius:11px;padding:12px;line-height:1.45}
+  .duplobtn{display:flex;gap:10px;margin:2px 0 16px}
+  .duplobtn .agbtn{flex:1;margin:0;font-size:22px;padding:15px}
   .agbtn{width:100%;margin:2px 0 16px;padding:13px;border-radius:13px;border:1px solid var(--line);
     background:var(--surface);color:var(--text);font-family:inherit;font-size:14px;
     font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -1222,6 +1246,173 @@ function FaseSheet({inicial,podeDuplicar,onSalvar,onClose}){
       </div>
     </div></div>);
 }
+/* tela 📊 — estado ATUAL da fase. Tom neutro: é consulta, não celebração. */
+function Progresso({db,nav,studentId,ehAluno}){
+  const s=db.students.find(x=>x.id===studentId);
+  if(!s) return <div className="screen"><div className="empty"><p>Aluno não encontrado.</p></div></div>;
+  const fase=faseVigente(s);
+  const p=calcProgresso(s, fase);
+  const dias=diasRestantes(fase);
+  return (<React.Fragment>
+    <TopBar title="Seu progresso" sub={fase?fase.nome:'Sem fase definida'}
+      onBack={()=>nav({name:'student',studentId})}/>
+    <div className="screen">
+      <div className="pgtopo">
+        <div className="pgcard">
+          <div className="pgnum">{p.sessoes}</div>
+          <div className="pglab">treinos concluídos</div>
+        </div>
+        <div className="pgcard">
+          <div className="pgnum">{fmtVol(p.volume).split(' ')[0]}</div>
+          <div className="pglab">{fmtVol(p.volume).split(' ').slice(1).join(' ')||'kg'} movidos</div>
+        </div>
+      </div>
+      {fase && dias!=null && dias>=0 &&
+        <div className="pgnota">Faltam {dias===1?'1 dia':dias+' dias'} para o fim desta fase.</div>}
+      {p.subiram.length>0 && <React.Fragment>
+        <div className="secaotit">📈 Cargas que subiram</div>
+        {p.subiram.map(x=>(
+          <div key={x.nome} className="pglinha">
+            <span className="pgnome">{x.nome}</span>
+            <span className="pgvalor">{x.de}kg → <b>{x.para}kg</b></span>
+          </div>))}
+      </React.Fragment>}
+      {p.cargas.length>0 && <React.Fragment>
+        <div className="secaotit">🏋️ Cargas atuais</div>
+        {p.cargas.map(x=>(
+          <div key={x.nome} className="pglinha">
+            <span className="pgnome">{x.nome}</span>
+            <span className="pgvalor"><b>{x.atual}kg</b></span>
+          </div>))}
+      </React.Fragment>}
+      {p.sessoes===0 && p.cargas.length===0 &&
+        <div className="empty"><div className="big">📊</div>
+          <p>Ainda não há registros nesta fase.<br/>Registre suas cargas para acompanhar a evolução.</p></div>}
+    </div>
+  </React.Fragment>);
+}
+/* RETROSPECTIVA — aparece 1x, a 7 dias do fim. O que ela mostra e o botão 📊
+   não mostra: comparação com a fase anterior e trajetória (de → para). Isso
+   só existe quando o ciclo tem começo E fim. */
+function Retrospectiva({s, fase, faseAnterior, onRelato, onFechar}){
+  const p=calcProgresso(s, fase);
+  const antN=faseAnterior?sessoesDaFase(s, faseAnterior):null;
+  const [txt,setTxt]=useState('');
+  const [enviado,setEnviado]=useState(false);
+  return (<div className="backdrop" onClick={onFechar}>
+    <div className="sheet retro" onClick={e=>e.stopPropagation()}>
+      <div className="rtselo">🏁 {fase.nome}</div>
+      <div className="rttit">Sua fase está chegando ao fim!</div>
+      <div className="rtsub">Veja o que você construiu nela.</div>
+      <div className="pgtopo" style={{marginTop:16}}>
+        <div className="pgcard destaque">
+          <div className="pgnum">{p.sessoes}</div>
+          <div className="pglab">treinos concluídos</div>
+          {antN!=null && <div className="pgcomp">
+            {p.sessoes>antN ? '↑ '+(p.sessoes-antN)+' a mais que a fase anterior'
+             : p.sessoes===antN ? 'igual à fase anterior'
+             : 'na fase anterior foram '+antN}
+          </div>}
+        </div>
+        <div className="pgcard destaque">
+          <div className="pgnum">{fmtVol(p.volume).split(' ')[0]}</div>
+          <div className="pglab">{fmtVol(p.volume).split(' ').slice(1).join(' ')||'kg'} movidos</div>
+        </div>
+      </div>
+      {p.subiram.length>0 && <React.Fragment>
+        <div className="rtsec">📈 Cargas que evoluíram</div>
+        {p.subiram.slice(0,6).map(x=>(
+          <div key={x.nome} className="pglinha">
+            <span className="pgnome">{x.nome}</span>
+            <span className="pgvalor">{x.de}kg → <b>{x.para}kg</b></span>
+          </div>))}
+      </React.Fragment>}
+      {/* só melhora de 2+ pontos entra aqui. Piora não é mencionada. */}
+      {p.dorMelhorou.length>0 && <React.Fragment>
+        <div className="rtsec">🩺 Dor que diminuiu</div>
+        {p.dorMelhorou.slice(0,4).map(x=>(
+          <div key={x.nome} className="pglinha">
+            <span className="pgnome">{x.nome}</span>
+            <span className="pgvalor">{x.de}/10 → <b>{x.para}/10</b></span>
+          </div>))}
+      </React.Fragment>}
+      <div className="rtsec">💬 O que você sentiu de diferente nessa fase?</div>
+      {enviado
+        ? <div className="rtok">Anotado! Vou ler antes da nossa conversa. 💪🏼</div>
+        : <React.Fragment>
+            <textarea className="obstext" value={txt} onChange={e=>setTxt(e.target.value)}
+              placeholder="Energia, dor, disposição, o que mudou no dia a dia…"/>
+            <button className="btn" style={{marginTop:10}} disabled={!txt.trim()}
+              onClick={()=>{ onRelato(txt.trim()); setEnviado(true); }}>Enviar</button>
+          </React.Fragment>}
+      <button className="btn ghost" style={{marginTop:10}} onClick={onFechar}>Fechar</button>
+    </div></div>);
+}
+
+/* ===== MOTOR DE PROGRESSO =====
+   Alimenta o botão 📊 (durante a fase) e a retrospectiva (no fim).
+   Tudo em memória, sobre dados já carregados — nenhuma consulta nova.
+
+   Duas regras de conteúdo, deliberadas:
+   - Só reporta carga que SUBIU. Estagnação é normal e às vezes é o objetivo
+     (deload, refinamento técnico); apontá-la ensina a métrica errada.
+   - Dor só aparece quando MELHOROU 2+ pontos. Piora e oscilação pequena
+     ficam em silêncio — quem precisa saber disso é o treinador. */
+function calcProgresso(s, fase){
+  const ini=fase?fase.inicio:null, fim=fase?fase.fim:null;
+  const dentro=(d)=>(!ini||d>=ini) && (!fim||d<=fim);
+  const idsFase=new Set((s.treinos||[]).filter(t=>!fase||t.faseId===fase.id).map(t=>t.id));
+  // constância: só sessões manuais (o aluno confirmou de fato)
+  let sessoes=0;
+  (s.treinos||[]).forEach(t=>{ if(!idsFase.has(t.id)) return;
+    (t.sessoes||[]).forEach(x=>{ if(x.origem==='manual' && dentro(x.data)) sessoes++; }); });
+  // agrega por exercício
+  const porEx={};
+  (s.treinos||[]).forEach(t=>{ if(!idsFase.has(t.id)) return;
+    (t.exercises||[]).forEach(ex=>{
+      const chave=(ex.exerciseId!=null?('id:'+ex.exerciseId):('n:'+norm(ex.name)));
+      const alvo=(porEx[chave]=porEx[chave]||{nome:ex.name, logs:[]});
+      (ex.logs||[]).forEach(l=>{ if(dentro(l.date)) alvo.logs.push(l); });
+    });
+  });
+  const subiram=[], dorMelhorou=[];
+  let volume=0, cargas=[];
+  Object.keys(porEx).forEach(k=>{
+    const e=porEx[k];
+    const ls=e.logs.slice().sort((a,b)=>a.date.localeCompare(b.date));
+    if(!ls.length) return;
+    ls.forEach(l=>{ const c=numFrom(l.carga), r=parseInt(l.reps,10);
+      if(c && r) volume+=c*r; });
+    // carga: melhor do primeiro dia x melhor do último dia
+    const dias=[...new Set(ls.map(l=>l.date))];
+    const melhorDoDia=(d)=>Math.max(...ls.filter(l=>l.date===d).map(l=>numFrom(l.carga)||0));
+    const c0=melhorDoDia(dias[0]), c1=melhorDoDia(dias[dias.length-1]);
+    if(c1>0) cargas.push({nome:e.nome, atual:c1, sessoes:dias.length});
+    if(dias.length>=2 && c0>0 && c1>c0)
+      subiram.push({nome:e.nome, de:c0, para:c1, ganho:+(c1-c0).toFixed(1)});
+    // dor: média do primeiro dia x média do último. Só melhora >= 2 pontos.
+    const dorDoDia=(d)=>{ const v=ls.filter(l=>l.date===d && l.dor!=null).map(l=>l.dor);
+      return v.length? v.reduce((a,b)=>a+b,0)/v.length : null; };
+    const d0=dorDoDia(dias[0]), d1=dorDoDia(dias[dias.length-1]);
+    if(dias.length>=2 && d0!=null && d1!=null && (d0-d1)>=2)
+      dorMelhorou.push({nome:e.nome, de:Math.round(d0), para:Math.round(d1)});
+  });
+  subiram.sort((a,b)=>b.ganho-a.ganho);
+  dorMelhorou.sort((a,b)=>(b.de-b.para)-(a.de-a.para));
+  cargas.sort((a,b)=>a.nome.localeCompare(b.nome));
+  return {sessoes, volume:Math.round(volume), subiram, dorMelhorou, cargas,
+          exercicios:Object.keys(porEx).length};
+}
+/* sessões manuais de uma fase — usado na comparação entre ciclos */
+function sessoesDaFase(s, fase){
+  if(!fase) return 0;
+  let n=0;
+  (s.treinos||[]).filter(t=>t.faseId===fase.id).forEach(t=>
+    (t.sessoes||[]).forEach(x=>{
+      if(x.origem==='manual' && x.data>=fase.inicio && x.data<=fase.fim) n++; }));
+  return n;
+}
+const fmtVol=(kg)=> kg>=1000 ? (kg/1000).toFixed(1).replace('.',',')+' toneladas' : kg+' kg';
 /* ===== MINHA AGENDA =====
    Aluno vê só o que ele CONFIRMOU (sessões manuais). Treinador vê também os
    acessos — "abriu o treino" é dado dele, não do aluno: para o aluno seria
@@ -2500,6 +2691,7 @@ function App({auth}){
 
   let screen;
   if(view.name==='students') screen=<Students db={db} setDb={setDb} nav={nav}/>;
+  else if(view.name==='progresso') screen=<Progresso db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
   else if(view.name==='agenda') screen=<Agenda db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
   else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash} ehAluno={ehAluno} onSair={auth?auth.sair:null}/>;
   else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio}/>;
@@ -2516,6 +2708,7 @@ function App({auth}){
     view.name==='treino'    ? ()=>nav({name:'student',studentId:view.studentId}) :
     view.name==='evolution' ? ()=>nav(view.back||{name:'student',studentId:view.studentId}) :
     view.name==='agenda'    ? ()=>nav({name:'student',studentId:view.studentId}) :
+    view.name==='progresso' ? ()=>nav({name:'student',studentId:view.studentId}) :
     view.name==='student'   ? (ehAluno?null:()=>nav({name:'students'})) : null);
   return (<div className={claroAtivo?'tema-claro':''}>
     {!LS_OK && <div className="warnbar">⚠️ Modo temporário: os dados somem ao fechar. Abra pelo link do GitHub Pages para salvar.</div>}
@@ -3116,6 +3309,29 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
   const [nome,setNome]=useState('');
   const [menu,setMenu]=useState(null); // treino em edição
   const [subindoFoto,setSubindoFoto]=useState(false);
+  const [abaFase,setAbaFase]=useState('atual');   // anteriores | atual | futuros
+  const [retro,setRetro]=useState(false);
+  const [faseSel,setFaseSel]=useState(null);      // fase aberta na lista
+  const [editandoFase,setEditandoFase]=useState(null); // 'nova' | objeto
+  /* RETROSPECTIVA: 1x por fase, a partir de 7 dias do fim.
+     Mínimo de 6 sessões — abaixo disso a tela sairia constrangedora justo
+     para quem mais precisaria de estímulo. */
+  useEffect(()=>{
+    if(!ehAluno || !s) return;
+    const f=faseVigente(s); if(!f) return;
+    const d=diasRestantes(f);
+    if(d==null || d>7 || d<0) return;
+    const chave='idealis_retro_'+f.id;
+    try{ if(LS_OK && window.localStorage.getItem(chave)) return; }catch(e){}
+    if(sessoesDaFase(s,f)<6) return;
+    const t=setTimeout(()=>{
+      try{ if(LS_OK) window.localStorage.setItem(chave,'1'); }catch(e){}
+      setRetro(true);
+    }, 1200);
+    return ()=>clearTimeout(t);
+  },[ehAluno,studentId,s]);
+  // TODOS os hooks acima deste return. Hook depois de saída antecipada faz o
+  // React executar quantidades diferentes entre renders -> erro #310.
   if(!s) return null;
   const trocarFotoAluno=async (file)=>{
     setSubindoFoto(true);
@@ -3128,9 +3344,21 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
   };
   const treinos=s.treinos||[];
   const fases=(s.fases||[]).slice().sort((a,b)=>b.inicio.localeCompare(a.inicio));
-  const [abaFase,setAbaFase]=useState('atual');   // anteriores | atual | futuros
-  const [faseSel,setFaseSel]=useState(null);      // fase aberta na lista
-  const [editandoFase,setEditandoFase]=useState(null); // 'nova' | objeto
+
+  // relato da retrospectiva: sem exercício, é o texto geral da fase
+  const salvarRelatoGeral=(texto)=>{
+    const f=faseVigente(s);
+    const t0=(s.treinos||[]).find(x=>!f || x.faseId===f.id) || (s.treinos||[])[0];
+    const novo={id:uid(), data:todayISO(), exercicioId:null, texto, fixado:false,
+                criadoEm:new Date().toISOString()};
+    if(t0){
+      updStudent({treinos:(s.treinos||[]).map(x=>x.id===t0.id
+        ? {...x, relatos:[...(x.relatos||[]), novo]} : x)});
+    }
+    enqueueOp({tipo:'insert',tabela:'relatos',dados:{
+      id:novo.id, aluno_id:studentId, treino_id:t0?t0.id:null,
+      exercicio_id:null, exercicio_nome:null, data:novo.data, texto, fixado:false}});
+  };
   const hojeISO=todayISO();
   const grupoFases={
     atual:      fases.filter(f=>f.inicio<=hojeISO && f.fim>=hojeISO),
@@ -3232,8 +3460,10 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
             <div className="frasedia">{fraseDoDia(studentId)}</div>
           </div>
         </div>
-        <button className="agbtn" onClick={()=>nav({name:'agenda',studentId})}>
-          📅 Minha agenda</button>
+        <div className="duplobtn">
+          <button className="agbtn" onClick={()=>nav({name:'agenda',studentId})}>📅</button>
+          <button className="agbtn" onClick={()=>nav({name:'progresso',studentId})}>📊</button>
+        </div>
         {treinos.length>0 && <div className="secaotit">Seus treinos</div>}
         {(()=>{
           const f=faseVigente(s); if(!f) return null;
@@ -3331,6 +3561,12 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
       })}
     </div>
     {!ehAluno && <button className="fab" onClick={()=>setAdding(true)}>＋ Treino</button>}
+    {retro && ehAluno && (()=>{
+      const f=faseVigente(s); if(!f) return null;
+      const ants=(s.fases||[]).filter(x=>x.fim<f.inicio).sort((a,b)=>b.fim.localeCompare(a.fim));
+      return <Retrospectiva s={s} fase={f} faseAnterior={ants[0]||null}
+        onRelato={(txt)=>salvarRelatoGeral(txt)} onFechar={()=>setRetro(false)}/>;
+    })()}
     {editandoFase && !ehAluno && <FaseSheet
       inicial={editandoFase==='nova'?null:editandoFase}
       podeDuplicar={!!faseAtual && treinos.some(t=>t.faseId===faseAtual.id)}
