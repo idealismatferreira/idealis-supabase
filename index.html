@@ -152,14 +152,60 @@
     font-variant-numeric:tabular-nums;min-width:52px}
   .agtxt{flex:1;font-size:13px;color:var(--muted);min-width:0}
   .agtxt b{color:var(--text);font-weight:700}
+  .tempoest{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:12px 14px;
+    border-radius:13px;background:var(--surface);border:1px solid var(--line);
+    border-left:3px solid var(--cyan)}
+  .tempoest .teico{font-size:17px;flex:0 0 auto}
+  .tempoest .tetxt{flex:1;font-size:12.5px;color:var(--muted);display:flex;
+    align-items:baseline;justify-content:space-between;gap:10px}
+  .tempoest .tetxt b{font-size:15px;font-weight:800;color:var(--text);white-space:nowrap}
   .pgtopo{display:flex;gap:10px;margin:0 4px 14px}
+  .pgtopo{display:flex;gap:10px;margin:0 4px 14px;align-items:stretch}
   .pgcard{flex:1;padding:16px 12px;border-radius:14px;background:var(--surface);
-    border:1px solid var(--line);text-align:center}
+    border:1px solid var(--line);text-align:center;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;min-width:0}
   .pgcard.destaque{border-color:var(--cyan);background:rgba(0,201,204,.07)}
   .pgnum{font-size:30px;font-weight:800;color:var(--text);line-height:1;letter-spacing:-.02em}
   .pglab{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.35}
   .pgcomp{font-size:10.5px;font-weight:700;color:var(--cyan-2);margin-top:7px;line-height:1.35}
+  .pgcard.clicavel{cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .pgcard.clicavel:active{background:var(--surface-2)}
+  .pgformula{font-size:9.5px;color:var(--muted-2);margin-top:5px;line-height:1.3;
+    letter-spacing:.01em}
+  .pgequiv{margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}
+  .pgequiv .peico{display:block;font-size:22px;line-height:1.25;margin-bottom:5px;
+    word-break:break-all}
+  .pgequiv .peico.multi{font-size:17px}
+  .pgequiv .peico em{font-style:normal;font-size:13px;font-weight:800;
+    color:var(--muted);margin-left:2px}
+  .pgequiv .petxt{display:block;font-size:12px;font-weight:700;color:var(--cyan-2);line-height:1.3}
+  .pgequiv .pemais{display:block;font-size:9.5px;color:var(--muted-2);margin-top:5px}
   .pgnota{font-size:12.5px;color:var(--muted);margin:0 6px 16px;text-align:center}
+  /* barra de evolução */
+  .evbar{margin:0 4px 12px;padding:12px 14px;border-radius:13px;background:var(--surface);
+    border:1px solid var(--line)}
+  .evtopo{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+  .evnome{flex:1;min-width:0;font-size:13.5px;font-weight:700;color:var(--text)}
+  .evganho{font-size:14px;font-weight:800;color:var(--lime);white-space:nowrap}
+  .evtrilha{height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+  .evfill{height:100%;border-radius:999px;
+    background:linear-gradient(90deg,var(--cyan),var(--lime))}
+  .evde{font-size:11.5px;color:var(--muted);margin-top:6px}
+  .evde b{color:var(--cyan-2);font-weight:800}
+  /* grade de cargas atuais */
+  .cgrade{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 4px 8px}
+  .cgcard{padding:13px 12px;border-radius:12px;background:var(--surface);
+    border:1px solid var(--line);min-width:0}
+  .cgkg{font-size:21px;font-weight:800;color:var(--cyan-2);line-height:1;letter-spacing:-.02em}
+  .cgkg span{font-size:11px;font-weight:700;margin-left:2px;opacity:.75}
+  .cgnome{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.35;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  /* estado vazio que EXPLICA o benefício em vez de sumir */
+  .vaziopre{margin:0 4px 12px;padding:20px 16px;border-radius:14px;
+    background:var(--surface);border:1px dashed var(--line);text-align:center;opacity:.72}
+  .vpico{font-size:26px;margin-bottom:8px;filter:grayscale(.5)}
+  .vptit{font-size:14px;font-weight:800;color:var(--text);margin-bottom:5px}
+  .vptxt{font-size:12.5px;color:var(--muted);line-height:1.5}
   .pglinha{display:flex;align-items:center;gap:10px;margin:0 4px 7px;padding:11px 13px;
     border-radius:11px;background:var(--surface);border:1px solid var(--line)}
   .pgnome{flex:1;min-width:0;font-size:13.5px;color:var(--text);font-weight:600}
@@ -1252,7 +1298,6 @@ function Progresso({db,nav,studentId,ehAluno}){
   if(!s) return <div className="screen"><div className="empty"><p>Aluno não encontrado.</p></div></div>;
   const fase=faseVigente(s);
   const p=calcProgresso(s, fase);
-  const dias=diasRestantes(fase);
   return (<React.Fragment>
     <TopBar title="Seu progresso" sub={fase?fase.nome:'Sem fase definida'}
       onBack={()=>nav({name:'student',studentId})}/>
@@ -1262,32 +1307,52 @@ function Progresso({db,nav,studentId,ehAluno}){
           <div className="pgnum">{p.sessoes}</div>
           <div className="pglab">treinos concluídos</div>
         </div>
-        <div className="pgcard">
-          <div className="pgnum">{fmtVol(p.volume).split(' ')[0]}</div>
-          <div className="pglab">{fmtVol(p.volume).split(' ').slice(1).join(' ')||'kg'} movidos</div>
-        </div>
+        <CardVolume kg={p.volume}/>
       </div>
-      {fase && dias!=null && dias>=0 &&
-        <div className="pgnota">Faltam {dias===1?'1 dia':dias+' dias'} para o fim desta fase.</div>}
       {p.subiram.length>0 && <React.Fragment>
-        <div className="secaotit">📈 Cargas que subiram</div>
-        {p.subiram.map(x=>(
-          <div key={x.nome} className="pglinha">
-            <span className="pgnome">{x.nome}</span>
-            <span className="pgvalor">{x.de}kg → <b>{x.para}kg</b></span>
-          </div>))}
+        <div className="secaotit">📈 O que evoluiu</div>
+        {/* barra proporcional ao maior ganho da fase: comparação visual
+            imediata, sem precisar ler número por número */}
+        {(()=>{ const topo=Math.max(...p.subiram.map(x=>x.ganho));
+          return p.subiram.map(x=>(
+          <div key={x.nome} className="evbar">
+            <div className="evtopo">
+              <span className="evnome">{x.nome}</span>
+              <span className="evganho">+{x.ganho}kg</span>
+            </div>
+            <div className="evtrilha">
+              <div className="evfill" style={{width:Math.max(8,(x.ganho/topo)*100)+'%'}}></div>
+            </div>
+            <div className="evde">{x.de}kg → <b>{x.para}kg</b></div>
+          </div>)); })()}
       </React.Fragment>}
       {p.cargas.length>0 && <React.Fragment>
         <div className="secaotit">🏋️ Cargas atuais</div>
-        {p.cargas.map(x=>(
-          <div key={x.nome} className="pglinha">
-            <span className="pgnome">{x.nome}</span>
-            <span className="pgvalor"><b>{x.atual}kg</b></span>
-          </div>))}
+        {/* grade de 2 colunas: a lista vertical de 20 linhas virava rolagem
+            infinita e escondia o que importa */}
+        <div className="cgrade">
+          {p.cargas.map(x=>(
+            <div key={x.nome} className="cgcard">
+              <div className="cgkg">{x.atual}<span>kg</span></div>
+              <div className="cgnome">{x.nome}</div>
+            </div>))}
+        </div>
       </React.Fragment>}
-      {p.sessoes===0 && p.cargas.length===0 &&
-        <div className="empty"><div className="big">📊</div>
-          <p>Ainda não há registros nesta fase.<br/>Registre suas cargas para acompanhar a evolução.</p></div>}
+      {/* vazio EXPLICATIVO: se as seções simplesmente não aparecem, o aluno
+          nunca descobre que registrar carga desbloqueia isso. */}
+      {p.subiram.length===0 && <div className="vaziopre">
+        <div className="vpico">📈</div>
+        <div className="vptit">O que evoluiu</div>
+        <div className="vptxt">{p.cargas.length>0
+          ? 'Assim que você repetir um exercício com carga maior, a evolução aparece aqui.'
+          : 'Registre suas cargas e veja aqui o quanto você progrediu em cada exercício.'}</div>
+      </div>}
+      {p.cargas.length===0 && <div className="vaziopre">
+        <div className="vpico">🏋️</div>
+        <div className="vptit">Cargas atuais</div>
+        <div className="vptxt">Toque em “Registrar Carga” ao terminar cada série.
+          Suas cargas de cada exercício ficam guardadas aqui.</div>
+      </div>}
     </div>
   </React.Fragment>);
 }
@@ -1314,10 +1379,7 @@ function Retrospectiva({s, fase, faseAnterior, onRelato, onFechar}){
              : 'na fase anterior foram '+antN}
           </div>}
         </div>
-        <div className="pgcard destaque">
-          <div className="pgnum">{fmtVol(p.volume).split(' ')[0]}</div>
-          <div className="pglab">{fmtVol(p.volume).split(' ').slice(1).join(' ')||'kg'} movidos</div>
-        </div>
+        <CardVolume kg={p.volume} destaque/>
       </div>
       {p.subiram.length>0 && <React.Fragment>
         <div className="rtsec">📈 Cargas que evoluíram</div>
@@ -1347,6 +1409,58 @@ function Retrospectiva({s, fase, faseAnterior, onRelato, onFechar}){
           </React.Fragment>}
       <button className="btn ghost" style={{marginTop:10}} onClick={onFechar}>Fechar</button>
     </div></div>);
+}
+
+/* ===== TANGIBILIDADE DO VOLUME =====
+   "19,6 toneladas" não diz nada ao cérebro. A escala é escolhida para a conta
+   cair entre 1 e ~20 unidades: "8 elefantes" é imaginável, "160 cavalos" não. */
+const EQUIVALENTES=[
+  {kg:60,    sing:'uma pessoa adulta',        plur:'pessoas adultas',        ico:'🧍'},
+  {kg:100,   sing:'uma geladeira',            plur:'geladeiras',             ico:'🧊'},
+  {kg:250,   sing:'uma moto grande',          plur:'motos grandes',          ico:'🏍️'},
+  {kg:500,   sing:'um piano de cauda',        plur:'pianos de cauda',        ico:'🎹'},
+  {kg:600,   sing:'um cavalo',                plur:'cavalos',                ico:'🐎'},
+  {kg:950,   sing:'um carro popular',         plur:'carros populares',       ico:'🚗'},
+  {kg:1400,  sing:'uma vaca leiteira',        plur:'vacas leiteiras',        ico:'🐄'},
+  {kg:2500,  sing:'um hipopótamo',            plur:'hipopótamos',            ico:'🦛'},
+  {kg:5000,  sing:'um elefante africano',     plur:'elefantes africanos',    ico:'🐘'},
+  {kg:12000, sing:'um ônibus urbano',         plur:'ônibus urbanos',         ico:'🚌'},
+  {kg:30000, sing:'uma carreta carregada',    plur:'carretas carregadas',    ico:'🚛'},
+  {kg:150000,sing:'uma baleia-azul',          plur:'baleias-azuis',          ico:'🐋'},
+];
+function equivalencias(kg){
+  if(!kg || kg<30) return [];
+  // faixa larga de propósito: "196 geladeiras" é tão divertido quanto
+  // "2 ônibus". O teto de 300 evita números que perdem a graça.
+  const bons=EQUIVALENTES.filter(e=>{ const n=kg/e.kg; return n>=1 && n<=300; });
+  const lista=(bons.length?bons:[EQUIVALENTES[0]]).map(e=>{
+    const n=Math.round(kg/e.kg);
+    return {n, texto:(n===1?('1 '+e.sing):(n+' '+e.plur)), ico:e.ico};
+  });
+  return lista.reverse();   // começa pela unidade maior, que impressiona mais
+}
+/* card de volume: um toque troca a comparação. Vira brincadeira, não dado fixo. */
+function CardVolume({kg, destaque}){
+  const eqs=equivalencias(kg);
+  const [i,setI]=useState(0);
+  const v=fmtVol(kg).split(' ');
+  const eq=eqs[i];
+  // repetir o emoji só até 8: acima disso vira parede ilegível em tela de
+  // celular, e o número comunica melhor que a repetição.
+  const icones = eq ? (eq.n<=8 ? eq.ico.repeat(eq.n) : eq.ico) : '';
+  return (<div className={'pgcard'+(destaque?' destaque':'')+(eqs.length>1?' clicavel':'')}
+      onClick={()=>{ if(eqs.length>1) setI(x=>(x+1)%eqs.length); }}>
+    <div className="pgnum">{v[0]}</div>
+    <div className="pglab">{v.slice(1).join(' ')||'kg'} levantadas</div>
+    <div className="pgformula">carga × repetições × séries</div>
+    {eq && <div className="pgequiv">
+      <span className={'peico'+(eq.n<=8&&eq.n>1?' multi':'')}>
+        {icones}{eq.n>8 && <em> ×{eq.n}</em>}
+      </span>
+      <span className="petxt">{eq.texto}</span>
+      {eqs.length>1 && <span className="pemais">toque para outra comparação</span>}
+    </div>}
+  </div>);
 }
 
 /* ===== MOTOR DE PROGRESSO =====
@@ -1935,6 +2049,34 @@ async function fetchDbFromSupabase(){
 
 /* extrai o nº de séries de "3 × 8 a 12" -> 3 */
 /* total de séries considerando método (quando houver) */
+/* ===== TEMPO ESTIMADO DO TREINO =====
+   Usa séries × (execução + descanso) + troca de aparelho.
+   A alternativa "7-10 min a cada 3 séries" foi descartada: ela dá o MESMO
+   número para força pesada (desc 120s) e circuito (desc 30s), que na prática
+   levam 70 e 36 minutos. O descanso é a variável que mais muda o tempo. */
+const EXEC_POR_SERIE=40;   // ~12 reps em ritmo controlado
+const TROCA_APARELHO=60;   // deslocar, ajustar banco, esperar liberar
+function tempoEstimado(exercicios){
+  let seg=0, nEx=0;
+  (exercicios||[]).forEach(ex=>{
+    if(ex.cardio){ seg+=totalCardioSeg(ex.cardio)+TROCA_APARELHO; nEx++; return; }
+    const n=totalSeries(ex); if(!n) return;
+    nEx++;
+    const d=parseDescanso(ex.descanso);
+    // sem descanso definido, usa 75s — média do que costuma ser prescrito
+    const desc=d ? Math.round((d.min+d.max)/2) : 75;
+    seg += n*(EXEC_POR_SERIE+desc) + TROCA_APARELHO;
+    // pausas internas do método (cluster, drop) entram como tempo real
+    const m=ex.metodo;
+    if(m && Array.isArray(m.series)) m.series.forEach(sr=>{
+      (sr.blocos||[]).forEach(b=>{ const p=parseDescanso(b.pausa);
+        if(p) seg += Math.round((p.min+p.max)/2); });
+    });
+  });
+  if(!nEx) return null;
+  const min=Math.round(seg/60);
+  return {min, faixa:[Math.round(min*0.85), Math.round(min*1.15)]};
+}
 function totalSeries(ex){
   if(ex && ex.metodo && ex.metodo.series && ex.metodo.series.length) return ex.metodo.series.length;
   return numSeries(ex?ex.series:'');
@@ -5035,8 +5177,16 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
       right={<CronoBadge inicio={inicio}/>}/>
     {celebrando && <Celebracao nome={t.nome} onFim={fecharCelebracao}/>}
     <div className="screen">
+      {(t.exercises||[]).length>0 && (()=>{
+        const te=tempoEstimado(t.exercises); if(!te) return null;
+        return <div className="tempoest">
+          <span className="teico">⏱</span>
+          <span className="tetxt">Tempo estimado do treino
+            <b>{te.faixa[0]}–{te.faixa[1]} min</b></span>
+        </div>;
+      })()}
       {inicio==null && (t.exercises||[]).length>0 &&
-        <div className="cronohint">⏱ O tempo começa a contar a partir da primeira série 💪🏼</div>}
+        <div className="cronohint">O relógio conta quando você registra a primeira série 👇</div>}
       {(t.exercises||[]).length===0 && <div className="empty"><div className="big">＋</div>
         <p>{ehAluno?'Este treino ainda não tem exercícios. Fale com seu treinador.':'Treino vazio. Toque em “+ Exercício” para montar. Depois, a cada aula, você só registra a carga.'}</p></div>}
       {(t.exercises||[]).map((ex,idx)=>{
