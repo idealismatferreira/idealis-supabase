@@ -5102,14 +5102,21 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     ids.forEach(id=>enqueueOp({tipo:'update',tabela:'logs',id,dados:{variante:novo}}));
   };
   const saveLog=(data)=>{
-    const ex=registering;
+    // `registering` é um SNAPSHOT de quando a folha abriu. Com "Salvar e ir
+    // para a próxima" a folha continua aberta, então na 2ª chamada esse
+    // snapshot ainda não tem os logs recém-criados — e a série era inserida
+    // de novo em vez de atualizada. Lê sempre a versão viva do exercício.
+    const exSnap=registering;
+    const ex=(t.exercises||[]).find(e=>e.id===exSnap.id)||exSnap;
     const hoje=todayISO();
     const varData=data.variante||'';
     // registro incremental: se a série N de hoje (mesmo equipamento) já existe, ATUALIZA em vez de duplicar
     const existentes=(ex.logs||[]).filter(l=>l.date===hoje && (l.variante||'')===varData);
     const atualizados=[], inseridos=[];
     (data.series||[]).forEach(sr=>{
-      const ja=existentes.find(l=>l.serie===sr.serie);
+      // `filter` em vez de `find`: se já houver duplicata no histórico, o
+      // save passa a atualizar a primeira e não cria uma terceira.
+      const ja=existentes.filter(l=>l.serie===sr.serie)[0];
       const base={serie:sr.serie, carga:sr.carga, reps:sr.reps,
         intensidade:(sr.intensidade!=null?sr.intensidade:null),
         dor:(sr.dor!=null?sr.dor:null),
