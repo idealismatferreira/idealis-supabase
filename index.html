@@ -605,6 +605,13 @@
   .celemoji{font-size:64px;line-height:1}
   .celtit{margin-top:10px;font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--lime)}
   .celsub{margin-top:4px;font-size:14px;color:var(--muted)}
+  .celacts{display:flex;flex-direction:column;gap:9px;margin-top:26px;
+    width:min(280px,74vw);margin-left:auto;margin-right:auto}
+  .celbtn{padding:15px;border-radius:13px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--text);font-family:inherit;font-size:15px;
+    font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .celbtn.prog{border:none;background:var(--lime);color:var(--on-accent);font-weight:800}
+  .celbtn:active{transform:scale(.97)}
   .rtpill{position:fixed;z-index:70;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));
     display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;
     background:var(--surface-2);border:1px solid var(--line);color:var(--muted);
@@ -1164,16 +1171,22 @@
   .sesspanel .spdel{flex:0 0 auto;width:26px;height:26px;border-radius:8px;border:none;background:transparent;color:var(--muted);font-size:14px;cursor:pointer;font-family:inherit}
   .sesspanel .spdel:active{background:rgba(255,92,108,.15);color:var(--danger)}
   .sesspanel .spmais{font-size:11.5px;color:var(--muted);text-align:center;padding-top:4px}
-  .fimbox{display:flex;align-items:center;gap:12px;width:100%;margin:16px 4px 90px;padding:15px 16px;
-    border-radius:14px;border:1px solid var(--line);background:var(--surface);font-family:inherit;
-    cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent;transition:border-color .2s,background .2s}
-  .fimbox:active{background:var(--surface-2)}
-  .fimbox.done{border-color:var(--lime);background:var(--lime-bg);cursor:default}
-  .fimcheck{flex:0 0 26px;width:26px;height:26px;border-radius:8px;border:2px solid var(--lime);
-    display:grid;place-items:center;font-size:15px;font-weight:900;color:var(--on-accent);transition:background .2s}
-  .fimcheck.on{background:var(--lime)}
-  .fimlabel{flex:1;font-size:15.5px;font-weight:700;color:var(--text)}
-  .fimbox.done .fimlabel{color:var(--lime)}
+  /* ação final do treino: era um retângulo neutro que parecia campo de texto.
+     Agora é botão sólido na cor de conquista, com o mesmo peso do resultado. */
+  .fimbox{display:flex;align-items:center;justify-content:center;gap:11px;width:calc(100% - 8px);
+    margin:22px 4px 90px;padding:19px 16px;border-radius:15px;border:none;
+    background:var(--lime);color:var(--on-accent);font-family:inherit;cursor:pointer;
+    text-align:center;-webkit-tap-highlight-color:transparent;
+    box-shadow:0 6px 20px rgba(221,255,0,.18);transition:transform .12s,box-shadow .2s}
+  .fimbox:active{transform:scale(.98);box-shadow:0 2px 10px rgba(221,255,0,.14)}
+  .fimbox.done{background:var(--lime-bg);border:1px solid var(--lime);box-shadow:none;
+    cursor:default;justify-content:flex-start}
+  .fimcheck{flex:0 0 24px;width:24px;height:24px;border-radius:7px;
+    border:2px solid var(--on-accent);display:grid;place-items:center;
+    font-size:14px;font-weight:900;color:var(--lime);transition:background .2s}
+  .fimbox.done .fimcheck{border-color:var(--lime);background:var(--lime);color:var(--on-accent)}
+  .fimlabel{font-size:17px;font-weight:800;letter-spacing:-.01em;color:var(--on-accent)}
+  .fimbox.done .fimlabel{flex:1;color:var(--lime);font-size:15.5px}
   .fimundo{flex:0 0 auto;background:none;border:none;color:var(--muted);font-size:12px;
     font-family:inherit;cursor:pointer;text-decoration:underline;padding:6px}
   .rtrunning .rttrack{position:relative;display:flex;height:6px;width:100%;overflow:hidden}
@@ -3200,11 +3213,9 @@ function saudacao(){
    os cards) não re-renderiza a cada segundo por causa do relógio */
 /* celebração ao concluir o treino: confete em CSS puro, sem biblioteca */
 const CONFETE_CORES=['#ddff00','#00c9cc','#71fcff','#6ee89a','#ffa45c','#a2feff'];
-function Celebracao({nome,onFim}){
-  useEffect(()=>{
-    const id=setTimeout(()=>onFim&&onFim(), 2100);
-    return ()=>clearTimeout(id);
-  },[]);
+function Celebracao({nome,onProgresso,onHome}){
+  // sem auto-fechar: o aluno escolhe para onde vai. Antes ela sumia sozinha
+  // em 2s e ele nem via o que tinha acabado de conquistar.
   const pecas=React.useMemo(()=>Array.from({length:38}).map((_,i)=>({
     left:Math.random()*100,
     delay:Math.random()*0.5,
@@ -3214,7 +3225,7 @@ function Celebracao({nome,onFim}){
     larg:5+Math.random()*5,
     alt:8+Math.random()*8,
   })),[]);
-  return (<div className="celebra" onClick={()=>onFim&&onFim()}>
+  return (<div className="celebra">
     <div className="confetes" aria-hidden="true">
       {pecas.map((p,i)=>(
         <span key={i} style={{left:p.left+'%', background:p.cor, width:p.larg+'px', height:p.alt+'px',
@@ -3225,6 +3236,10 @@ function Celebracao({nome,onFim}){
       <div className="celemoji">🎉</div>
       <div className="celtit">Treino Concluído!</div>
       {nome && <div className="celsub">{nome}</div>}
+      <div className="celacts">
+        <button className="celbtn prog" onClick={onProgresso}>📊 Progresso da fase</button>
+        <button className="celbtn" onClick={onHome}>🏠 Início</button>
+      </div>
     </div>
   </div>);
 }
@@ -3744,7 +3759,8 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
   return (<React.Fragment>
     <TopBar title={ehAluno?(faseId?'Treinos':'Idealis'):s.name}
       sub={ehAluno?(faseId?primeiroNome(s.name):'Presencial'):'Treinos fixos'}
-      onBack={ehAluno?(faseId?()=>nav({name:'student',studentId}):null):()=>nav({name:'students'})} logo={ehAluno} onSair={onSair}/>
+      onBack={ehAluno?(faseId?()=>nav({name:'student',studentId}):null):()=>nav({name:'students'})}
+      logo={ehAluno && !faseId} onSair={onSair}/>
     <div className="screen">
       {ehAluno && !faseId && <React.Fragment>
         <div className="perfilrow">
@@ -5372,7 +5388,9 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
   return (<React.Fragment>
     <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId,faseId:deFase||null})}
       right={<CronoBadge inicio={inicio}/>}/>
-    {celebrando && <Celebracao nome={t.nome} onFim={fecharCelebracao}/>}
+    {celebrando && <Celebracao nome={t.nome}
+      onProgresso={()=>{ setCelebrando(false); nav({name:'progresso',studentId}); }}
+      onHome={fecharCelebracao}/>}
     <div className="screen">
       {(t.exercises||[]).length>0 && (()=>{
         const te=tempoEstimado(t.exercises); if(!te) return null;
