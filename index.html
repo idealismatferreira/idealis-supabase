@@ -251,6 +251,21 @@
   .rtsec{font-size:12.5px;font-weight:800;color:var(--text);margin:20px 4px 9px}
   .rtok{font-size:13px;color:var(--cyan-2);background:rgba(0,201,204,.09);
     border:1px solid rgba(0,201,204,.3);border-radius:11px;padding:12px;line-height:1.45}
+  /* cartão de fase na home do aluno */
+  .fasecard{display:block;width:100%;text-align:left;margin:0 0 11px;padding:14px 15px;
+    border-radius:14px;background:var(--surface);border:1px solid var(--line);
+    border-left:3px solid var(--cyan);font-family:inherit;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .fasecard:active{background:var(--surface-2)}
+  .fasefoot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;
+    font-size:12px;color:var(--muted)}
+  .fasechev{font-size:19px;color:var(--ctrl);line-height:1}
+  .fasetopo{margin:0 0 16px;padding:14px 15px;border-radius:14px;background:var(--surface);
+    border:1px solid var(--line);border-left:3px solid var(--cyan)}
+  .fasetopo .fasenome{font-size:16px}
+  .fasetopo .faseper{font-size:12px;color:var(--muted);margin-top:6px}
+  .fasetopo .faseper b{color:var(--cyan-2);font-weight:800}
+  .secaotit.trhead{margin-top:26px}
   .duplobtn{display:flex;gap:10px;margin:2px 0 16px}
   .duplobtn .agbtn{flex:1;margin:0;font-size:20px;padding:14px 8px;min-width:0}
   .agbtn{width:100%;margin:2px 0 16px;padding:13px;border-radius:13px;border:1px solid var(--line);
@@ -1827,6 +1842,14 @@ function diasRestantes(f){
   return Math.round((a-b)/86400000);
 }
 /* a fase que cobre hoje; se não houver, a mais recente já iniciada */
+/* TODAS as fases que cobrem hoje. Vira lista porque o treinador às vezes
+   deixa duas fases rodando em paralelo para o mesmo aluno. */
+function fasesVigentes(s){
+  const hoje=todayISO();
+  return ((s&&s.fases)||[])
+    .filter(f=>f.inicio<=hoje && f.fim>=hoje)
+    .sort((a,b)=>a.inicio.localeCompare(b.inicio));
+}
 function faseVigente(s){
   const fs=(s&&s.fases)||[]; const hoje=todayISO();
   const cobre=fs.find(f=>f.inicio<=hoje && (!f.fim || f.fim>=hoje));
@@ -2956,8 +2979,8 @@ function App({auth}){
   else if(view.name==='plano') screen=<PlanoFases db={db} nav={nav} studentId={view.studentId}/>;
   else if(view.name==='progresso') screen=<Progresso db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
   else if(view.name==='agenda') screen=<Agenda db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
-  else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash} ehAluno={ehAluno} onSair={auth?auth.sair:null}/>;
-  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio}/>;
+  else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} faseId={view.faseId||null} flash={flash} ehAluno={ehAluno} onSair={auth?auth.sair:null}/>;
+  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio}/>;
   else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={ehAluno}/>;
   // FCmáx do aluno cuja tela está aberta (o cardio roda por cima de qualquer view)
   const fcMaxDoAlunoEmFoco = (()=>{
@@ -2968,12 +2991,13 @@ function App({auth}){
   // mesma ação do ‹ da .topbar de cada tela — a barra de descanso a cobre,
   // então ela precisa oferecer o mesmo caminho de volta
   const voltarDaTela = (
-    view.name==='treino'    ? ()=>nav({name:'student',studentId:view.studentId}) :
+    view.name==='treino'    ? ()=>nav({name:'student',studentId:view.studentId,faseId:view.deFase||null}) :
     view.name==='evolution' ? ()=>nav(view.back||{name:'student',studentId:view.studentId}) :
     view.name==='agenda'    ? ()=>nav({name:'student',studentId:view.studentId}) :
     view.name==='plano'     ? ()=>nav({name:'student',studentId:view.studentId}) :
     view.name==='progresso' ? ()=>nav({name:'student',studentId:view.studentId}) :
-    view.name==='student'   ? (ehAluno?null:()=>nav({name:'students'})) : null);
+    view.name==='student'   ? (view.faseId ? ()=>nav({name:'student',studentId:view.studentId})
+                                            : (ehAluno?null:()=>nav({name:'students'}))) : null);
   return (<div className={claroAtivo?'tema-claro':''}>
     {!LS_OK && <div className="warnbar">⚠️ Modo temporário: os dados somem ao fechar. Abra pelo link do GitHub Pages para salvar.</div>}
     {auth && !ehAluno && <div className="rolebar">
@@ -3567,7 +3591,7 @@ function Students({db,setDb,nav}){
       onClose={()=>setMenu(null)}/>}
   </React.Fragment>);
 }
-function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
+function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
   const s=db.students.find(x=>x.id===studentId);
   const [adding,setAdding]=useState(false);
   const [nome,setNome]=useState('');
@@ -3630,11 +3654,16 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
     futuros:    fases.filter(f=>f.inicio>hojeISO)
   };
   const faseAtual=grupoFases.atual[0]||null;
-  // treinador navega por fase; aluno vê sempre a vigente
-  const faseEmFoco = ehAluno ? faseVigente(s) : (faseSel || faseAtual);
+  const vigentes=fasesVigentes(s);
+  const faseAberta = faseId ? (fases.find(f=>f.id===faseId)||null) : null;
+  // ALUNO: home lista as fases; ao abrir uma, vê os treinos dela.
+  // TREINADOR: continua navegando pelas abas Anteriores/Atuais/Futuros.
+  const faseEmFoco = ehAluno ? faseAberta : (faseSel || faseAtual);
+  const treinosSemFase = treinos.filter(t=>!t.faseId);
   const treinosVisiveis = ehAluno
-    ? treinos.filter(t=>!faseEmFoco || !t.faseId || t.faseId===faseEmFoco.id)
-    : (faseEmFoco ? treinos.filter(t=>t.faseId===faseEmFoco.id) : treinos.filter(t=>!t.faseId));
+    ? (faseAberta ? treinos.filter(t=>t.faseId===faseAberta.id)
+                  : (faseId==='__sem__' ? treinosSemFase : []))
+    : (faseEmFoco ? treinos.filter(t=>t.faseId===faseEmFoco.id) : treinosSemFase);
   const salvarFase=(dados)=>{
     if(editandoFase && editandoFase!=='nova'){
       const id=editandoFase.id;
@@ -3713,9 +3742,11 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
     setNome('');setAdding(false);
   };
   return (<React.Fragment>
-    <TopBar title={ehAluno?'Idealis':s.name} sub={ehAluno?'Presencial':'Treinos fixos'} onBack={ehAluno?null:()=>nav({name:'students'})} logo={ehAluno} onSair={onSair}/>
+    <TopBar title={ehAluno?(faseId?'Treinos':'Idealis'):s.name}
+      sub={ehAluno?(faseId?primeiroNome(s.name):'Presencial'):'Treinos fixos'}
+      onBack={ehAluno?(faseId?()=>nav({name:'student',studentId}):null):()=>nav({name:'students'})} logo={ehAluno} onSair={onSair}/>
     <div className="screen">
-      {ehAluno && <React.Fragment>
+      {ehAluno && !faseId && <React.Fragment>
         <div className="perfilrow">
           <Avatar nome={s.name} foto={s.foto} size={92} onPick={trocarFotoAluno} busy={subindoFoto}/>
           <div className="saudacao">{saudacao()},<br/><strong>{primeiroNome(s.name)}</strong></div>
@@ -3729,24 +3760,59 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
           <button className="agbtn" onClick={()=>nav({name:'progresso',studentId})}>📊</button>
           <button className="agbtn" onClick={()=>nav({name:'plano',studentId})}>🗺️</button>
         </div>
-        {treinos.length>0 && <div className="secaotit">Seus treinos</div>}
-        {(()=>{
-          const f=faseVigente(s); if(!f) return null;
-          const sit=faseSituacao(f), dias=diasRestantes(f);
-          if(sit==='vencida') return (<div className="fasebox venc">
-            <div className="fasenome">{f.nome}</div>
-            <div className="fasemsg">{MSG_FASE_VENCIDA}</div>
-          </div>);
-          return (<div className="fasebox">
+      </React.Fragment>}
+      {/* HOME DO ALUNO: lista de fases. Os treinos ficam DENTRO de cada uma —
+          antes tudo vinha empilhado numa tela só e ficava longo demais. */}
+      {ehAluno && !faseId && <React.Fragment>
+        <div className="secaotit trhead">🧪 Seus treinos</div>
+        {vigentes.length===0 && treinosSemFase.length===0 &&
+          <div className="empty"><div className="big">🗓️</div>
+            <p>Nenhuma fase ativa no momento.<br/>Fale com o Matheus.</p></div>}
+        {vigentes.map(f=>{
+          const dias=diasRestantes(f);
+          const n=treinos.filter(t=>t.faseId===f.id).length;
+          return (<button key={f.id} className="fasecard"
+            onClick={()=>nav({name:'student',studentId,faseId:f.id})}>
             <div className="faselinha">
               <span className="fasenome">{f.nome}</span>
               {dias!=null && <span className={'fasedias'+(dias<=7?' perto':'')}>
                 {dias<=0?'Último dia':(dias===1?'Falta 1 dia':'Faltam '+dias+' dias')}</span>}
             </div>
             {f.objetivo && <div className="faseobj">{f.objetivo}</div>}
+            <div className="fasefoot">
+              <span>{n} {n===1?'treino':'treinos'}</span>
+              <span className="fasechev">›</span>
+            </div>
+          </button>);
+        })}
+        {/* fase encerrada sem substituta: avisa, mas não bloqueia nada */}
+        {vigentes.length===0 && (()=>{
+          const f=faseVigente(s);
+          if(!f || faseSituacao(f)!=='vencida') return null;
+          return (<div className="fasebox venc">
+            <div className="fasenome">{f.nome}</div>
+            <div className="fasemsg">{MSG_FASE_VENCIDA}</div>
           </div>);
         })()}
+        {treinosSemFase.length>0 &&
+          <button className="fasecard" onClick={()=>nav({name:'student',studentId,faseId:'__sem__'})}>
+            <div className="faselinha"><span className="fasenome">Outros treinos</span></div>
+            <div className="fasefoot">
+              <span>{treinosSemFase.length} {treinosSemFase.length===1?'treino':'treinos'}</span>
+              <span className="fasechev">›</span>
+            </div>
+          </button>}
       </React.Fragment>}
+      {/* dentro de uma fase: cabeçalho dela e, abaixo, os treinos */}
+      {ehAluno && faseId && <div className="fasetopo">
+        <div className="fasenome">{faseAberta?faseAberta.nome:'Outros treinos'}</div>
+        {faseAberta && faseAberta.objetivo && <div className="faseobj">{faseAberta.objetivo}</div>}
+        {faseAberta && (()=>{ const d=diasRestantes(faseAberta);
+          return d!=null && <div className="faseper">
+            {fmtDate(faseAberta.inicio)} → {fmtDate(faseAberta.fim)}
+            {d>=0 && <b>{d===0?' · último dia':(d===1?' · falta 1 dia':' · faltam '+d+' dias')}</b>}
+          </div>; })()}
+      </div>}
       {!ehAluno && <React.Fragment>
         <div className="fasetabs">
           <button className={abaFase==='anteriores'?'on':''}
@@ -3807,7 +3873,8 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
         <p>{ehAluno?'Nenhum treino montado ainda. Fale com seu treinador.':'Nenhum treino ainda. Crie o '}{!ehAluno && <b>Treino A</b>}{!ehAluno && ' e adicione os exercícios — ele fica fixo pelas próximas semanas.'}</p></div>}
       {treinosVisiveis.map(t=>{
         const letra=(t.nome.match(/\b([A-Z])\b/)||[])[1] || t.nome.slice(0,1).toUpperCase();
-        return (<div key={t.id} className="treino" onClick={()=>nav({name:'treino',studentId,treinoId:t.id})}>
+        return (<div key={t.id} className="treino"
+          onClick={()=>nav({name:'treino',studentId,treinoId:t.id,deFase:(faseId||null)})}>
           <div className="tag">{letra}</div>
           <div className="meta"><div className="name">{t.nome}</div>
             <div className="desc">
@@ -5024,7 +5091,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
       </button>}
     </div></div>);
 }
-function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesFeitas,setSeriesFeitas,catalogoVer,cardio}){
+function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,seriesFeitas,setSeriesFeitas,catalogoVer,cardio}){
   const s=db.students.find(x=>x.id===studentId);
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
   const [editingEx,setEditingEx]=useState(null);
@@ -5042,7 +5109,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   // tela preta era isto: `return null` sem nada renderizado. Se o treino
   // sumiu (fase apagada, sync ainda em curso), mostre e ofereça a saída.
   if(!t) return (<React.Fragment>
-    <TopBar title="Treino" sub={s?s.name:''} onBack={()=>nav({name:'student',studentId})}/>
+    <TopBar title="Treino" sub={s?s.name:''} onBack={()=>nav({name:'student',studentId,faseId:deFase||null})}/>
     <div className="screen"><div className="empty"><div className="big">🔍</div>
       <p>Este treino não está mais disponível.<br/>Pode ter sido movido ou removido.</p>
       <button className="btn" style={{marginTop:14}}
@@ -5177,7 +5244,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
   };
   const fecharCelebracao=()=>{
     setCelebrando(false);
-    nav({name:'student',studentId}); // volta pra tela inicial do aluno
+    nav({name:'student',studentId,faseId:deFase||null}); // volta para a fase de origem
   };
   const removerSessao=(iso)=>{
     const alvo=sessaoDe(iso);
@@ -5303,7 +5370,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,flash,ehAluno,timer,seriesF
     const m={}; loadCatalogo().forEach(c=>{ if(c.video) m[String(c.id)]=c.video; }); return m;
   },[catalogoVer]);
   return (<React.Fragment>
-    <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId})}
+    <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId,faseId:deFase||null})}
       right={<CronoBadge inicio={inicio}/>}/>
     {celebrando && <Celebracao nome={t.nome} onFim={fecharCelebracao}/>}
     <div className="screen">
