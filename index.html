@@ -260,9 +260,13 @@
   .fasefoot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;
     font-size:12px;color:var(--muted)}
   .fasechev{font-size:19px;color:var(--ctrl);line-height:1}
-  .fasetopo{margin:0 0 16px;padding:14px 15px;border-radius:14px;background:var(--surface);
-    border:1px solid var(--line);border-left:3px solid var(--cyan)}
-  .fasetopo .fasenome{font-size:16px}
+  .fasetopo{margin:0 0 18px;padding:18px 17px;border-radius:15px;
+    background:rgba(0,201,204,.08);border:1px solid var(--cyan);
+    border-left:4px solid var(--cyan);box-shadow:0 4px 16px rgba(0,201,204,.1)}
+  /* título da fase com o mesmo peso do botão de finalizar: é o que identifica
+     onde o aluno está, e antes competia com os cards abaixo */
+  .fasetit{font-size:22px;font-weight:800;letter-spacing:-.03em;line-height:1.15;
+    color:var(--cyan-2)}
   .fasetopo .faseper{font-size:12px;color:var(--muted);margin-top:6px}
   .fasetopo .faseper b{color:var(--cyan-2);font-weight:800}
   .secaotit.trhead{margin-top:26px}
@@ -3019,7 +3023,7 @@ function App({auth}){
         <button onClick={auth.sair}>Sair</button>
       </div>
     </div>}
-    {ehAluno && view.name==='student' && <button
+    {ehAluno && view.name==='student' && !view.faseId && <button
       className={'temasw '+(temaClaro?'claro':'escuro')} onClick={alternarTema}
       aria-label={temaClaro?'Mudar para tema escuro':'Mudar para tema claro'}>
       <span className="tsknob"></span>
@@ -3821,7 +3825,7 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
       </React.Fragment>}
       {/* dentro de uma fase: cabeçalho dela e, abaixo, os treinos */}
       {ehAluno && faseId && <div className="fasetopo">
-        <div className="fasenome">{faseAberta?faseAberta.nome:'Outros treinos'}</div>
+        <div className="fasetit">{faseAberta?faseAberta.nome:'Outros treinos'}</div>
         {faseAberta && faseAberta.objetivo && <div className="faseobj">{faseAberta.objetivo}</div>}
         {faseAberta && (()=>{ const d=diasRestantes(faseAberta);
           return d!=null && <div className="faseper">
@@ -5260,7 +5264,8 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
   };
   const fecharCelebracao=()=>{
     setCelebrando(false);
-    nav({name:'student',studentId,faseId:deFase||null}); // volta para a fase de origem
+    // "Início" é o início do APP: raiz do aluno, sem fase aberta
+    nav({name:'student',studentId});
   };
   const removerSessao=(iso)=>{
     const alvo=sessaoDe(iso);
