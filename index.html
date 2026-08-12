@@ -160,6 +160,37 @@
     align-items:baseline;justify-content:space-between;gap:10px}
   .tempoest .tetxt b{font-size:15px;font-weight:800;color:var(--text);white-space:nowrap}
   .pgtopo{display:flex;gap:10px;margin:0 4px 14px}
+  /* ===== PLANEJAMENTO ===== */
+  .plntit{font-size:18px;font-weight:800;color:var(--text);margin:0 4px 3px;letter-spacing:-.02em}
+  .plnsub{font-size:12.5px;color:var(--muted);margin:0 4px 18px}
+  .plnfase{margin:0 4px 12px;padding:14px 15px;border-radius:14px;background:var(--surface);
+    border:1px solid var(--line);border-left:3px solid var(--line)}
+  .plnfase.ativa{border-color:var(--cyan);border-left-width:4px;
+    background:rgba(0,201,204,.06);box-shadow:0 0 0 1px rgba(0,201,204,.2)}
+  .plnfase.fut{opacity:.72}
+  .plnfase.fim{opacity:.5}
+  .plntopo{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+  .plnnum{font-size:10.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;
+    letter-spacing:.08em;flex:1}
+  .plnchip{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;
+    border-radius:999px;padding:3px 9px;color:var(--on-cyan);background:var(--cyan);white-space:nowrap}
+  .plnchip.fut{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .plnchip.fim{color:var(--muted-2);background:transparent;border:1px solid var(--line)}
+  .plnnome{font-size:15.5px;font-weight:800;color:var(--text);line-height:1.25;letter-spacing:-.01em}
+  .plnper{font-size:12px;color:var(--muted);margin-top:4px}
+  .plnper b{color:var(--cyan-2);font-weight:800}
+  .plncat{display:inline-block;font-size:9.5px;font-weight:800;text-transform:uppercase;
+    letter-spacing:.05em;border:1px solid var(--line);border-radius:999px;
+    padding:2px 9px;margin-top:8px;color:var(--muted)}
+  .plnsec{margin-top:12px}
+  .plnlab{font-size:10.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;
+    letter-spacing:.07em;margin-bottom:5px}
+  .plnli{font-size:12.5px;color:var(--text);line-height:1.5;padding-left:2px;
+    white-space:pre-line;margin-bottom:2px}
+  .plnobs{margin-top:11px;padding:9px 11px;border-radius:10px;font-size:11.5px;line-height:1.45;
+    color:var(--warn-fg);background:var(--warn-bg);border:1px solid var(--line)}
+  .plnver{margin-top:9px;background:none;border:none;color:var(--muted);font-family:inherit;
+    font-size:11.5px;text-decoration:underline;cursor:pointer;padding:4px 2px}
   .pgtopo{display:flex;gap:10px;margin:0 4px 14px;align-items:stretch}
   .pgcard{flex:1;padding:16px 12px;border-radius:14px;background:var(--surface);
     border:1px solid var(--line);text-align:center;display:flex;flex-direction:column;
@@ -221,7 +252,7 @@
   .rtok{font-size:13px;color:var(--cyan-2);background:rgba(0,201,204,.09);
     border:1px solid rgba(0,201,204,.3);border-radius:11px;padding:12px;line-height:1.45}
   .duplobtn{display:flex;gap:10px;margin:2px 0 16px}
-  .duplobtn .agbtn{flex:1;margin:0;font-size:22px;padding:15px}
+  .duplobtn .agbtn{flex:1;margin:0;font-size:20px;padding:14px 8px;min-width:0}
   .agbtn{width:100%;margin:2px 0 16px;padding:13px;border-radius:13px;border:1px solid var(--line);
     background:var(--surface);color:var(--text);font-family:inherit;font-size:14px;
     font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -1292,6 +1323,72 @@ function FaseSheet({inicial,podeDuplicar,onSalvar,onClose}){
       </div>
     </div></div>);
 }
+/* ===== PLANEJAMENTO DE PERIODIZAÇÃO =====
+   Vertical de propósito: o documento tem 4 colunas lado a lado, o que não
+   cabe em tela de celular. Aqui a fase ATUAL é o que salta — é justamente
+   o que o PDF impresso não consegue fazer. */
+function PlanoFases({db,nav,studentId}){
+  const s=db.students.find(x=>x.id===studentId);
+  const [abertas,setAbertas]=useState({});
+  const plano=s?s.planejamento:null;
+  const fmtBR=(d)=>{ if(!d) return '—';
+    const p=String(d).slice(0,10).split('-'); return p[2]+'/'+p[1]+'/'+p[0].slice(2); };
+  const linhas=(txt)=>String(txt||'').split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!s) return <div className="screen"><div className="empty"><p>Aluno não encontrado.</p></div></div>;
+  if(!plano || !plano.fases.length) return (<React.Fragment>
+    <TopBar title="Seu planejamento" sub={s.name} onBack={()=>nav({name:'student',studentId})}/>
+    <div className="screen"><div className="empty"><div className="big">🗺️</div>
+      <p>Seu planejamento ainda não foi montado.<br/>Fale com o Matheus.</p></div></div>
+  </React.Fragment>);
+  const fases=plano.fases.slice().sort((a,b)=>(a.posicao||0)-(b.posicao||0));
+  return (<React.Fragment>
+    <TopBar title="Seu planejamento"
+      sub={plano.dataEmissao?('Emitido em '+fmtBR(plano.dataEmissao)):s.name}
+      onBack={()=>nav({name:'student',studentId})}/>
+    <div className="screen">
+      {plano.titulo && <div className="plntit">{plano.titulo}</div>}
+      {plano.semanas && <div className="plnsub">{plano.semanas} semanas de planejamento</div>}
+      {fases.map(f=>{
+        const ativa=f.situacao==='ativa', encerrada=f.situacao==='encerrada';
+        // encerrada nasce recolhida, mas NUNCA some: o aluno precisa enxergar
+        // o caminho inteiro, inclusive o que já passou
+        const aberta = ativa || abertas[f.faseId] || !encerrada;
+        return (<div key={f.faseId}
+          className={'plnfase'+(ativa?' ativa':'')+(encerrada?' fim':'')+(f.situacao==='futura'?' fut':'')}
+          style={f.cor?{borderLeftColor:f.cor}:null}>
+          <div className="plntopo">
+            <span className="plnnum">Fase {f.posicao}</span>
+            {ativa && <span className="plnchip">Fase atual</span>}
+            {f.situacao==='futura' && <span className="plnchip fut">A seguir</span>}
+            {encerrada && <span className="plnchip fim">Concluída</span>}
+          </div>
+          <div className="plnnome">{f.nome}</div>
+          <div className="plnper">{fmtBR(f.inicio)} → {fmtBR(f.fim)}
+            {ativa && f.diasRestantes!=null && f.diasRestantes>=0 &&
+              <b>{f.diasRestantes===0?' · último dia'
+                 :(f.diasRestantes===1?' · falta 1 dia':' · faltam '+f.diasRestantes+' dias')}</b>}
+          </div>
+          {f.categoria && <div className="plncat"
+            style={f.cor?{color:f.cor,borderColor:f.cor}:null}>{f.categoria}</div>}
+          {aberta && <React.Fragment>
+            {linhas(f.objetivo).length>0 && <div className="plnsec">
+              <div className="plnlab">Objetivo</div>
+              {linhas(f.objetivo).map((l,i)=><div key={i} className="plnli">{l}</div>)}
+            </div>}
+            {linhas(f.metodos).length>0 && <div className="plnsec">
+              <div className="plnlab">Métodos</div>
+              {linhas(f.metodos).map((l,i)=><div key={i} className="plnli">{l}</div>)}
+            </div>}
+            {f.observacao && <div className="plnobs">{f.observacao}</div>}
+          </React.Fragment>}
+          {encerrada && !abertas[f.faseId] &&
+            <button className="plnver" onClick={()=>setAbertas(m=>({...m,[f.faseId]:true}))}>
+              ver detalhes ▾</button>}
+        </div>);
+      })}
+    </div>
+  </React.Fragment>);
+}
 /* tela 📊 — estado ATUAL da fase. Tom neutro: é consulta, não celebração. */
 function Progresso({db,nav,studentId,ehAluno}){
   const s=db.students.find(x=>x.id===studentId);
@@ -1958,7 +2055,7 @@ async function fetchDbFromSupabase(){
   if(!sb) return {ok:false, erro:'Sem conexão com o servidor.'};
   try{
     // o RLS já filtra: treinador vê tudo, aluno vê só o dele
-    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg] = await Promise.all([
+    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg, rPlan] = await Promise.all([
       sb.from('alunos').select('id,nome,foto_url,academia,nascimento,fc_max').order('nome'),
       sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data,fase_id').order('ordem'),
       sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio,audio_url').order('ordem'),
@@ -1968,12 +2065,15 @@ async function fetchDbFromSupabase(){
       sb.from('acessos').select('id,aluno_id,treino_id,data,vezes').order('data'),
       sb.from('fases').select('id,aluno_id,nome,objetivo,inicio,fim').order('inicio'),
       sb.from('modalidades').select('id,nome,familia,ordem,cor').eq('ativa',true).order('ordem'),
-      sb.from('vw_alunos_segmentados').select('id,status,modalidade_id,modalidade,familia,ordem,cor')
+      sb.from('vw_alunos_segmentados').select('id,status,modalidade_id,modalidade,familia,ordem,cor'),
+      sb.from('vw_planejamento_doc').select('*')
+        .order('data_emissao',{ascending:false}).order('posicao')
     ]);
     const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error||rSess.error||rRel.error||rAce.error||rFas.error;
     if(err) return {ok:false, erro:err.message};
     // segmentação é informação de GESTÃO: se falhar, a lista continua funcionando sem grupos
     if(rMod.error||rSeg.error) console.warn('[segmentacao]', (rMod.error||rSeg.error).message);
+    if(rPlan.error) console.warn('[planejamento]', rPlan.error.message);
 
     const logsPorEx={};
     (rLogs.data||[]).forEach(l=>{
@@ -2022,6 +2122,25 @@ async function fetchDbFromSupabase(){
         id:f.id, nome:f.nome, objetivo:f.objetivo||'', inicio:f.inicio, fim:f.fim||null
       });
     });
+    /* Planejamento: 4 linhas (uma por fase) do mesmo planejamento_id.
+       Se houver mais de um, vence o de data_emissao mais recente — a view já
+       vem ordenada desc, então o primeiro que aparece por aluno é o certo. */
+    const planPorAluno={};
+    (rPlan.data||[]).forEach(x=>{
+      const cur=planPorAluno[x.aluno_id];
+      if(cur && cur.id!==x.planejamento_id) return;   // planejamento antigo: ignora
+      const p=(planPorAluno[x.aluno_id]=cur||{
+        id:x.planejamento_id, titulo:x.titulo||'', dataEmissao:x.data_emissao||null,
+        semanas:x.duracao_semanas||null, fases:[]
+      });
+      p.fases.push({
+        faseId:x.fase_id, posicao:x.posicao, nome:x.fase_nome||'',
+        inicio:x.inicio, fim:x.fim, objetivo:x.objetivo||'', metodos:x.metodos||'',
+        observacao:x.observacao||'', categoria:x.categoria||'',
+        cor:x.categoria_cor||'', situacao:x.situacao||'',
+        diasRestantes:(x.dias_restantes!=null?x.dias_restantes:null)
+      });
+    });
     const segPorAluno={};
     (rSeg.data||[]).forEach(x=>{ segPorAluno[x.id]=x; });
     const students=(rAlunos.data||[]).map(a=>{
@@ -2035,6 +2154,7 @@ async function fetchDbFromSupabase(){
         modalidade: g.modalidade||'', familia: g.familia||'',
         ordemMod: (g.ordem!=null?g.ordem:9999), corMod: g.cor||'',
         fases: fasesPorAluno[a.id]||[],
+        planejamento: planPorAluno[a.id]||null,
         treinos: treinosPorAluno[a.id]||[]
       };
     });
@@ -2833,6 +2953,7 @@ function App({auth}){
 
   let screen;
   if(view.name==='students') screen=<Students db={db} setDb={setDb} nav={nav}/>;
+  else if(view.name==='plano') screen=<PlanoFases db={db} nav={nav} studentId={view.studentId}/>;
   else if(view.name==='progresso') screen=<Progresso db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
   else if(view.name==='agenda') screen=<Agenda db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
   else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash} ehAluno={ehAluno} onSair={auth?auth.sair:null}/>;
@@ -2850,6 +2971,7 @@ function App({auth}){
     view.name==='treino'    ? ()=>nav({name:'student',studentId:view.studentId}) :
     view.name==='evolution' ? ()=>nav(view.back||{name:'student',studentId:view.studentId}) :
     view.name==='agenda'    ? ()=>nav({name:'student',studentId:view.studentId}) :
+    view.name==='plano'     ? ()=>nav({name:'student',studentId:view.studentId}) :
     view.name==='progresso' ? ()=>nav({name:'student',studentId:view.studentId}) :
     view.name==='student'   ? (ehAluno?null:()=>nav({name:'students'})) : null);
   return (<div className={claroAtivo?'tema-claro':''}>
@@ -3605,6 +3727,7 @@ function StudentDetail({db,setDb,nav,studentId,flash,ehAluno,onSair}){
         <div className="duplobtn">
           <button className="agbtn" onClick={()=>nav({name:'agenda',studentId})}>📅</button>
           <button className="agbtn" onClick={()=>nav({name:'progresso',studentId})}>📊</button>
+          <button className="agbtn" onClick={()=>nav({name:'plano',studentId})}>🗺️</button>
         </div>
         {treinos.length>0 && <div className="secaotit">Seus treinos</div>}
         {(()=>{
