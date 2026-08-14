@@ -211,6 +211,9 @@
     color:var(--muted);margin-left:2px}
   .pgequiv .petxt{display:block;font-size:12px;font-weight:700;color:var(--cyan-2);line-height:1.3}
   .pgequiv .pemais{display:block;font-size:9.5px;color:var(--muted-2);margin-top:5px}
+  .pgequiv .pemedia{display:block;font-size:22px;font-weight:800;color:var(--cyan-2);
+    line-height:1;letter-spacing:-.02em;margin-bottom:3px}
+  .pgequiv .petxt.sem{color:var(--muted-2);font-weight:600}
   .pgnota{font-size:12.5px;color:var(--muted);margin:0 6px 16px;text-align:center}
   /* barra de evolução */
   .evbar{margin:0 4px 12px;padding:12px 14px;border-radius:13px;background:var(--surface);
@@ -1435,6 +1438,16 @@ function Progresso({db,nav,studentId,ehAluno}){
         <div className="pgcard">
           <div className="pgnum">{p.sessoes}</div>
           <div className="pglab">treinos concluídos</div>
+          {(()=>{ const m=mediaSemanal(p.sessoes, fase); if(!m) return null;
+            return (<div className="pgequiv">
+              {m.curto
+                ? <span className="petxt sem">primeira semana</span>
+                : <React.Fragment>
+                    <span className="pemedia">{m.valor.toFixed(1).replace('.',',')}</span>
+                    <span className="petxt">por semana</span>
+                  </React.Fragment>}
+            </div>);
+          })()}
         </div>
         <CardVolume kg={p.volume}/>
       </div>
@@ -1507,6 +1520,12 @@ function Retrospectiva({s, fase, faseAnterior, onRelato, onFechar}){
              : p.sessoes===antN ? 'igual à fase anterior'
              : 'na fase anterior foram '+antN}
           </div>}
+          {(()=>{ const m=mediaSemanal(p.sessoes, fase); if(!m||m.curto) return null;
+            return (<div className="pgequiv">
+              <span className="pemedia">{m.valor.toFixed(1).replace('.',',')}</span>
+              <span className="petxt">por semana</span>
+            </div>);
+          })()}
         </div>
         <CardVolume kg={p.volume} destaque/>
       </div>
@@ -1544,29 +1563,107 @@ function Retrospectiva({s, fase, faseAnterior, onRelato, onFechar}){
    "19,6 toneladas" não diz nada ao cérebro. A escala é escolhida para a conta
    cair entre 1 e ~20 unidades: "8 elefantes" é imaginável, "160 cavalos" não. */
 const EQUIVALENTES=[
-  {kg:60,    sing:'uma pessoa adulta',        plur:'pessoas adultas',        ico:'🧍'},
-  {kg:100,   sing:'uma geladeira',            plur:'geladeiras',             ico:'🧊'},
-  {kg:250,   sing:'uma moto grande',          plur:'motos grandes',          ico:'🏍️'},
-  {kg:500,   sing:'um piano de cauda',        plur:'pianos de cauda',        ico:'🎹'},
-  {kg:600,   sing:'um cavalo',                plur:'cavalos',                ico:'🐎'},
-  {kg:950,   sing:'um carro popular',         plur:'carros populares',       ico:'🚗'},
-  {kg:1400,  sing:'uma vaca leiteira',        plur:'vacas leiteiras',        ico:'🐄'},
-  {kg:2500,  sing:'um hipopótamo',            plur:'hipopótamos',            ico:'🦛'},
-  {kg:5000,  sing:'um elefante africano',     plur:'elefantes africanos',    ico:'🐘'},
-  {kg:12000, sing:'um ônibus urbano',         plur:'ônibus urbanos',         ico:'🚌'},
-  {kg:30000, sing:'uma carreta carregada',    plur:'carretas carregadas',    ico:'🚛'},
-  {kg:150000,sing:'uma baleia-azul',          plur:'baleias-azuis',          ico:'🐋'},
+  // ---- leves: cotidiano ----
+  {kg:2,     sing:'um coelho',              plur:'coelhos',              ico:'🐇'},
+  {kg:2,     sing:'um notebook',            plur:'notebooks',            ico:'💻'},
+  {kg:2.5,   sing:'uma galinha',            plur:'galinhas',             ico:'🐓'},
+  {kg:3,     sing:'um tijolo',              plur:'tijolos',              ico:'🧱'},
+  {kg:4,     sing:'um gato',                plur:'gatos',                ico:'🐈'},
+  {kg:5,     sing:'um saco de arroz de 5kg',plur:'sacos de arroz de 5kg',ico:'🍚'},
+  {kg:5,     sing:'um ganso',               plur:'gansos',               ico:'🦆'},
+  {kg:5,     sing:'uma abóbora',            plur:'abóboras',             ico:'🎃'},
+  {kg:6,     sing:'uma bola de treino 6kg', plur:'bolas de treino 6kg',  ico:'⚫'},
+  {kg:8,     sing:'uma melancia',           plur:'melancias',            ico:'🍉'},
+  {kg:10,    sing:'uma mochila cheia',      plur:'mochilas cheias',      ico:'🎒'},
+  {kg:10,    sing:'uma anilha de 10kg',     plur:'anilhas de 10kg',      ico:'🥏'},
+  {kg:10,    sing:'um pneu de carro',       plur:'pneus de carro',       ico:'🛞'},
+  {kg:12,    sing:'uma bicicleta',          plur:'bicicletas',           ico:'🚲'},
+  {kg:12,    sing:'uma tábua de madeira',   plur:'tábuas de madeira',    ico:'🪵'},
+  {kg:15,    sing:'um cachorro de porte médio', plur:'cachorros de porte médio', ico:'🐕'},
+  {kg:15,    sing:'uma cadeira de escritório',  plur:'cadeiras de escritório',  ico:'🪑'},
+  {kg:15,    sing:'um patinete elétrico',   plur:'patinetes elétricos',  ico:'🛴'},
+  {kg:16,    sing:'um kettlebell de 16kg',  plur:'kettlebells de 16kg',  ico:'🎽'},
+  {kg:18,    sing:'uma criança de 5 anos',  plur:'crianças de 5 anos',   ico:'🧒'},
+  {kg:20,    sing:'um galão de água de 20L',plur:'galões de água de 20L',ico:'🧴'},
+  {kg:20,    sing:'uma anilha de 20kg',     plur:'anilhas de 20kg',      ico:'🏋️'},
+  {kg:20,    sing:'uma barra olímpica',     plur:'barras olímpicas',     ico:'🏋️‍♂️'},
+  {kg:25,    sing:'um saco de batata',      plur:'sacos de batata',      ico:'🥔'},
+  {kg:35,    sing:'uma porta de madeira',   plur:'portas de madeira',    ico:'🚪'},
+  {kg:40,    sing:'um carrinho de mercado cheio', plur:'carrinhos de mercado cheios', ico:'🛒'},
+  {kg:50,    sing:'um saco de cimento',     plur:'sacos de cimento',     ico:'🧱'},
+  {kg:50,    sing:'uma cabra',              plur:'cabras',               ico:'🐐'},
+  {kg:60,    sing:'uma pessoa adulta',      plur:'pessoas adultas',      ico:'🧍'},
+  {kg:60,    sing:'um barril de chope',     plur:'barris de chope',      ico:'🍺'},
+  {kg:60,    sing:'uma saca de café',       plur:'sacas de café',        ico:'☕'},
+  {kg:70,    sing:'uma máquina de lavar',   plur:'máquinas de lavar',    ico:'🧺'},
+  {kg:80,    sing:'um sofá de 3 lugares',   plur:'sofás de 3 lugares',   ico:'🛋️'},
+  {kg:80,    sing:'um cervo',               plur:'cervos',               ico:'🦌'},
+  {kg:100,   sing:'uma geladeira',          plur:'geladeiras',           ico:'🧊'},
+  {kg:110,   sing:'um porco adulto',        plur:'porcos adultos',       ico:'🐖'},
+  {kg:120,   sing:'uma scooter',            plur:'scooters',             ico:'🛵'},
+  // ---- médios ----
+  {kg:180,   sing:'um gorila',              plur:'gorilas',              ico:'🦍'},
+  {kg:200,   sing:'um golfinho',            plur:'golfinhos',            ico:'🐬'},
+  {kg:200,   sing:'um tambor de 200L cheio',plur:'tambores de 200L cheios', ico:'🛢️'},
+  {kg:250,   sing:'uma moto grande',        plur:'motos grandes',        ico:'🏍️'},
+  {kg:250,   sing:'uma âncora de barco',    plur:'âncoras de barco',     ico:'⚓'},
+  {kg:250,   sing:'um piano de parede',     plur:'pianos de parede',     ico:'🎸'},
+  {kg:300,   sing:'um jacaré-açu',          plur:'jacarés-açu',          ico:'🐊'},
+  {kg:300,   sing:'uma foca',               plur:'focas',                ico:'🦭'},
+  {kg:300,   sing:'uma estátua de bronze',  plur:'estátuas de bronze',   ico:'🏺'},
+  {kg:400,   sing:'um urso pardo',          plur:'ursos pardos',         ico:'🐻'},
+  {kg:450,   sing:'um crocodilo',           plur:'crocodilos',           ico:'🐊'},
+  {kg:500,   sing:'um piano de cauda',      plur:'pianos de cauda',      ico:'🎹'},
+  {kg:600,   sing:'um cavalo',              plur:'cavalos',              ico:'🐎'},
+  {kg:600,   sing:'um camelo',              plur:'camelos',              ico:'🐫'},
+  {kg:700,   sing:'um boi',                 plur:'bois',                 ico:'🐂'},
+  {kg:800,   sing:'um sino de igreja',      plur:'sinos de igreja',      ico:'🔔'},
+  {kg:900,   sing:'um bisão',               plur:'bisões',               ico:'🦬'},
+  {kg:950,   sing:'um carro popular',       plur:'carros populares',     ico:'🚗'},
+  // ---- pesados ----
+  {kg:1200,  sing:'uma girafa',             plur:'girafas',              ico:'🦒'},
+  {kg:1200,  sing:'um avião pequeno',       plur:'aviões pequenos',      ico:'✈️'},
+  {kg:1400,  sing:'uma vaca leiteira',      plur:'vacas leiteiras',      ico:'🐄'},
+  {kg:1500,  sing:'um helicóptero leve',    plur:'helicópteros leves',   ico:'🚁'},
+  {kg:1800,  sing:'um SUV',                 plur:'SUVs',                 ico:'🚙'},
+  {kg:2300,  sing:'um rinoceronte',         plur:'rinocerontes',         ico:'🦏'},
+  {kg:2500,  sing:'um hipopótamo',          plur:'hipopótamos',          ico:'🦛'},
+  {kg:2800,  sing:'uma van de carga',       plur:'vans de carga',        ico:'🚐'},
+  {kg:3500,  sing:'um trator pequeno',      plur:'tratores pequenos',    ico:'🚜'},
+  {kg:5000,  sing:'um elefante africano',   plur:'elefantes africanos',  ico:'🐘'},
+  {kg:5500,  sing:'uma orca',               plur:'orcas',                ico:'🐳'},
+  {kg:5500,  sing:'uma cápsula espacial',   plur:'cápsulas espaciais',   ico:'🚀'},
+  {kg:8000,  sing:'um tiranossauro',        plur:'tiranossauros',        ico:'🦕'},
+  {kg:12000, sing:'um ônibus urbano',       plur:'ônibus urbanos',       ico:'🚌'},
+  {kg:30000, sing:'uma carreta carregada',  plur:'carretas carregadas',  ico:'🚛'},
+  {kg:150000,sing:'uma baleia-azul',        plur:'baleias-azuis',        ico:'🐋'},
 ];
+/* embaralha de forma DETERMINÍSTICA: a mesma tela mostra a mesma ordem
+   enquanto está aberta, mas muda a cada dia e a cada volume novo. Sem isto,
+   qualquer re-render trocaria a comparação debaixo do olho do aluno. */
+function embaralharCom(lista, semente){
+  const a=lista.slice(); let x=semente||1;
+  for(let i=a.length-1;i>0;i--){
+    x=(x*1103515245+12345)&0x7fffffff;      // LCG simples, suficiente aqui
+    const j=x%(i+1);
+    const t=a[i]; a[i]=a[j]; a[j]=t;
+  }
+  return a;
+}
 function equivalencias(kg){
-  if(!kg || kg<30) return [];
+  if(!kg || kg<2) return [];
   // faixa larga de propósito: "196 geladeiras" é tão divertido quanto
   // "2 ônibus". O teto de 300 evita números que perdem a graça.
   const bons=EQUIVALENTES.filter(e=>{ const n=kg/e.kg; return n>=1 && n<=300; });
-  const lista=(bons.length?bons:[EQUIVALENTES[0]]).map(e=>{
+  const base=(bons.length?bons:[EQUIVALENTES[0]]).map(e=>{
     const n=Math.round(kg/e.kg);
     return {n, texto:(n===1?('1 '+e.sing):(n+' '+e.plur)), ico:e.ico};
   });
-  return lista.reverse();   // começa pela unidade maior, que impressiona mais
+  // maior unidade primeiro (impressiona mais); o resto vem sorteado
+  const ordenada=base.slice().sort((a,b)=>a.n-b.n);
+  const dia=Math.floor(Date.parse(todayISO()+'T00:00:00Z')/86400000);
+  const resto=embaralharCom(ordenada.slice(1), dia*7919 + Math.round(kg));
+  return [ordenada[0]].concat(resto).filter(Boolean);
 }
 /* card de volume: um toque troca a comparação. Vira brincadeira, não dado fixo. */
 function CardVolume({kg, destaque}){
@@ -1601,6 +1698,22 @@ function CardVolume({kg, destaque}){
      (deload, refinamento técnico); apontá-la ensina a métrica errada.
    - Dor só aparece quando MELHOROU 2+ pontos. Piora e oscilação pequena
      ficam em silêncio — quem precisa saber disso é o treinador. */
+/* Média semanal. O denominador são as semanas JÁ DECORRIDAS da fase — usar a
+   duração total faria alguém na 2ª semana de uma fase de 8 aparecer com 0,75
+   treinos/semana, o que é falso e desmotivador.
+   Abaixo de 10 dias não devolve número: com 2 treinos em 3 dias daria 4,7/sem. */
+function mediaSemanal(sessoes, fase){
+  if(!fase || !fase.inicio) return null;
+  const ini=Date.parse(fase.inicio+'T00:00:00'), hoje=Date.parse(todayISO()+'T00:00:00');
+  if(isNaN(ini)||isNaN(hoje)) return null;
+  const dias=Math.floor((hoje-ini)/86400000)+1;
+  if(dias<10) return {curto:true, dias};
+  const fim=Date.parse(fase.fim+'T00:00:00');
+  // se a fase já acabou, conta só até o fim dela
+  const decorridos=(!isNaN(fim) && hoje>fim) ? Math.floor((fim-ini)/86400000)+1 : dias;
+  const semanas=Math.max(1, decorridos/7);
+  return {curto:false, valor:(sessoes/semanas)};
+}
 function calcProgresso(s, fase){
   const ini=fase?fase.inicio:null, fim=fase?fase.fim:null;
   const dentro=(d)=>(!ini||d>=ini) && (!fim||d<=fim);
