@@ -191,6 +191,30 @@
     color:var(--warn-fg);background:var(--warn-bg);border:1px solid var(--line)}
   .plnver{margin-top:9px;background:none;border:none;color:var(--muted);font-family:inherit;
     font-size:11.5px;text-decoration:underline;cursor:pointer;padding:4px 2px}
+  /* ===== INDICADOR DE PROGRESSÃO ===== */
+  .secaotit.sectit-i{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .infobtn{flex:0 0 22px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--muted);font-family:inherit;font-size:12px;
+    font-weight:800;font-style:italic;cursor:pointer;line-height:1;
+    -webkit-tap-highlight-color:transparent}
+  .infobtn:active{background:var(--surface)}
+  .infobox{margin:0 4px 12px;padding:12px 14px;border-radius:12px;font-size:12px;
+    line-height:1.55;color:var(--muted);background:var(--surface);
+    border:1px dashed var(--line)}
+  .infobox b{color:var(--text);font-weight:700}
+  .progaviso{margin:0 4px 12px;padding:12px 14px;border-radius:12px;font-size:13px;
+    line-height:1.5;color:var(--text);background:var(--lime-bg);
+    border:1px solid var(--lime-line);border-left:3px solid var(--lime)}
+  .progcard{margin:0 4px 10px;padding:13px 15px;border-radius:13px;background:var(--surface);
+    border:1px solid var(--line);border-left:3px solid var(--lime)}
+  .progtopo{display:flex;align-items:center;gap:10px}
+  .prognome{flex:1;min-width:0;font-size:13.5px;font-weight:700;color:var(--text)}
+  .progseta{color:var(--muted-2);font-size:15px}
+  .progpeso{display:flex;align-items:baseline;gap:10px;margin-top:7px}
+  .pgatual{font-size:15px;font-weight:600;color:var(--muted);text-decoration:line-through;
+    text-decoration-color:var(--muted-2)}
+  .pgsug{font-size:23px;font-weight:800;color:var(--lime);letter-spacing:-.02em}
+  .progpq{font-size:11.5px;color:var(--muted-2);margin-top:6px;line-height:1.4}
   .pgtopo{display:flex;gap:10px;margin:0 4px 14px;align-items:stretch}
   .pgcard{flex:1;padding:16px 12px;border-radius:14px;background:var(--surface);
     border:1px solid var(--line);text-align:center;display:flex;flex-direction:column;
@@ -1427,6 +1451,9 @@ function PlanoFases({db,nav,studentId}){
 /* tela 📊 — estado ATUAL da fase. Tom neutro: é consulta, não celebração. */
 function Progresso({db,nav,studentId,ehAluno}){
   const s=db.students.find(x=>x.id===studentId);
+  // hook ANTES de qualquer saída antecipada — hook depois de return faz o
+  // React executar quantidades diferentes entre renders (erro #310)
+  const [infoProg,setInfoProg]=useState(false);
   if(!s) return <div className="screen"><div className="empty"><p>Aluno não encontrado.</p></div></div>;
   const fase=faseVigente(s);
   const p=calcProgresso(s, fase);
@@ -1451,6 +1478,41 @@ function Progresso({db,nav,studentId,ehAluno}){
         </div>
         <CardVolume kg={p.volume}/>
       </div>
+      {/* indicador de progressão — LIVRE, sem XP. Se o app sabe que ele pode
+          subir carga, esconder isso o faria treinar abaixo do potencial. */}
+      {p.podem.length>0 && <React.Fragment>
+        <div className="secaotit sectit-i">
+          <span>🚀 Dá pra aumentar o peso?</span>
+          <button className="infobtn" onClick={()=>setInfoProg(v=>!v)}
+            aria-label="Como isso é calculado">i</button>
+        </div>
+        {infoProg && <div className="infobox">
+          Essa estimativa vem de uma fórmula que o Matheus desenvolveu.
+          Ela cruza o seu histórico de carga, quantas repetições você fez em
+          relação ao que foi prescrito, o esforço que você registrou e se houve
+          dor no exercício. Quando tudo indica que sobrou, ela aparece aqui.
+          <b>Nenhum exercício com dor entra nessa lista.</b>
+        </div>}
+        <div className="progaviso">
+          Pelos últimos registros, pode tentar aumentar o peso
+          (lembre-se da execução correta) 🙏🏼 ✅
+        </div>
+        {p.podem.map(x=>(
+          <div key={x.nome} className="progcard">
+            <div className="progtopo">
+              <span className="prognome">{x.nome}</span>
+              <span className="progseta">→</span>
+            </div>
+            <div className="progpeso">
+              <span className="pgatual">{x.atual}kg</span>
+              <span className="pgsug">{x.sugerida}kg</span>
+            </div>
+            <div className="progpq">
+              {x.sessoes} {x.sessoes===1?'sessão':'sessões'} fechando {x.topo} repetições
+              {x.comEsforco?' com esforço confortável':''}
+            </div>
+          </div>))}
+      </React.Fragment>}
       {p.subiram.length>0 && <React.Fragment>
         <div className="secaotit">📈 O que evoluiu</div>
         {/* barra proporcional ao maior ganho da fase: comparação visual
@@ -1714,6 +1776,69 @@ function mediaSemanal(sessoes, fase){
   const semanas=Math.max(1, decorridos/7);
   return {curto:false, valor:(sessoes/semanas)};
 }
+/* ===== INDICADOR: DÁ PRA AUMENTAR O PESO? =====
+   Progressão dupla: primeiro sobe repetição dentro da faixa prescrita,
+   depois sobe carga.
+
+   Regras deliberadas:
+   - DOR >= 2 bloqueia sempre. Sem exceção, sem "mas o esforço estava baixo".
+   - ESFORÇO é VETO, não requisito: quem não anota não fica sem o indicador.
+     Anotado >= 9 bloqueia (fechou a faixa no limite, não está sobrando).
+     Sem anotação, exijo uma sessão a mais de consistência no lugar. */
+function topoDaFaixa(seriesTxt){
+  // "3 x 8 a 12" -> 12 · "4 x 15" -> 15 · "3 x 10-12" -> 12
+  const m=String(seriesTxt||'').match(/[x×]\s*(.+)$/i);
+  if(!m) return null;
+  const nums=m[1].match(/\d+/g);
+  if(!nums || !nums.length) return null;
+  return Math.max.apply(null, nums.map(Number));
+}
+function incrementoSugerido(carga){
+  if(!carga || carga<=0) return null;
+  if(carga<=10) return 1;      // halteres leves, sobe de 1 em 1
+  if(carga<=50) return 2.5;    // faixa intermediária
+  return 5;                    // máquinas e barras pesadas
+}
+function podeAumentar(ex, logs){
+  const topo=topoDaFaixa(ex.series);
+  if(topo==null) return null;
+  const porDia={};
+  (logs||[]).forEach(l=>{ (porDia[l.date]=porDia[l.date]||[]).push(l); });
+  const dias=Object.keys(porDia).sort().reverse();   // mais recente primeiro
+  if(!dias.length) return null;
+
+  const cargaDoDia=(d)=>{
+    const c=porDia[d].map(l=>numFrom(l.carga)).filter(x=>x>0);
+    return c.length?Math.max.apply(null,c):0;
+  };
+  const cargaAtual=cargaDoDia(dias[0]);
+  if(!cargaAtual) return null;                       // peso corporal: fora da regra
+
+  // DOR bloqueia — checa a sessão mais recente
+  const dores=porDia[dias[0]].map(l=>l.dor).filter(x=>x!=null);
+  if(dores.length && Math.max.apply(null,dores)>=2) return null;
+
+  // ESFORÇO como veto
+  const esf=porDia[dias[0]].map(l=>l.intensidade).filter(x=>x!=null);
+  const temEsforco=esf.length>0;
+  if(temEsforco && (esf.reduce((a,b)=>a+b,0)/esf.length)>=9) return null;
+
+  // consistência: 2 sessões com esforço anotado, 3 sem
+  const exigidas = temEsforco?2:3;
+  let ok=0;
+  for(let i=0;i<dias.length && i<exigidas;i++){
+    const d=dias[i];
+    if(cargaDoDia(d)!==cargaAtual) break;            // mudou a carga: recomeça a contagem
+    const reps=porDia[d].map(l=>parseInt(l.reps,10)).filter(x=>x>0);
+    if(!reps.length) break;
+    if(Math.min.apply(null,reps) < topo) break;      // TODAS as séries no topo
+    ok++;
+  }
+  if(ok<exigidas) return null;
+  const inc=incrementoSugerido(cargaAtual);
+  return {nome:ex.name, atual:cargaAtual, sugerida:+(cargaAtual+inc).toFixed(1),
+          incremento:inc, sessoes:ok, topo, comEsforco:temEsforco};
+}
 function calcProgresso(s, fase){
   const ini=fase?fase.inicio:null, fim=fase?fase.fim:null;
   const dentro=(d)=>(!ini||d>=ini) && (!fim||d<=fim);
@@ -1727,11 +1852,12 @@ function calcProgresso(s, fase){
   (s.treinos||[]).forEach(t=>{ if(!idsFase.has(t.id)) return;
     (t.exercises||[]).forEach(ex=>{
       const chave=(ex.exerciseId!=null?('id:'+ex.exerciseId):('n:'+norm(ex.name)));
-      const alvo=(porEx[chave]=porEx[chave]||{nome:ex.name, logs:[]});
+      const alvo=(porEx[chave]=porEx[chave]||{nome:ex.name, series:ex.series, ex:ex, logs:[]});
+      if(!alvo.series && ex.series) { alvo.series=ex.series; alvo.ex=ex; }
       (ex.logs||[]).forEach(l=>{ if(dentro(l.date)) alvo.logs.push(l); });
     });
   });
-  const subiram=[], dorMelhorou=[];
+  const subiram=[], dorMelhorou=[], podem=[];
   let volume=0, cargas=[];
   Object.keys(porEx).forEach(k=>{
     const e=porEx[k];
@@ -1752,11 +1878,15 @@ function calcProgresso(s, fase){
     const d0=dorDoDia(dias[0]), d1=dorDoDia(dias[dias.length-1]);
     if(dias.length>=2 && d0!=null && d1!=null && (d0-d1)>=2)
       dorMelhorou.push({nome:e.nome, de:Math.round(d0), para:Math.round(d1)});
+    // indicador de progressão — usa TODOS os logs do exercício, não só os da fase
+    if(e.ex){ const p=podeAumentar(e.ex, allLogsOfExercise(s, e.ex.name, e.ex.exerciseId));
+      if(p) podem.push(p); }
   });
   subiram.sort((a,b)=>b.ganho-a.ganho);
   dorMelhorou.sort((a,b)=>(b.de-b.para)-(a.de-a.para));
   cargas.sort((a,b)=>a.nome.localeCompare(b.nome));
-  return {sessoes, volume:Math.round(volume), subiram, dorMelhorou, cargas,
+  podem.sort((a,b)=>b.atual-a.atual);
+  return {sessoes, volume:Math.round(volume), subiram, dorMelhorou, cargas, podem,
           exercicios:Object.keys(porEx).length};
 }
 /* sessões manuais de uma fase — usado na comparação entre ciclos */
