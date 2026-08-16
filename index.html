@@ -202,9 +202,7 @@
     line-height:1.55;color:var(--muted);background:var(--surface);
     border:1px dashed var(--line)}
   .infobox b{color:var(--text);font-weight:700}
-  .progaviso{margin:0 4px 12px;padding:12px 14px;border-radius:12px;font-size:13px;
-    line-height:1.5;color:var(--text);background:var(--lime-bg);
-    border:1px solid var(--lime-line);border-left:3px solid var(--lime)}
+  .progaviso{margin:0 6px 14px;font-size:13px;line-height:1.5;color:var(--text)}
   .progcard{margin:0 4px 10px;padding:13px 15px;border-radius:13px;background:var(--surface);
     border:1px solid var(--line);border-left:3px solid var(--lime)}
   .progtopo{display:flex;align-items:center;gap:10px}
@@ -1490,12 +1488,11 @@ function Progresso({db,nav,studentId,ehAluno}){
           Essa estimativa vem de uma fórmula que o Matheus desenvolveu.
           Ela cruza o seu histórico de carga, quantas repetições você fez em
           relação ao que foi prescrito, o esforço que você registrou e se houve
-          dor no exercício. Quando tudo indica que sobrou, ela aparece aqui.
-          <b>Nenhum exercício com dor entra nessa lista.</b>
+          dor no exercício.
         </div>}
         <div className="progaviso">
-          Pelos últimos registros, pode tentar aumentar o peso
-          (lembre-se da execução correta) 🙏🏼 ✅
+          Acho que você pode tentar aumentar o peso nesses exercícios
+          (lembre-se da execução correta) 👇🏼 🙏🏼 ✅
         </div>
         {p.podem.map(x=>(
           <div key={x.nome} className="progcard">
@@ -1509,7 +1506,6 @@ function Progresso({db,nav,studentId,ehAluno}){
             </div>
             <div className="progpq">
               {x.sessoes} {x.sessoes===1?'sessão':'sessões'} fechando {x.topo} repetições
-              {x.comEsforco?' com esforço confortável':''}
             </div>
           </div>))}
       </React.Fragment>}
