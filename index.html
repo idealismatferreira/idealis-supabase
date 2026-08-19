@@ -826,6 +826,20 @@
   .crono{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:10px;
     background:var(--surface-2);border:1px solid var(--line);font-size:13px;font-weight:700;
     font-variant-numeric:tabular-nums;color:var(--cyan-2);letter-spacing:.02em}
+  .dlgback{position:fixed;inset:0;background:var(--veu);z-index:120;
+    display:flex;align-items:center;justify-content:center;padding:24px}
+  .dlg{width:100%;max-width:330px;background:var(--surface);border-radius:18px;
+    border:1px solid var(--line);padding:24px 20px;text-align:center;
+    box-shadow:0 18px 50px rgba(0,0,0,.45);animation:dlgin .18s ease}
+  @keyframes dlgin{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
+  .dlgico{font-size:32px;line-height:1;margin-bottom:10px}
+  .dlgtit{font-size:19px;font-weight:800;color:var(--text);letter-spacing:-.02em}
+  .dlgtxt{font-size:13px;color:var(--muted);line-height:1.5;margin-top:8px}
+  .dlgtxt b{color:var(--text);font-weight:700}
+  .dlgacts{display:flex;gap:9px;margin-top:20px}
+  .dlgacts .btn{flex:1}
+  .crono.tocavel{cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s}
+  .crono.tocavel:active{transform:scale(.94)}
   .crono .crico{font-size:11px;opacity:.7}
   .crono.off{color:var(--muted);opacity:.7}
   .cronohint{margin:0 2px 14px;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.4;
@@ -3717,8 +3731,9 @@ function useViradaDoDia(){
   },[]);
   return dia;
 }
-function CronoBadge({inicio}){
+function CronoBadge({inicio,onZerar}){
   const [agora,setAgora]=useState(Date.now());
+  const [perg,setPerg]=useState(false);
   useEffect(()=>{
     if(inicio==null) return;
     const id=setInterval(()=>setAgora(Date.now()),1000);
@@ -3726,8 +3741,27 @@ function CronoBadge({inicio}){
     document.addEventListener('visibilitychange',onVis);
     return ()=>{ clearInterval(id); document.removeEventListener('visibilitychange',onVis); };
   },[inicio]);
-  return (<span className={'crono'+(inicio==null?' off':'')}>
-    <span className="crico">⏱</span>{inicio==null?'--:--':fmtCrono(agora-inicio)}</span>);
+  useEffect(()=>{ if(inicio==null) setPerg(false); },[inicio]);
+  const podeZerar = inicio!=null && !!onZerar;
+  return (<React.Fragment>
+    <span className={'crono'+(inicio==null?' off':'')+(podeZerar?' tocavel':'')}
+      onClick={()=>{ if(podeZerar) setPerg(true); }}>
+      <span className="crico">⏱</span>{inicio==null?'--:--':fmtCrono(agora-inicio)}</span>
+    {/* diálogo CENTRALIZADO, não folha de rodapé: este componente vive dentro
+        da topbar, e a folha ancorada embaixo era desenhada colada no topo. */}
+    {perg && <div className="dlgback" onClick={()=>setPerg(false)}>
+      <div className="dlg" onClick={e=>e.stopPropagation()}>
+        <div className="dlgico">⏱</div>
+        <div className="dlgtit">Zerar relógio?</div>
+        <div className="dlgtxt">
+          O relógio volta para <b>--:--</b>.
+        </div>
+        <div className="dlgacts">
+          <button className="btn ghost" onClick={()=>setPerg(false)}>Cancelar</button>
+          <button className="btn" onClick={()=>{ onZerar(); setPerg(false); }}>Zerar</button>
+        </div>
+      </div></div>}
+  </React.Fragment>);
 }
 function TopBar({title,sub,onBack,logo,onSair,right}){
   if(logo) return (<div className="topbar tbmarca">
@@ -5717,6 +5751,14 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
     if(navigator.vibrate) navigator.vibrate([180,80,180]);
     setCelebrando(true);
   };
+  /* zerar o relógio: para o cronômetro sem apagar nada do treino.
+     A próxima série registrada reinicia a contagem (avancarSerie já cuida
+     disso quando `inicio` está nulo). */
+  const zerarRelogio=()=>{
+    zerarCrono(treinoId);
+    setInicio(null);
+    flash('Relógio zerado');
+  };
   const fecharCelebracao=()=>{
     setCelebrando(false);
     // "Início" é o início do APP: raiz do aluno, sem fase aberta
@@ -5847,7 +5889,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
   },[catalogoVer]);
   return (<React.Fragment>
     <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId,faseId:deFase||null})}
-      right={<CronoBadge inicio={inicio}/>}/>
+      right={<CronoBadge inicio={inicio} onZerar={zerarRelogio}/>}/>
     {celebrando && <Celebracao nome={t.nome}
       onProgresso={()=>{ setCelebrando(false); nav({name:'progresso',studentId}); }}
       onHome={fecharCelebracao}/>}
