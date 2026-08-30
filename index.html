@@ -2781,18 +2781,37 @@ async function flushOpQueue(){
 const CACHE_META_KEY = 'idealis_presencial_cache_meta_v1';
 function loadCacheMeta(){ if(!LS_OK) return null; try{return window.localStorage.getItem(CACHE_META_KEY);}catch(e){return null;} }
 function saveCacheMeta(iso){ if(!LS_OK)return; try{window.localStorage.setItem(CACHE_META_KEY,iso);}catch(e){} }
+/* Busca TODAS as linhas de uma tabela, em páginas.
+   O PostgREST corta em 1.000 linhas SEM AVISO — não vem erro, vem menos
+   dado. Como a ordenação é crescente por data, o que ficava de fora era
+   justamente o mais recente: o aluno registrava hoje e via a semana
+   passada. Aconteceu de verdade com 1.119 logs. */
+async function buscarTudo(tabela, colunas, ordem){
+  const PAG=1000;
+  let todos=[], de=0;
+  for(let i=0;i<50;i++){                       // teto de segurança: 50 mil
+    let q=sb.from(tabela).select(colunas).range(de, de+PAG-1);
+    if(ordem) q=q.order(ordem);
+    const {data,error}=await q;
+    if(error) return {data:null, error};
+    todos=todos.concat(data||[]);
+    if(!data || data.length<PAG) break;        // última página
+    de+=PAG;
+  }
+  return {data:todos, error:null};
+}
 async function fetchDbFromSupabase(){
   if(!sb) return {ok:false, erro:'Sem conexão com o servidor.'};
   try{
     // o RLS já filtra: treinador vê tudo, aluno vê só o dele
     const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg, rPlan, rAcad, rAlAcad, rSem, rDor] = await Promise.all([
       sb.from('alunos').select('id,nome,foto_url,academia,nascimento,fc_max').order('nome'),
-      sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data,fase_id').order('ordem'),
-      sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio,audio_url').order('ordem'),
-      sb.from('logs').select('id,exercicio_id,data,carga,reps,intensidade,dor,dor_local,dor_lado,variante,serie,extra').order('data,serie'),
-      sb.from('sessoes').select('id,aluno_id,treino_id,data,origem,duracao').order('data'),
-      sb.from('relatos').select('id,aluno_id,treino_id,exercicio_id,exercicio_nome,data,texto,fixado,created_at').order('created_at'),
-      sb.from('acessos').select('id,aluno_id,treino_id,data,vezes').order('data'),
+      buscarTudo('treinos','id,aluno_id,nome,ordem,concluido_data,fase_id','ordem'),
+      buscarTudo('exercicios','id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio,audio_url','ordem'),
+      buscarTudo('logs','id,exercicio_id,data,carga,reps,intensidade,dor,dor_local,dor_lado,variante,serie,extra','data,serie'),
+      buscarTudo('sessoes','id,aluno_id,treino_id,data,origem,duracao','data'),
+      buscarTudo('relatos','id,aluno_id,treino_id,exercicio_id,exercicio_nome,data,texto,fixado,created_at','created_at'),
+      buscarTudo('acessos','id,aluno_id,treino_id,data,vezes','data'),
       sb.from('fases').select('id,aluno_id,nome,objetivo,inicio,fim').order('inicio'),
       sb.from('modalidades').select('id,nome,familia,ordem,cor').eq('ativa',true).order('ordem'),
       sb.from('vw_alunos_segmentados').select('id,status,modalidade_id,modalidade,familia,ordem,cor'),
