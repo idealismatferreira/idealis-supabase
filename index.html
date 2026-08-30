@@ -246,45 +246,6 @@
     text-decoration-color:var(--muted-2)}
   .pgsug{font-size:23px;font-weight:800;color:var(--lime);letter-spacing:-.02em}
   .progpq{font-size:11.5px;color:var(--muted-2);margin-top:6px;line-height:1.4}
-  /* ===== PRÉ-TREINO (briefing) =====
-     Reaproveita .progaviso/.progcard/.infobtn/.infobox do indicador de
-     progressão: mesma linguagem visual, o aluno aprende o cálculo uma vez. */
-  .ptwrap{margin:0 0 18px;padding:16px 12px 14px;border-radius:16px;
-    background:var(--surface);border:1px solid var(--line);position:relative;
-    animation:ptfade .28s ease both}
-  /* cascata: o card só desenha a moldura, cada parte entra em sequência.
-     Conduz o olho de cima pra baixo — quando chega no card de carga, o
-     aluno já está lendo. Roda UMA vez; nada aqui fica em loop. */
-  @keyframes ptfade{from{opacity:0}to{opacity:1}}
-  @keyframes ptin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
-  .ptabertura,.ptwrap .frasedia,.ptsectit,.ptwrap .progaviso,
-  .ptwrap .progcard,.ptwrap .infobox{animation:ptin .34s ease both}
-  .ptabertura{animation-delay:.06s}
-  .ptwrap .frasedia{animation-delay:.16s}
-  .ptsectit{animation-delay:.26s}
-  .ptwrap .progaviso{animation-delay:.32s}
-  /* .progcard recebe o delay por índice via style inline (nth-of-type não
-     serve: .progaviso também é div e entraria na contagem) */
-  .ptfechar{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;
-    border:0;background:transparent;color:var(--muted-2);font-family:inherit;font-size:15px;
-    line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}
-  .ptfechar:active{background:var(--surface-2)}
-  .ptabertura{text-align:center;font-size:19px;font-weight:700;color:var(--cyan-2);
-    line-height:1.3;letter-spacing:-.02em;padding:0 26px;text-wrap:balance}
-  .ptwrap .frasedia{margin-top:12px}
-  .ptsec{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
-  .ptsectit{display:flex;align-items:center;justify-content:space-between;gap:10px;
-    font-size:13px;font-weight:800;color:var(--lime);text-transform:uppercase;
-    letter-spacing:.08em;padding:0 4px 10px}
-  .ptwrap .progaviso{margin:0 4px 12px;font-size:12.5px;color:var(--muted)}
-  .ptwrap .progcard{margin:0 0 8px}
-  .ptwrap .progcard:last-child{margin-bottom:0}
-  .ptwrap .infobox{margin:0 0 12px}
-  /* tem aluno que liga "reduzir movimento" justamente por enjoo. Aqui tudo
-     para de vez — o conteúdo já nasce no estado final, nada some. */
-  @media (prefers-reduced-motion:reduce){
-    .ptwrap,.ptwrap *{animation:none!important}
-  }
   .pgtopo{display:flex;gap:10px;margin:0 4px 14px;align-items:stretch}
   .pgcard{flex:1;padding:16px 12px;border-radius:14px;background:var(--surface);
     border:1px solid var(--line);text-align:center;display:flex;flex-direction:column;
@@ -367,8 +328,138 @@
   .fasetopo .faseper{font-size:12px;color:var(--muted);margin-top:6px}
   .fasetopo .faseper b{color:var(--cyan-2);font-weight:800}
   .secaotit.trhead{margin-top:26px}
+  /* ===== AVALIAÇÃO DA DOR (avaliacao.js) ===== */
+  .avtopo{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;
+    padding:12px 14px;background:var(--topbar);border-bottom:1px solid var(--topbar-line);
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+  .avprog{flex:1;height:5px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+  .avprogbar{height:100%;border-radius:999px;background:var(--cyan);transition:width .3s ease}
+  .avsair{background:none;border:none;color:var(--muted);font-family:inherit;
+    font-size:12.5px;cursor:pointer;padding:6px}
+  .avscreen{padding-bottom:40px}
+  .avpasso{margin-bottom:22px}
+  .avptit{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.25}
+  .avpsub{font-size:13px;color:var(--muted);line-height:1.5;margin:7px 0 18px}
+  .avpsub2{font-size:11.5px;color:var(--muted-2);line-height:1.45;margin:-2px 0 12px}
+  /* mapa corporal */
+  .mapawrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .mapatabs{display:flex;gap:6px;width:100%;max-width:260px}
+  .mapatabs button{flex:1;padding:10px;border-radius:11px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--muted);font-family:inherit;font-size:13px;
+    font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .mapatabs button.on{border-color:var(--cyan);background:rgba(0,201,204,.14);color:var(--cyan-2)}
+  .mapasvg{width:100%;max-width:270px;height:auto;display:block;
+    -webkit-tap-highlight-color:transparent}
+  .mapasvg path{transition:fill .18s ease,stroke .18s ease}
+  /* seletor de nota da região */
+  .avnota{margin-top:16px;padding:15px;border-radius:14px;background:var(--surface);
+    border:1px solid var(--cyan)}
+  .avnotatit{font-size:14.5px;font-weight:800;color:var(--text);margin-bottom:10px}
+  .avnotafechar{width:100%;margin-top:8px;background:none;border:none;color:var(--muted);
+    font-family:inherit;font-size:12px;text-decoration:underline;cursor:pointer;padding:6px}
+  .avresumo{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;justify-content:center}
+  .avchip{font-size:11.5px;font-weight:700;border:1px solid var(--line);
+    border-radius:999px;padding:4px 10px}
+  /* escalas 0-10 */
+  .avescala{margin-bottom:20px}
+  .avesctopo{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+  .avesclab{font-size:13.5px;font-weight:700;color:var(--text)}
+  .avescval{font-size:19px;font-weight:800;color:var(--cyan-2)}
+  .avescbtns{display:flex;gap:3px}
+  .avescbtn{flex:1;min-width:0;aspect-ratio:1;border-radius:9px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--muted);font-family:inherit;font-size:12.5px;
+    font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0}
+  .avescbtn.on{border-color:var(--cyan);background:var(--cyan);color:var(--on-cyan);font-weight:800}
+  .avescanc{display:flex;justify-content:space-between;margin-top:6px;
+    font-size:10.5px;color:var(--muted-2)}
+  /* listas de opção */
+  .avlista{display:flex;flex-direction:column;gap:8px}
+  .avdupla{display:flex;gap:8px}
+  .avdupla .avopt{flex:1;text-align:center}
+  .avopt{display:flex;align-items:center;gap:10px;width:100%;padding:14px;border-radius:12px;
+    border:1px solid var(--line);background:var(--surface);color:var(--text);
+    font-family:inherit;font-size:13.5px;text-align:left;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .avopt.on{border-color:var(--cyan);background:rgba(0,201,204,.12);font-weight:700}
+  .avopt.off{opacity:.4}
+  .avoptn{flex:0 0 26px;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+    background:var(--surface-2);font-size:12px;font-weight:800;color:var(--muted)}
+  .avopt.on .avoptn{background:var(--cyan);color:var(--on-cyan)}
+  .avcheck{flex:0 0 20px;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line);
+    display:grid;place-items:center;font-size:12px;font-weight:900;color:var(--cyan-2)}
+  .avopt.on .avcheck{border-color:var(--cyan)}
+  /* blocos e mecanismo */
+  .avbloco{margin-bottom:20px}
+  .avlab{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:9px}
+  .avmec{padding:12px 0;border-bottom:1px solid var(--line)}
+  .avmectxt{font-size:13px;color:var(--text);line-height:1.45;margin-bottom:8px}
+  .avmecbtns{display:flex;gap:6px}
+  .avmecbtn{flex:1;padding:9px 4px;border-radius:9px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--muted);font-family:inherit;font-size:12px;
+    font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .avmecbtn.on{border-color:var(--cyan);background:rgba(0,201,204,.14);
+    color:var(--cyan-2);font-weight:800}
+  .avinput{width:100%;padding:13px 14px;border-radius:12px;background:var(--bg);
+    border:1px solid var(--line);color:var(--text);font-family:inherit;font-size:14px;
+    margin-bottom:12px;outline:none}
+  .avinput:focus{border-color:var(--cyan)}
+  .avadd{width:100%;padding:13px;border-radius:12px;border:1px dashed var(--line);
+    background:none;color:var(--muted);font-family:inherit;font-size:13px;cursor:pointer}
+  /* revisão e final */
+  .avrev{padding:16px;border-radius:14px;background:var(--surface);
+    border:1px solid var(--line);margin-bottom:18px}
+  .avrevlin{font-size:13.5px;color:var(--muted);line-height:1.7}
+  .avrevlin b{color:var(--text);font-weight:800;font-size:16px}
+  .avenviar{width:100%}
+  .avnav{margin-top:22px}
+  .avnav .btn{width:100%;padding:16px;font-size:15.5px}
+  .avsalvo{text-align:center;font-size:10.5px;color:var(--muted-2);margin-top:16px}
+  .avfim{text-align:center;padding:50px 20px}
+  .avfimico{font-size:44px;line-height:1;margin-bottom:14px}
+  .avfimtit{font-size:21px;font-weight:800;color:var(--text);letter-spacing:-.02em}
+  .avfimtxt{font-size:13.5px;color:var(--muted);line-height:1.55;margin:9px 0 24px}
+  /* ===== JORNADA DA DOR ===== */
+  .dorbtn{position:relative}
+  .agdot{position:absolute;top:9px;right:12px;width:9px;height:9px;border-radius:50%;
+    background:var(--lime);box-shadow:0 0 0 2px var(--surface)}
+  /* semáforo pós-treino */
+  .semwrap{margin:0 0 18px;padding:14px;border-radius:13px;
+    background:var(--surface-2);border:1px solid var(--line)}
+  .semtit{font-size:13.5px;font-weight:800;color:var(--text);margin-bottom:12px}
+  .semdor{margin-bottom:12px}
+  .semdor:last-child{margin-bottom:0}
+  .semnome{font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600}
+  .sembtns{display:flex;gap:6px}
+  .sembtn{flex:1;min-width:0;padding:10px 4px;border-radius:11px;
+    border:1px solid var(--line);background:var(--bg);color:var(--muted);
+    font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .sembtn .semico{display:block;font-size:17px;line-height:1.2}
+  .sembtn .semrot{display:block;font-size:9.5px;font-weight:700;margin-top:3px}
+  .sembtn.on{color:var(--text);font-weight:800}
+  .sembtn.verde.on{border-color:#3fa38a;background:rgba(63,163,138,.16)}
+  .sembtn.amarelo.on{border-color:#e0b93c;background:rgba(224,185,60,.16)}
+  .sembtn.vermelho.on{border-color:#d1495b;background:rgba(209,73,91,.16)}
+  /* retrospectiva na abertura */
+  .dlg.retro2{max-width:340px;max-height:82vh;overflow:auto}
+  .rtdor{margin-top:16px;text-align:left}
+  .rtnome{font-size:12px;font-weight:800;color:var(--muted);margin-bottom:7px;
+    text-transform:uppercase;letter-spacing:.04em}
+  .rtopt{width:100%;padding:12px 13px;margin-bottom:6px;border-radius:11px;
+    border:1px solid var(--line);background:var(--surface-2);color:var(--text);
+    font-family:inherit;font-size:13px;text-align:left;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .rtopt.on{border-color:var(--cyan);background:rgba(0,201,204,.14);font-weight:700}
+  .dortarefa{margin:0 4px 18px;padding:20px 17px;border-radius:15px;text-align:center;
+    background:rgba(0,201,204,.07);border:1px solid var(--cyan);
+    border-left:4px solid var(--cyan)}
+  .dtico{font-size:30px;line-height:1;margin-bottom:9px}
+  .dttit{font-size:17px;font-weight:800;color:var(--text);letter-spacing:-.02em}
+  .dttxt{font-size:12.5px;color:var(--muted);line-height:1.5;margin:6px 0 15px}
+  .dorcard{margin:0 4px 8px;padding:13px 15px;border-radius:12px;background:var(--surface);
+    border:1px solid var(--line);border-left:3px solid var(--cyan)}
+  .dornome{font-size:14px;font-weight:700;color:var(--text)}
   .duplobtn{display:flex;gap:10px;margin:2px 0 16px}
-  .duplobtn .agbtn{flex:1;margin:0;font-size:20px;padding:14px 8px;min-width:0}
+  .duplobtn .agbtn{flex:1;margin:0;font-size:19px;padding:13px 6px;min-width:0}
   .agbtn{width:100%;margin:2px 0 16px;padding:13px;border-radius:13px;border:1px solid var(--line);
     background:var(--surface);color:var(--text);font-family:inherit;font-size:14px;
     font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -1851,6 +1942,193 @@ function CardVolume({kg, destaque}){
   </div>);
 }
 
+/* RETROSPECTIVA — aparece na ABERTURA do treino seguinte.
+   Substitui o push de 24h depois, que o aluno ignora ou responde tarde
+   demais. Aqui ele já está com o app na mão e focado.
+   Pergunta só sobre a sessão MAIS RECENTE: perguntar sobre treino de 8
+   dias atrás não gera dado confiável. */
+function RetroSheet({dores,dataRef,onResponder,onPular}){
+  const [esc,setEsc]=useState({});
+  const algum=Object.keys(esc).some(k=>esc[k]);
+  return (<div className="dlgback">
+    <div className="dlg retro2">
+      <div className="dlgico">🩺</div>
+      <div className="dlgtit">Depois do treino de {fmtDate(dataRef)}</div>
+      <div className="dlgtxt">Como cada região se comportou?</div>
+      {(dores||[]).map(d=>(
+        <div key={d.id} className="rtdor">
+          <div className="rtnome">{nomeDor(d)}</div>
+          {RECUPERACAO.map(o=>(
+            <button key={o.v} type="button"
+              className={'rtopt'+(esc[d.id]===o.v?' on':'')}
+              onClick={()=>setEsc(m=>({...m,[d.id]:m[d.id]===o.v?null:o.v}))}>
+              {o.rot}</button>))}
+        </div>))}
+      <div className="dlgacts">
+        <button className="btn ghost" onClick={onPular}>Agora não</button>
+        <button className="btn" disabled={!algum} onClick={()=>onResponder(esc)}>Enviar</button>
+      </div>
+    </div></div>);
+}
+/* ===== SEMÁFORO E RETROSPECTIVA =====
+   As duas micro-interações vivem NO FLUXO DE TREINO, não numa tela à parte:
+   é isso que sustenta a adesão. Ambas só aparecem se houver dor ativa.
+
+   Escala ORDINAL de propósito (cor, não número): a quantificação numérica
+   fica concentrada no check-in semanal, quando o aluno tem cabeça para dar
+   nota. No dia a dia, número seria carga cognitiva sem ganho. */
+const SEMAFORO=[
+  {cor:'verde',    ico:'🟢', rot:'Tranquilo',  desc:'Zerou ou sobrou algo tolerável'},
+  {cor:'amarelo',  ico:'🟡', rot:'Incomodou',  desc:'Aumentou, mas cedeu rápido'},
+  {cor:'vermelho', ico:'🔴', rot:'Limitou',    desc:'Atrapalhou a execução'},
+];
+const RECUPERACAO=[
+  {v:'mesmo_dia', rot:'Recuperou no mesmo dia'},
+  {v:'1_2_dias',  rot:'Ficou sensível 1 a 2 dias'},
+  {v:'piorou',    rot:'Piorou'},
+];
+function gravarSemaforo(alunoId, treinoId, escolhas){
+  Object.keys(escolhas||{}).forEach(dorId=>{
+    if(!escolhas[dorId]) return;
+    enqueueOp({tipo:'insert',tabela:'treino_semaforo',dados:{
+      id:uid(), aluno_id:alunoId, dor_id:dorId, treino_id:treinoId||null,
+      treino_em:todayISO(), cor:escolhas[dorId]
+    }});
+  });
+}
+function gravarRetrospectiva(alunoId, dataRef, escolhas){
+  Object.keys(escolhas||{}).forEach(dorId=>{
+    if(!escolhas[dorId]) return;
+    enqueueOp({tipo:'insert',tabela:'treino_retrospectiva',dados:{
+      id:uid(), aluno_id:alunoId, dor_id:dorId,
+      treino_ref_em:dataRef, recuperacao:escolhas[dorId]
+    }});
+  });
+}
+/* chave do "já perguntei sobre este treino" — evita repetir a retrospectiva
+   toda vez que ele abre o mesmo treino no mesmo dia */
+const chaveRetro=(treinoId,dataRef)=>'idealis_retro_tr_'+treinoId+'_'+dataRef;
+/* nome curto da dor para os cartões */
+function nomeDor(d){ return d.apelido || NOME_REGIAO_DOR[d.regiao] || d.regiao; }
+/* ===== JORNADA DA DOR — casco =====
+   Semáforo e retrospectiva vivem no bundle principal (são pequenos e
+   inseparáveis do fluxo de treino). A avaliação completa (6-10 min) é
+   carregada SOB DEMANDA: ela custaria ~2,4s no boot de todos os 87
+   alunos por causa de uma tela aberta 3x a cada 8 semanas. */
+const AVALIACAO_SRC='avaliacao.js';
+let _avalCarregando=null;
+function carregarAvaliacao(){
+  if(window.AvaliacaoDor) return Promise.resolve(window.AvaliacaoDor);
+  if(_avalCarregando) return _avalCarregando;
+  _avalCarregando=new Promise((ok,falha)=>{
+    const el=document.createElement('script');
+    el.src=AVALIACAO_SRC+'?v=1';
+    el.onload=()=>{ if(window.AvaliacaoDor) ok(window.AvaliacaoDor);
+                    else falha(new Error('avaliacao.js carregou sem expor AvaliacaoDor')); };
+    el.onerror=()=>{ _avalCarregando=null; falha(new Error('falha ao baixar avaliacao.js')); };
+    document.body.appendChild(el);
+  });
+  return _avalCarregando;
+}
+/* marcos: semanas 1, 4 e 8 do ciclo pedem avaliação completa */
+const MARCO_DA_SEMANA={1:'D0', 4:'D28', 8:'D56'};
+/* rascunho local — obrigatório num formulário de 8 minutos: se o app fechar
+   no meio, ele volta de onde parou em vez de perder tudo */
+const chaveRascunho=(alunoId,momento)=>'idealis_aval_'+alunoId+'_'+momento;
+function lerRascunho(alunoId,momento){
+  try{ const r=LS_OK&&window.localStorage.getItem(chaveRascunho(alunoId,momento));
+       return r?JSON.parse(r):null; }catch(e){ return null; }
+}
+function salvarRascunho(alunoId,momento,dados){
+  try{ if(LS_OK) window.localStorage.setItem(chaveRascunho(alunoId,momento),JSON.stringify(dados)); }catch(e){}
+}
+function limparRascunho(alunoId,momento){
+  try{ if(LS_OK) window.localStorage.removeItem(chaveRascunho(alunoId,momento)); }catch(e){}
+}
+/* envia a avaliação inteira numa transação. Devolve {ok, avaliacao_id} */
+async function enviarAvaliacao(payload){
+  if(!sb) return {ok:false, erro:'sem conexão'};
+  try{
+    const {data,error}=await sb.rpc('salvar_avaliacao',{p:payload});
+    if(error) return {ok:false, erro:error.message};
+    return data||{ok:false, erro:'resposta vazia'};
+  }catch(e){ return {ok:false, erro:String(e)}; }
+}
+/* o que a semana atual pede — alimenta o badge do chip */
+function tarefaDaSemana(db, s){
+  const c=db.ciclo; if(!c) return null;
+  const marco=MARCO_DA_SEMANA[c.semana];
+  if(marco) return {tipo:'avaliacao', momento:marco, semana:c.semana,
+                    rotulo:'Avaliação da semana '+c.semana};
+  return {tipo:'checkin', semana:c.semana, rotulo:'Check-in da semana '+c.semana};
+}
+/* ===== TELA "DOR" ===== */
+function TelaDor({db,nav,studentId,flash}){
+  const s=db.students.find(x=>x.id===studentId);
+  const [carregando,setCarregando]=useState(false);
+  const [erro,setErro]=useState('');
+  if(!s) return <div className="screen"><div className="empty"><p>Aluno não encontrado.</p></div></div>;
+  const tarefa=tarefaDaSemana(db,s);
+  const dores=s.dores||[];
+  const abrirAvaliacao=async ()=>{
+    setCarregando(true); setErro('');
+    try{ await carregarAvaliacao();
+         nav({name:'avaliacao', studentId, momento:(tarefa?tarefa.momento:'extra')}); }
+    catch(e){ setErro('Não consegui carregar. Verifique a conexão e tente de novo.'); }
+    setCarregando(false);
+  };
+  return (<React.Fragment>
+    <TopBar title="Sua dor" sub={db.ciclo?('Semana '+db.ciclo.semana+' de '+db.ciclo.semanas):s.name}
+      onBack={()=>nav({name:'student',studentId})}/>
+    <div className="screen">
+      {tarefa && tarefa.tipo==='avaliacao' && <div className="dortarefa">
+        <div className="dtico">🩺</div>
+        <div className="dttit">{tarefa.rotulo}</div>
+        <div className="dttxt">Leva uns 8 minutos. Melhor fazer com calma, em casa.</div>
+        <button className="btn" disabled={carregando} onClick={abrirAvaliacao}>
+          {carregando?'Carregando…':'Começar'}</button>
+        {erro && <div className="loginerro" style={{marginTop:10}}>{erro}</div>}
+      </div>}
+      {tarefa && tarefa.tipo==='checkin' && <div className="dortarefa">
+        <div className="dtico">📆</div>
+        <div className="dttit">{tarefa.rotulo}</div>
+        <div className="dttxt">Um minuto para registrar como foi a semana.</div>
+        <button className="btn" onClick={()=>nav({name:'checkin',studentId})}>Responder</button>
+      </div>}
+      {dores.length>0 && <React.Fragment>
+        <div className="secaotit">📍 O que você acompanha</div>
+        {dores.map(d=>(
+          <div key={d.id} className="dorcard">
+            <span className="dornome">{d.apelido||NOME_REGIAO_DOR[d.regiao]||d.regiao}</span>
+          </div>))}
+      </React.Fragment>}
+      {dores.length===0 && !tarefa &&
+        <div className="empty"><div className="big">🩺</div>
+          <p>Nada para registrar por enquanto.</p></div>}
+    </div>
+  </React.Fragment>);
+}
+/* nomes das regiões — espelha os ids gravados em dores.regiao */
+const NOME_REGIAO_DOR={
+  pescoco:'Pescoço', cervical:'Nuca / cervical',
+  ombro_d:'Ombro direito', ombro_e:'Ombro esquerdo',
+  trapezio_d:'Trapézio direito', trapezio_e:'Trapézio esquerdo',
+  peitoral:'Peito', abdome:'Barriga', toracica:'Meio das costas', lombar:'Lombar',
+  braco_d:'Braço direito', braco_e:'Braço esquerdo',
+  braco_pd:'Braço direito', braco_pe:'Braço esquerdo',
+  cotovelo_d:'Cotovelo direito', cotovelo_e:'Cotovelo esquerdo',
+  mao_d:'Punho / mão dir.', mao_e:'Punho / mão esq.',
+  mao_pd:'Punho / mão dir.', mao_pe:'Punho / mão esq.',
+  quadril:'Quadril', gluteo_d:'Glúteo direito', gluteo_e:'Glúteo esquerdo',
+  coxa_d:'Coxa direita', coxa_e:'Coxa esquerda',
+  post_coxa_d:'Atrás da coxa D', post_coxa_e:'Atrás da coxa E',
+  joelho_d:'Joelho direito', joelho_e:'Joelho esquerdo',
+  poplitea_d:'Atrás do joelho D', poplitea_e:'Atrás do joelho E',
+  perna_d:'Perna direita', perna_e:'Perna esquerda',
+  panturr_d:'Panturrilha D', panturr_e:'Panturrilha E',
+  torn_d:'Tornozelo / pé D', torn_e:'Tornozelo / pé E',
+  calc_d:'Calcanhar D', calc_e:'Calcanhar E'
+};
 /* ===== MOTOR DE PROGRESSO =====
    Alimenta o botão 📊 (durante a fase) e a retrospectiva (no fim).
    Tudo em memória, sobre dados já carregados — nenhuma consulta nova.
@@ -2507,7 +2785,7 @@ async function fetchDbFromSupabase(){
   if(!sb) return {ok:false, erro:'Sem conexão com o servidor.'};
   try{
     // o RLS já filtra: treinador vê tudo, aluno vê só o dele
-    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg, rPlan, rAcad, rAlAcad] = await Promise.all([
+    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg, rPlan, rAcad, rAlAcad, rSem, rDor] = await Promise.all([
       sb.from('alunos').select('id,nome,foto_url,academia,nascimento,fc_max').order('nome'),
       sb.from('treinos').select('id,aluno_id,nome,ordem,concluido_data,fase_id').order('ordem'),
       sb.from('exercicios').select('id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio,audio_url').order('ordem'),
@@ -2521,7 +2799,9 @@ async function fetchDbFromSupabase(){
       sb.from('vw_planejamento_doc').select('*')
         .order('data_emissao',{ascending:false}).order('posicao'),
       sb.from('academias').select('id,nome,cidade').eq('ativa',true).order('nome'),
-      sb.from('aluno_academias').select('aluno_id,academia_id,principal')
+      sb.from('aluno_academias').select('aluno_id,academia_id,principal'),
+      sb.from('v_semana_atual').select('*').maybeSingle(),
+      sb.from('dores').select('id,aluno_id,regiao,vista,apelido,ativa').eq('ativa',true)
     ]);
     const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error||rSess.error||rRel.error||rAce.error||rFas.error;
     if(err) return {ok:false, erro:err.message};
@@ -2529,6 +2809,8 @@ async function fetchDbFromSupabase(){
     if(rMod.error||rSeg.error) console.warn('[segmentacao]', (rMod.error||rSeg.error).message);
     if(rPlan.error) console.warn('[planejamento]', rPlan.error.message);
     if(rAcad.error||rAlAcad.error) console.warn('[academias]', (rAcad.error||rAlAcad.error).message);
+    // módulo de dor é opcional: se falhar, o app de treino segue inteiro
+    if(rSem.error||rDor.error) console.warn('[dor]', (rSem.error||rDor.error).message);
 
     const logsPorEx={};
     (rLogs.data||[]).forEach(l=>{
@@ -2590,6 +2872,13 @@ async function fetchDbFromSupabase(){
         .push({academiaId:x.academia_id, principal:!!x.principal});
     });
     const academias=(rAcad.data||[]).map(a=>({id:a.id, nome:a.nome, cidade:a.cidade||''}));
+    const doresPorAluno={};
+    (rDor.data||[]).forEach(d=>{
+      (doresPorAluno[d.aluno_id]=doresPorAluno[d.aluno_id]||[]).push({
+        id:d.id, regiao:d.regiao, vista:d.vista||'frente', apelido:d.apelido||''
+      });
+    });
+    const ciclo=(rSem.data&&!rSem.error)?rSem.data:null;
     const planPorAluno={};
     (rPlan.data||[]).forEach(x=>{
       const cur=planPorAluno[x.aluno_id];
@@ -2613,6 +2902,7 @@ async function fetchDbFromSupabase(){
       return {
         id:a.id, name:a.nome, foto: a.foto_url||'', academia: a.academia||'',
         academias: acadPorAluno[a.id]||[],
+        dores: doresPorAluno[a.id]||[],
         nascimento: a.nascimento||null, fcMax: a.fc_max||null,
         // vem da view; o app só LÊ — a troca de formato acontece na dashboard
         status: g.status||'ativo',
@@ -2627,7 +2917,7 @@ async function fetchDbFromSupabase(){
     const modalidades=(rMod.data||[]).map(m=>({
       id:m.id, nome:m.nome, familia:m.familia||'', ordem:m.ordem, cor:m.cor||''
     }));
-    return {ok:true, db:{students, modalidades, academias}};
+    return {ok:true, db:{students, modalidades, academias, ciclo}};
   }catch(e){
     return {ok:false, erro:String(e)};
   }
@@ -3419,6 +3709,12 @@ function App({auth}){
 
   let screen;
   if(view.name==='students') screen=<Students db={db} setDb={setDb} nav={nav}/>;
+  else if(view.name==='avaliacao') screen=(window.AvaliacaoDor
+    ? React.createElement(window.AvaliacaoDor.Componente,{
+        studentId:view.studentId, momento:view.momento||'extra', flash:flash,
+        onSair:()=>nav({name:'dor',studentId:view.studentId})})
+    : <div className="screen"><div className="empty"><p>Carregando…</p></div></div>);
+  else if(view.name==='dor') screen=<TelaDor db={db} nav={nav} studentId={view.studentId} flash={flash}/>;
   else if(view.name==='plano') screen=<PlanoFases db={db} nav={nav} studentId={view.studentId}/>;
   else if(view.name==='progresso') screen=<Progresso db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
   else if(view.name==='agenda') screen=<Agenda db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
@@ -3437,6 +3733,8 @@ function App({auth}){
     view.name==='treino'    ? ()=>nav({name:'student',studentId:view.studentId,faseId:view.deFase||null}) :
     view.name==='evolution' ? ()=>nav(view.back||{name:'student',studentId:view.studentId}) :
     view.name==='agenda'    ? ()=>nav({name:'student',studentId:view.studentId}) :
+    view.name==='avaliacao' ? ()=>nav({name:'dor',studentId:view.studentId}) :
+    view.name==='dor'       ? ()=>nav({name:'student',studentId:view.studentId}) :
     view.name==='plano'     ? ()=>nav({name:'student',studentId:view.studentId}) :
     view.name==='progresso' ? ()=>nav({name:'student',studentId:view.studentId}) :
     view.name==='student'   ? (view.faseId ? ()=>nav({name:'student',studentId:view.studentId})
@@ -3632,33 +3930,6 @@ function fraseDoDia(alunoId){
   // cola o último token (emoji) na palavra anterior: evita emoji órfão na quebra
   return f.replace(/\s+(\S+)$/,'\u00A0$1');
 }
-/* Frase de ABERTURA do pré-treino — ação + agora, sem instrução técnica.
-   A instrução é a frasedia, que vem logo abaixo; se as duas ensinarem algo,
-   competem entre si e o aluno não lê nenhuma.
-   Sem saudação por hora: o relógio do aparelho erra e "boa tarde" às 12h05
-   de quem começou 11h50 faz o app parecer bobo. */
-const FRASES_ABERTURA=[
-  "Bora que o treino vai começar! 💪🏼",
-  "Chegou a hora. Bora pra cima! 🔥",
-  "Tudo pronto? Então vamos 🚀",
-  "Treino de hoje te esperando 👊🏼",
-  "É agora. Bora fazer acontecer ⚡",
-  "Mais um dia, mais um treino 🏋️",
-  "Simbora, o treino já começou 🎯",
-  "Aquece que a gente começa já 🔄",
-  "Fone no ouvido e bora 🎧",
-  "Vamos que vamos 🙌🏼",
-];
-function fraseAbertura(alunoId){
-  const dias=Math.floor(Date.parse(todayISO()+'T00:00:00Z')/86400000);
-  // deslocamento PRÓPRIO (semente diferente da frasedia): senão as duas
-  // rodariam em par sincronizado e o aluno veria sempre a mesma dupla
-  let h=0; const a='ab:'+String(alunoId||'');
-  for(let i=0;i<a.length;i++){ h=((h<<5)-h+a.charCodeAt(i))|0; }
-  const n=FRASES_ABERTURA.length;
-  const f=FRASES_ABERTURA[(((dias+h)%n)+n)%n];
-  return f.replace(/\s+(\S+)$/,'\u00A0$1');
-}
 function primeiroNome(n){ return String(n||'').trim().split(/\s+/)[0] || ''; }
 function saudacao(){
   const h=new Date().getHours();
@@ -3712,21 +3983,6 @@ function acessoJaRegistrado(treinoId){
 function marcarAcessoLocal(treinoId){
   try{ if(LS_OK) window.localStorage.setItem(chaveAcesso(treinoId),'1'); }catch(e){}
 }
-/* ===== BRIEFING PRÉ-TREINO: quota de exibição =====
-   Mesmo padrão do acesso (chave com a data no nome, expira sozinha na virada
-   do dia), mas com CONTADOR em vez de flag: aparece 2x por treino por dia.
-   Duas, e não uma, porque é comum abrir pra conferir e voltar depois pra
-   treinar de fato — na única, a segunda vez (a que importa) vinha vazia. */
-const PT_MAX_DIA=2;
-function chaveBriefing(treinoId){ return 'idealis_brief_'+String(treinoId||'')+'_'+todayISO(); }
-function briefingVistas(treinoId){
-  try{ if(!LS_OK) return 0; return parseInt(window.localStorage.getItem(chaveBriefing(treinoId))||'0',10)||0; }
-  catch(e){ return 0; }
-}
-function briefingPodeMostrar(treinoId){ return briefingVistas(treinoId) < PT_MAX_DIA; }
-function briefingConsumir(treinoId){
-  try{ if(LS_OK) window.localStorage.setItem(chaveBriefing(treinoId), String(briefingVistas(treinoId)+1)); }catch(e){}
-}
 /* folha de relato do aluno: um exercício específico, ou o relato geral do treino */
 function RelatoSheet({exNome,inicial,fixadoInicial,onSalvar,onApagar,onClose}){
   const [txt,setTxt]=useState(inicial||'');
@@ -3767,14 +4023,35 @@ function RelatoSheet({exNome,inicial,fixadoInicial,onSalvar,onApagar,onClose}){
    - sem relatos hoje  -> pergunta aberta
    Em nenhum dos casos esta tela é o canal de entrega: as notas por exercício
    já foram enfileiradas no momento em que o aluno as escreveu. */
-function FimTreinoSheet({relatosHoje,nomePorEx,onConcluir,onClose}){
+function FimTreinoSheet({relatosHoje,nomePorEx,dores,onConcluir,onClose}){
   const tem=(relatosHoje||[]).length>0;
   const [aberto,setAberto]=useState(!tem);
   const [txt,setTxt]=useState('');
+  // semáforo: um toque por dor ativa. Opcional — quem pular, conclui igual.
+  const [semaforo,setSemaforo]=useState({});
   const limpo=txt.trim();
+  const comDor=(dores||[]).length>0;
   return (<div className="backdrop" onClick={onClose}>
     <div className="sheet" onClick={e=>e.stopPropagation()}>
       <div className="rlwrap">
+        {/* semáforo ANTES do relato: é a pergunta mais rápida e a mais
+            valiosa clinicamente. Um toque por dor, e é dispensável. */}
+        {comDor && <div className="semwrap">
+          <div className="semtit">Como sua dor se comportou hoje?</div>
+          {(dores||[]).map(d=>(
+            <div key={d.id} className="semdor">
+              <div className="semnome">{nomeDor(d)}</div>
+              <div className="sembtns">
+                {SEMAFORO.map(o=>(
+                  <button key={o.cor} type="button"
+                    className={'sembtn '+o.cor+(semaforo[d.id]===o.cor?' on':'')}
+                    onClick={()=>setSemaforo(m=>({...m,[d.id]:m[d.id]===o.cor?null:o.cor}))}>
+                    <span className="semico">{o.ico}</span>
+                    <span className="semrot">{o.rot}</span>
+                  </button>))}
+              </div>
+            </div>))}
+        </div>}
         <div className="rltit">{tem?'✍️ Você anotou hoje':'Como foi o treino de hoje?'}</div>
         {tem
           ? <React.Fragment>
@@ -3792,7 +4069,7 @@ function FimTreinoSheet({relatosHoje,nomePorEx,onConcluir,onClose}){
             placeholder="Ex: joelho incomodou na descida do agachamento"/>}
         <div className="rlbtns">
           {tem && !aberto && <button onClick={()=>setAberto(true)}>Relatar mais</button>}
-          <button className="ok" onClick={()=>onConcluir(limpo)}>
+          <button className="ok" onClick={()=>onConcluir(limpo, semaforo)}>
             {tem && !aberto ? 'Está tudo certo ✓' : 'Concluir treino'}
           </button>
         </div>
@@ -4346,6 +4623,8 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
           <button className="agbtn" onClick={()=>nav({name:'agenda',studentId})}>📅</button>
           <button className="agbtn" onClick={()=>nav({name:'progresso',studentId})}>📊</button>
           <button className="agbtn" onClick={()=>nav({name:'plano',studentId})}>🗺️</button>
+          <button className="agbtn dorbtn" onClick={()=>nav({name:'dor',studentId})}>🩺
+            {tarefaDaSemana(db,s) && <span className="agdot"></span>}</button>
         </div>
       </React.Fragment>}
       {/* HOME DO ALUNO: lista de fases. Os treinos ficam DENTRO de cada uma —
@@ -5678,98 +5957,6 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
       </button>}
     </div></div>);
 }
-/* respeita "reduzir movimento" do sistema também no JS: o CSS sozinho não
-   segura o contador, que é setState em rAF */
-function movimentoReduzido(){
-  try{ return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
-  catch(e){ return false; }
-}
-/* Número que sobe de `de` até `para`. É a mensagem do card virando movimento:
-   o peso literalmente cresce na frente do aluno. Uma vez só, ~620ms. */
-function NumeroSobe({de,para,delay}){
-  const parado=movimentoReduzido();
-  const [v,setV]=useState(parado?para:de);
-  useEffect(()=>{
-    if(parado){ setV(para); return; }
-    let raf=null, t0=null;
-    const dur=620;
-    const passo=(ts)=>{
-      if(t0==null) t0=ts;
-      const p=Math.min(1,(ts-t0)/dur);
-      const e=1-Math.pow(1-p,3);              // easeOutCubic: rápido e desacelera
-      setV(de+(para-de)*e);
-      if(p<1) raf=requestAnimationFrame(passo); else setV(para);
-    };
-    // começa depois que o card já entrou na cascata, senão anima escondido
-    const tid=setTimeout(()=>{ raf=requestAnimationFrame(passo); }, delay||0);
-    return ()=>{ clearTimeout(tid); if(raf) cancelAnimationFrame(raf); };
-  },[de,para,delay,parado]);
-  // 1 casa, sem ".0" pendurado: fecha idêntico ao que o Progresso escreve
-  const r=Math.round(v*10)/10;
-  return <React.Fragment>{String(r)}</React.Fragment>;
-}
-/* ===== BRIEFING PRÉ-TREINO =====
-   Card no topo do treino, não tela cheia bloqueante: o aluno já decidiu
-   treinar, "Começar" no meio do caminho é imposto.
-   O que ele mostra é PROSPECTIVO (o que dá pra fazer hoje). Dor e relato de
-   sessão passada ficam de fora de propósito — ler a própria dor logo antes
-   de executar o movimento é priming de expectativa, nocebo puro.
-   Sugestão de carga é o `podem` do Progresso filtrado só por este treino:
-   mesma fórmula, mesma copy, mesmo botão "i". Se cada tela explicasse do
-   próprio jeito, o aluno acharia que são dois indicadores diferentes. */
-function PreTreino({aluno,treino,onFechar}){
-  const [info,setInfo]=useState(false);
-  // no máximo 3: no Progresso a lista inteira faz sentido (tela de análise);
-  // antes do treino, seis sugestões viram lista de tarefa e ele não faz nenhuma
-  const sugestoes=React.useMemo(()=>(treino.exercises||[])
-    .map(ex=>podeAumentar(ex, allLogsOfExercise(aluno, ex.name, ex.exerciseId)))
-    .filter(Boolean)
-    .sort((a,b)=>b.atual-a.atual)
-    .slice(0,3),[treino.exercises, aluno]);
-  return (<div className="ptwrap">
-    <button className="ptfechar" onClick={onFechar} aria-label="Fechar">✕</button>
-    <div className="ptabertura">{fraseAbertura(aluno.id)}</div>
-    <div className="frasedia">{fraseDoDia(aluno.id)}</div>
-    {/* sem sugestão: some o bloco inteiro. "Nenhuma sugestão hoje" é
-        informação vazia ocupando tela. */}
-    {sugestoes.length>0 && <div className="ptsec">
-      <div className="ptsectit">
-        <span>🚀 Dá pra aumentar o peso?</span>
-        <button className="infobtn" onClick={()=>setInfo(v=>!v)}
-          aria-label="Como isso é calculado">i</button>
-      </div>
-      {info && <div className="infobox">
-        Essa estimativa vem de uma fórmula que o Matheus desenvolveu.
-        Ela cruza o seu histórico de carga, quantas repetições você fez em
-        relação ao que foi prescrito, o esforço que você registrou e se houve
-        dor no exercício.
-      </div>}
-      <div className="progaviso">
-        Pelo histórico, acho que você pode tentar aumentar o peso nesses
-        exercícios (lembre-se da execução correta) 👇🏼 🙏🏼 ✅
-      </div>
-      {sugestoes.map((x,i)=>{
-        // cascata continua pelos cards; o número só arranca depois que o
-        // card dele já apareceu, senão a contagem roda escondida
-        const atraso=400+i*80;
-        return (
-        <div key={x.nome} className="progcard" style={{animationDelay:(atraso/1000)+'s'}}>
-          <div className="progtopo">
-            <span className="prognome">{x.nome}</span>
-            <span className="progseta">→</span>
-          </div>
-          <div className="progpeso">
-            <span className="pgatual">{x.atual}kg</span>
-            <span className="pgsug"><NumeroSobe de={x.atual} para={x.sugerida} delay={atraso+180}/>kg</span>
-          </div>
-          <div className="progpq">
-            {x.sessoes} {x.sessoes===1?'sessão':'sessões'} fechando {x.topo} repetições
-          </div>
-        </div>);
-      })}
-    </div>}
-  </div>);
-}
 function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,seriesFeitas,setSeriesFeitas,catalogoVer,cardio}){
   const s=db.students.find(x=>x.id===studentId);
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
@@ -5778,6 +5965,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
   const [relatando,setRelatando]=useState(null); // {exId|null, exNome|null, atual}
   const [fixAberto,setFixAberto]=useState({});   // exId -> anotações fixadas expandidas
   const [finalizando,setFinalizando]=useState(false);
+  const [retroDor,setRetroDor]=useState(null);   // {dataRef} da retrospectiva pendente
   // --- conclusão de treino: só confirmação MANUAL do aluno ---
   const abertoEmRef = React.useRef(marcarAberto(treinoId));
   useEffect(()=>{ abertoEmRef.current=marcarAberto(treinoId); },[treinoId]);
@@ -5785,20 +5973,6 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
   // cronômetro da sessão — o tick vive no CronoBadge, não aqui
   const [inicio,setInicio]=useState(()=>lerInicio(treinoId));
   useEffect(()=>{ setInicio(lerInicio(treinoId)); },[treinoId]);
-  // ---- briefing pré-treino: decide UMA vez por treino, e só então gasta quota ----
-  const [mostrarBrief,setMostrarBrief]=useState(false);
-  const briefRef=React.useRef(null); // qual treino já foi decidido
-  useEffect(()=>{
-    if(briefRef.current===treinoId) return;     // já resolvido: não gasta de novo
-    if(!t || !(t.exercises||[]).length) return; // treino ainda vindo do sync: espera
-    briefRef.current=treinoId;
-    const concluidoHoje=(t.sessoes||[]).some(x=>x.data===todayISO() && x.origem!=='inferido');
-    const jaComecou=(t.exercises||[]).some(ex=>(seriesFeitas[ex.id]||0)>0);
-    // quem já fechou o treino hoje, ou já está no meio dele, não quer briefing
-    const pode = ehAluno && !concluidoHoje && !jaComecou && briefingPodeMostrar(treinoId);
-    if(pode) briefingConsumir(treinoId);
-    setMostrarBrief(!!pode);
-  },[treinoId, t, ehAluno]);
   // tela preta era isto: `return null` sem nada renderizado. Se o treino
   // sumiu (fase apagada, sync ainda em curso), mostre e ofereça a saída.
   if(!t) return (<React.Fragment>
@@ -5907,6 +6081,28 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
     setRelatando(null);
     flash('Anotação removida');
   };
+  /* RETROSPECTIVA: pergunta sobre a última sessão CONCLUÍDA, na abertura
+     do treino seguinte. Só com dor ativa, só uma vez por sessão de
+     referência, e nunca no mesmo dia do treino que a originou. */
+  useEffect(()=>{
+    if(!ehAluno) return;
+    const ds=(s.dores||[]); if(!ds.length) return;
+    const manuais=(t.sessoes||[]).filter(x=>x.origem==='manual' && x.data<todayISO());
+    if(!manuais.length) return;
+    const ref=manuais[manuais.length-1].data;
+    try{ if(LS_OK && window.localStorage.getItem(chaveRetro(treinoId,ref))) return; }catch(e){}
+    const id=setTimeout(()=>setRetroDor({dataRef:ref}), 900);
+    return ()=>clearTimeout(id);
+  },[ehAluno,treinoId]);
+  const fecharRetro=(gravou,esc)=>{
+    const ref=retroDor?retroDor.dataRef:null;
+    if(ref){
+      // marca como perguntado mesmo se ele pular: não insistir no mesmo dia
+      try{ if(LS_OK) window.localStorage.setItem(chaveRetro(treinoId,ref),'1'); }catch(e){}
+      if(gravou){ gravarRetrospectiva(studentId, ref, esc); flash('Obrigado! 🙏🏼'); }
+    }
+    setRetroDor(null);
+  };
   // ---- ACESSO AO TREINO: factual, substitui a antiga sessão 'inferido' ----
   useEffect(()=>{
     if(!ehAluno) return;
@@ -5928,8 +6124,9 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
     if(treinoConcluidoHoje) return; // já confirmado manualmente
     setFinalizando(true);           // a tela de fim decide o que perguntar
   };
-  const confirmarConclusao=(textoGeral)=>{
-    if(textoGeral) salvarRelato(null,textoGeral,false); // relato geral não fixa: não pertence a um exercício
+  const confirmarConclusao=(textoGeral, semaforo)=>{
+    if(textoGeral) salvarRelato(null,textoGeral,false);
+    if(semaforo) gravarSemaforo(studentId, treinoId, semaforo); // relato geral não fixa: não pertence a um exercício
     setFinalizando(false);
     // duração vem do cronômetro, que hoje morre no zerarCrono — captura ANTES
     const dur = inicio ? Math.round((Date.now()-inicio)/60000) : null;
@@ -6081,9 +6278,6 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
       onProgresso={()=>{ setCelebrando(false); nav({name:'progresso',studentId}); }}
       onHome={fecharCelebracao}/>}
     <div className="screen">
-      {/* some sozinho na 1ª série: o briefing já cumpriu o papel dele */}
-      {mostrarBrief && !(t.exercises||[]).some(ex=>(seriesFeitas[ex.id]||0)>0) &&
-        <PreTreino aluno={s} treino={t} onFechar={()=>setMostrarBrief(false)}/>}
       {(t.exercises||[]).length>0 && (()=>{
         const te=tempoEstimado(t.exercises); if(!te) return null;
         return <div className="tempoest">
@@ -6341,7 +6535,10 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
       onSalvar={(txt,fix)=>salvarRelato(relatando.exId,txt,fix)}
       onApagar={relatando.atual?()=>apagarRelato(relatando.atual.id):null}
       onClose={()=>setRelatando(null)}/>}
+    {retroDor && ehAluno && <RetroSheet dores={s.dores||[]} dataRef={retroDor.dataRef}
+      onResponder={(esc)=>fecharRetro(true,esc)} onPular={()=>fecharRetro(false)}/>}
     {finalizando && <FimTreinoSheet relatosHoje={relatosHoje} nomePorEx={nomePorEx}
+      dores={ehAluno?(s.dores||[]):[]}
       onConcluir={confirmarConclusao} onClose={()=>setFinalizando(false)}/>}
     {registering && <RegisterSheet exName={registering.name} lastLog={lastLogOfExercise(s,registering.name,registering.exerciseId)} onSave={saveLog} onClose={()=>setRegistering(null)} academia={s.academia} exercicio={registering} historico={allLogsOfExercise(s,registering.name,registering.exerciseId)} onRenomearVariante={(a,n,b)=>renomearVarTreino(registering,a,n,b)} alunoId={studentId}/>}
   </React.Fragment>);
