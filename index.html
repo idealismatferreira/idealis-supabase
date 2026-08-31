@@ -2058,12 +2058,32 @@ async function enviarAvaliacao(payload){
     return data||{ok:false, erro:'resposta vazia'};
   }catch(e){ return {ok:false, erro:String(e)}; }
 }
-/* o que a semana atual pede — alimenta o badge do chip */
+/* O que a semana atual pede — alimenta o badge do chip.
+
+   Três regras, nesta ordem:
+   1. SEM dor em acompanhamento -> avaliação, sempre. Check-in sem dor
+      não tem o que registrar; é justamente pela avaliação que a pessoa
+      passa a acompanhar alguma coisa.
+   2. Marco (semanas 1, 4 e 8) já respondido -> não insiste.
+   3. Semana comum com dor ativa -> check-in. */
 function tarefaDaSemana(db, s){
   const c=db.ciclo; if(!c) return null;
+  const temDor=((s&&s.dores)||[]).length>0;
+  const feitas=(s&&s.avaliacoes)||[];
   const marco=MARCO_DA_SEMANA[c.semana];
-  if(marco) return {tipo:'avaliacao', momento:marco, semana:c.semana,
-                    rotulo:'Avaliação da semana '+c.semana};
+
+  if(!temDor){
+    const m=marco||'extra';
+    // só oferece se ainda não respondeu esse marco
+    if(marco && feitas.some(v=>v.momento===marco)) return null;
+    return {tipo:'avaliacao', momento:m, semana:c.semana,
+            rotulo: marco ? ('Avaliação da semana '+c.semana) : 'Avaliação inicial'};
+  }
+  if(marco){
+    if(feitas.some(v=>v.momento===marco)) return null;
+    return {tipo:'avaliacao', momento:marco, semana:c.semana,
+            rotulo:'Avaliação da semana '+c.semana};
+  }
   return {tipo:'checkin', semana:c.semana, rotulo:'Check-in da semana '+c.semana};
 }
 /* ===== CHECK-IN SEMANAL =====
@@ -2935,7 +2955,7 @@ async function fetchDbFromSupabase(){
   if(!sb) return {ok:false, erro:'Sem conexão com o servidor.'};
   try{
     // o RLS já filtra: treinador vê tudo, aluno vê só o dele
-    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg, rPlan, rAcad, rAlAcad, rSem, rDor] = await Promise.all([
+    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg, rPlan, rAcad, rAlAcad, rSem, rDor, rAval] = await Promise.all([
       sb.from('alunos').select('id,nome,foto_url,academia,nascimento,fc_max').order('nome'),
       buscarTudo('treinos','id,aluno_id,nome,ordem,concluido_data,fase_id','ordem'),
       buscarTudo('exercicios','id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio,audio_url','ordem'),
@@ -2951,7 +2971,8 @@ async function fetchDbFromSupabase(){
       sb.from('academias').select('id,nome,cidade').eq('ativa',true).order('nome'),
       sb.from('aluno_academias').select('aluno_id,academia_id,principal'),
       sb.from('v_semana_atual').select('*').maybeSingle(),
-      sb.from('dores').select('id,aluno_id,regiao,vista,apelido,ativa').eq('ativa',true)
+      sb.from('dores').select('id,aluno_id,regiao,vista,apelido,ativa').eq('ativa',true),
+      sb.from('avaliacoes').select('id,aluno_id,momento,data,status').eq('status','respondida')
     ]);
     const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error||rSess.error||rRel.error||rAce.error||rFas.error;
     if(err) return {ok:false, erro:err.message};
@@ -2960,7 +2981,8 @@ async function fetchDbFromSupabase(){
     if(rPlan.error) console.warn('[planejamento]', rPlan.error.message);
     if(rAcad.error||rAlAcad.error) console.warn('[academias]', (rAcad.error||rAlAcad.error).message);
     // módulo de dor é opcional: se falhar, o app de treino segue inteiro
-    if(rSem.error||rDor.error) console.warn('[dor]', (rSem.error||rDor.error).message);
+    if(rSem.error||rDor.error||rAval.error)
+      console.warn('[dor]', (rSem.error||rDor.error||rAval.error).message);
 
     const logsPorEx={};
     (rLogs.data||[]).forEach(l=>{
@@ -3028,6 +3050,11 @@ async function fetchDbFromSupabase(){
         id:d.id, regiao:d.regiao, vista:d.vista||'frente', apelido:d.apelido||''
       });
     });
+    const avalPorAluno={};
+    (rAval.data||[]).forEach(v=>{
+      (avalPorAluno[v.aluno_id]=avalPorAluno[v.aluno_id]||[]).push({
+        id:v.id, momento:v.momento, data:v.data});
+    });
     const ciclo=(rSem.data&&!rSem.error)?rSem.data:null;
     const planPorAluno={};
     (rPlan.data||[]).forEach(x=>{
@@ -3053,6 +3080,7 @@ async function fetchDbFromSupabase(){
         id:a.id, name:a.nome, foto: a.foto_url||'', academia: a.academia||'',
         academias: acadPorAluno[a.id]||[],
         dores: doresPorAluno[a.id]||[],
+        avaliacoes: avalPorAluno[a.id]||[],
         nascimento: a.nascimento||null, fcMax: a.fc_max||null,
         // vem da view; o app só LÊ — a troca de formato acontece na dashboard
         status: g.status||'ativo',
