@@ -457,7 +457,11 @@
   .dttxt{font-size:12.5px;color:var(--muted);line-height:1.5;margin:6px 0 15px}
   .dorcard{margin:0 4px 8px;padding:13px 15px;border-radius:12px;background:var(--surface);
     border:1px solid var(--line);border-left:3px solid var(--cyan)}
-  .dornome{font-size:14px;font-weight:700;color:var(--text)}
+  .dorcard{display:flex;align-items:center;gap:10px}
+  .dornome{flex:1;min-width:0;font-size:14px;font-weight:700;color:var(--text)}
+  .dorfim{flex:0 0 auto;background:none;border:none;color:var(--muted);font-family:inherit;
+    font-size:11.5px;text-decoration:underline;cursor:pointer;padding:6px 2px;
+    -webkit-tap-highlight-color:transparent}
   .duplobtn{display:flex;gap:10px;margin:2px 0 16px}
   .duplobtn .agbtn{flex:1;margin:0;font-size:19px;padding:13px 6px;min-width:0}
   .agbtn{width:100%;margin:2px 0 16px;padding:13px;border-radius:13px;border:1px solid var(--line);
@@ -2062,11 +2066,114 @@ function tarefaDaSemana(db, s){
                     rotulo:'Avaliação da semana '+c.semana};
   return {tipo:'checkin', semana:c.semana, rotulo:'Check-in da semana '+c.semana};
 }
+/* ===== CHECK-IN SEMANAL =====
+   O ÚNICO momento de quantificação numérica do dia a dia. Semáforo e
+   retrospectiva são ordinais de propósito; aqui o aluno tem cabeça para
+   dar nota, então é onde as escalas 0-10 moram.
+   Termina mostrando o gráfico das últimas semanas — a devolutiva imediata
+   é o que sustenta a adesão. */
+function CheckinSemanal({db,nav,studentId,flash}){
+  const s=db.students.find(x=>x.id===studentId);
+  const [sel,setSel]=useState([]);
+  const [vals,setVals]=useState({});
+  const [enviando,setEnviando]=useState(false);
+  const [pronto,setPronto]=useState(false);
+  if(!s) return <div className="screen"><div className="empty"><p>Aluno não encontrado.</p></div></div>;
+  const dores=s.dores||[];
+  // segunda-feira da semana corrente — chave de agrupamento
+  const semanaRef=(()=>{
+    const d=new Date(todayISO()+'T00:00:00');
+    d.setDate(d.getDate()-((d.getDay()+6)%7));
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  })();
+  const alterna=(id)=>setSel(a=>a.indexOf(id)<0?a.concat([id]):a.filter(x=>x!==id));
+  const setV=(id,campo,n)=>setVals(m=>({...m,[id]:{...(m[id]||{}),[campo]:n}}));
+  const completo=sel.length>0 && sel.every(id=>(vals[id]||{}).dor_media!=null);
+  const enviar=()=>{
+    setEnviando(true);
+    sel.forEach(id=>{
+      const v=vals[id]||{};
+      enqueueOp({tipo:'insert',tabela:'checkins_semanais',dados:{
+        id:uid(), aluno_id:studentId, dor_id:id, semana_ref:semanaRef,
+        dor_media:v.dor_media, limitacao:(v.limitacao!=null?v.limitacao:null)
+      }});
+    });
+    setEnviando(false); setPronto(true); flash('Check-in registrado ✓');
+  };
+  if(pronto) return (<React.Fragment>
+    <TopBar title="Check-in" sub="Semana registrada"
+      onBack={()=>nav({name:'dor',studentId})}/>
+    <div className="screen"><div className="avfim">
+      <div className="avfimico">✅</div>
+      <div className="avfimtit">Registrado</div>
+      <div className="avfimtxt">Obrigado. Isso ajuda o Matheus a ajustar seu treino.</div>
+      <button className="btn" onClick={()=>nav({name:'dor',studentId})}>Voltar</button>
+    </div></div>
+  </React.Fragment>);
+  return (<React.Fragment>
+    <TopBar title="Check-in da semana"
+      sub={db.ciclo?('Semana '+db.ciclo.semana+' de '+db.ciclo.semanas):''}
+      onBack={()=>nav({name:'dor',studentId})}/>
+    <div className="screen avscreen">
+      {dores.length===0
+        ? <div className="empty"><div className="big">🩺</div>
+            <p>Você ainda não tem nenhuma dor em acompanhamento.</p></div>
+        : <React.Fragment>
+            <div className="avpasso">
+              <div className="avptit">Como foi a sua semana?</div>
+              <div className="avpsub">Escolha o que quer registrar. Um minuto e acabou.</div>
+              <div className="avlista">
+                {dores.map(d=>{
+                  const on=sel.indexOf(d.id)>=0;
+                  return (<button key={d.id} type="button" className={'avopt'+(on?' on':'')}
+                    onClick={()=>alterna(d.id)}>
+                    <span className="avcheck">{on?'✓':''}</span>
+                    <span>{nomeDor(d)}</span>
+                  </button>);
+                })}
+              </div>
+            </div>
+            {sel.map(id=>{
+              const d=dores.find(x=>x.id===id); if(!d) return null;
+              const v=vals[id]||{};
+              return (<div key={id} className="avbloco">
+                <div className="avlab">{nomeDor(d)}</div>
+                <EscalaApp rotulo="Dor média na semana" valor={v.dor_media}
+                  min="Sem dor" max="Pior dor" onChange={n=>setV(id,'dor_media',n)}/>
+                <EscalaApp rotulo="O quanto atrapalhou" valor={v.limitacao}
+                  min="Nada" max="Muito" onChange={n=>setV(id,'limitacao',n)}/>
+              </div>);
+            })}
+            {sel.length>0 && <div className="avnav">
+              <button className="btn" disabled={!completo||enviando} onClick={enviar}>
+                {enviando?'Enviando…':'Registrar'}</button>
+            </div>}
+          </React.Fragment>}
+    </div>
+  </React.Fragment>);
+}
+/* escala 0-10 reutilizável dentro do bundle principal (a do avaliacao.js
+   vive noutro arquivo e não é acessível aqui) */
+function EscalaApp({rotulo,valor,min,max,onChange}){
+  return (<div className="avescala">
+    <div className="avesctopo">
+      <span className="avesclab">{rotulo}</span>
+      {valor!=null && <span className="avescval">{valor}</span>}
+    </div>
+    <div className="avescbtns">
+      {[0,1,2,3,4,5,6,7,8,9,10].map(n=>(
+        <button key={n} type="button" className={'avescbtn'+(valor===n?' on':'')}
+          onClick={()=>onChange(n)}>{n}</button>))}
+    </div>
+    <div className="avescanc"><span>{min||'Nada'}</span><span>{max||'Máximo'}</span></div>
+  </div>);
+}
 /* ===== TELA "DOR" ===== */
-function TelaDor({db,nav,studentId,flash}){
+function TelaDor({db,setDb,nav,studentId,flash}){
   const s=db.students.find(x=>x.id===studentId);
   const [carregando,setCarregando]=useState(false);
   const [erro,setErro]=useState('');
+  const [encerrar,setEncerrar]=useState(null);
   if(!s) return <div className="screen"><div className="empty"><p>Aluno não encontrado.</p></div></div>;
   const tarefa=tarefaDaSemana(db,s);
   const dores=s.dores||[];
@@ -2100,8 +2207,32 @@ function TelaDor({db,nav,studentId,flash}){
         {dores.map(d=>(
           <div key={d.id} className="dorcard">
             <span className="dornome">{d.apelido||NOME_REGIAO_DOR[d.regiao]||d.regiao}</span>
+            {/* encerrar não apaga: marca ativa=false e guarda resolvida_em.
+                A série histórica continua inteira, e ela some do semáforo
+                e da retrospectiva. */}
+            <button className="dorfim" onClick={()=>setEncerrar(d)}>não sinto mais</button>
           </div>))}
       </React.Fragment>}
+      {encerrar && <div className="dlgback" onClick={()=>setEncerrar(null)}>
+        <div className="dlg" onClick={e=>e.stopPropagation()}>
+          <div className="dlgico">🎉</div>
+          <div className="dlgtit">Encerrar acompanhamento?</div>
+          <div className="dlgtxt">
+            <b>{nomeDor(encerrar)}</b> sai das perguntas do dia a dia.<br/>
+            Seu histórico continua guardado.
+          </div>
+          <div className="dlgacts">
+            <button className="btn ghost" onClick={()=>setEncerrar(null)}>Cancelar</button>
+            <button className="btn" onClick={()=>{
+              const id=encerrar.id;
+              setDb(dd=>({...dd,students:dd.students.map(x=>x.id===studentId
+                ? {...x, dores:(x.dores||[]).filter(y=>y.id!==id)} : x)}));
+              enqueueOp({tipo:'update',tabela:'dores',id,
+                dados:{ativa:false, resolvida_em:todayISO()}});
+              setEncerrar(null); flash('Acompanhamento encerrado');
+            }}>Encerrar</button>
+          </div>
+        </div></div>}
       {dores.length===0 && !tarefa &&
         <div className="empty"><div className="big">🩺</div>
           <p>Nada para registrar por enquanto.</p></div>}
@@ -3733,7 +3864,8 @@ function App({auth}){
         studentId:view.studentId, momento:view.momento||'extra', flash:flash,
         onSair:()=>nav({name:'dor',studentId:view.studentId})})
     : <div className="screen"><div className="empty"><p>Carregando…</p></div></div>);
-  else if(view.name==='dor') screen=<TelaDor db={db} nav={nav} studentId={view.studentId} flash={flash}/>;
+  else if(view.name==='dor') screen=<TelaDor db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash}/>;
+  else if(view.name==='checkin') screen=<CheckinSemanal db={db} nav={nav} studentId={view.studentId} flash={flash}/>;
   else if(view.name==='plano') screen=<PlanoFases db={db} nav={nav} studentId={view.studentId}/>;
   else if(view.name==='progresso') screen=<Progresso db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
   else if(view.name==='agenda') screen=<Agenda db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
@@ -3778,7 +3910,11 @@ function App({auth}){
         strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20.5 14.5A8.6 8.6 0 0 1 9.5 3.5a8.6 8.6 0 1 0 11 11z"/></svg></span>
     </button>}
-    {screen}
+    {screen || <div className="screen"><div className="empty"><div className="big">🧭</div>
+      <p>Não encontrei essa tela.</p>
+      <button className="btn" style={{marginTop:14}}
+        onClick={()=>nav(ehAluno?{name:'student',studentId:meuAlunoId}:{name:'students'})}>
+        Voltar ao início</button></div></div>}
     <NuvemBadge carga={carga} fila={fila} ehAluno={ehAluno} onRetry={()=>{flushOps(true);recarregar();}}/>
     <RestTimerOverlay timer={timer} voltar={voltarDaTela}/>
     {cardio.ativo && <CardioOverlay cardio={{...cardio, fcMax:fcMaxDoAlunoEmFoco}}/>}
