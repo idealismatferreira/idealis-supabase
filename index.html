@@ -2036,6 +2036,13 @@ function carregarAvaliacao(){
 }
 /* marcos: semanas 1, 4 e 8 do ciclo pedem avaliação completa */
 const MARCO_DA_SEMANA={1:'D0', 4:'D28', 8:'D56'};
+/* `avaliacoes.momento` tem CHECK (momento ~ '^D[0-9]{1,3}$'): só aceita
+   D seguido de 1 a 3 dígitos. Avaliação fora dos marcos vira D + dias
+   corridos do ciclo — válido pela regra e ainda registra QUANDO foi feita. */
+function momentoAvulso(ciclo){
+  const d=(ciclo && ciclo.dias_corridos!=null) ? ciclo.dias_corridos : 0;
+  return 'D'+Math.max(0, Math.min(999, Math.round(d)));
+}
 /* rascunho local — obrigatório num formulário de 8 minutos: se o app fechar
    no meio, ele volta de onde parou em vez de perder tudo */
 const chaveRascunho=(alunoId,momento)=>'idealis_aval_'+alunoId+'_'+momento;
@@ -2073,7 +2080,7 @@ function tarefaDaSemana(db, s){
   const marco=MARCO_DA_SEMANA[c.semana];
 
   if(!temDor){
-    const m=marco||'extra';
+    const m=marco||momentoAvulso(c);
     // só oferece se ainda não respondeu esse marco
     if(marco && feitas.some(v=>v.momento===marco)) return null;
     return {tipo:'avaliacao', momento:m, semana:c.semana,
@@ -2200,7 +2207,8 @@ function TelaDor({db,setDb,nav,studentId,flash}){
   const abrirAvaliacao=async ()=>{
     setCarregando(true); setErro('');
     try{ await carregarAvaliacao();
-         nav({name:'avaliacao', studentId, momento:(tarefa?tarefa.momento:'extra')}); }
+         nav({name:'avaliacao', studentId,
+              momento:(tarefa?tarefa.momento:momentoAvulso(db.ciclo))}); }
     catch(e){ setErro('Não consegui carregar. Verifique a conexão e tente de novo.'); }
     setCarregando(false);
   };
@@ -3889,7 +3897,7 @@ function App({auth}){
   if(view.name==='students') screen=<Students db={db} setDb={setDb} nav={nav}/>;
   else if(view.name==='avaliacao') screen=(window.AvaliacaoDor
     ? React.createElement(window.AvaliacaoDor.Componente,{
-        studentId:view.studentId, momento:view.momento||'extra', flash:flash,
+        studentId:view.studentId, momento:view.momento||momentoAvulso(db.ciclo), flash:flash,
         onSair:()=>nav({name:'dor',studentId:view.studentId})})
     : <div className="screen"><div className="empty"><p>Carregando…</p></div></div>);
   else if(view.name==='dor') screen=<TelaDor db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash}/>;
