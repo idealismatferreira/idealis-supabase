@@ -2099,7 +2099,7 @@ function tarefaDaSemana(db, s){
    dar nota, então é onde as escalas 0-10 moram.
    Termina mostrando o gráfico das últimas semanas — a devolutiva imediata
    é o que sustenta a adesão. */
-function CheckinSemanal({db,nav,studentId,flash}){
+function CheckinSemanal({db,nav,studentId,flash,recarregar}){
   const s=db.students.find(x=>x.id===studentId);
   const [sel,setSel]=useState([]);
   const [vals,setVals]=useState({});
@@ -2126,6 +2126,7 @@ function CheckinSemanal({db,nav,studentId,flash}){
       }});
     });
     setEnviando(false); setPronto(true); flash('Check-in registrado ✓');
+    if(recarregar) recarregar();   // o db em memória não sabe do que acabou de subir
   };
   if(pronto) return (<React.Fragment>
     <TopBar title="Check-in" sub="Semana registrada"
@@ -2134,7 +2135,7 @@ function CheckinSemanal({db,nav,studentId,flash}){
       <div className="avfimico">✅</div>
       <div className="avfimtit">Registrado</div>
       <div className="avfimtxt">Obrigado. Isso ajuda o Matheus a ajustar seu treino.</div>
-      <button className="btn" onClick={()=>nav({name:'dor',studentId})}>Voltar</button>
+      <button className="btn" onClick={()=>nav({name:'student',studentId})}>Voltar ao início</button>
     </div></div>
   </React.Fragment>);
   return (<React.Fragment>
@@ -3898,10 +3899,14 @@ function App({auth}){
   else if(view.name==='avaliacao') screen=(window.AvaliacaoDor
     ? React.createElement(window.AvaliacaoDor.Componente,{
         studentId:view.studentId, momento:view.momento||momentoAvulso(db.ciclo), flash:flash,
-        onSair:()=>nav({name:'dor',studentId:view.studentId})})
+        // sair pelo topo volta para a tela Dor; CONCLUIR volta para o início.
+        // Em ambos recarrega: o RPC gravou no banco, mas o `db` em memória
+        // ainda achava que a avaliação estava pendente.
+        onSair:()=>{ recarregar(); nav({name:'dor',studentId:view.studentId}); },
+        onConcluir:()=>{ recarregar(); nav({name:'student',studentId:view.studentId}); }})
     : <div className="screen"><div className="empty"><p>Carregando…</p></div></div>);
   else if(view.name==='dor') screen=<TelaDor db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash}/>;
-  else if(view.name==='checkin') screen=<CheckinSemanal db={db} nav={nav} studentId={view.studentId} flash={flash}/>;
+  else if(view.name==='checkin') screen=<CheckinSemanal db={db} nav={nav} studentId={view.studentId} flash={flash} recarregar={recarregar}/>;
   else if(view.name==='plano') screen=<PlanoFases db={db} nav={nav} studentId={view.studentId}/>;
   else if(view.name==='progresso') screen=<Progresso db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
   else if(view.name==='agenda') screen=<Agenda db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
