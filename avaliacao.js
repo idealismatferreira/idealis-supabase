@@ -247,6 +247,8 @@ function Avaliacao(props){
   var studentId = props.studentId;
   var momento = props.momento || "extra";
   var onSair = props.onSair;
+  // concluir tem destino próprio: a jornada acabou, volta ao início do app
+  var onConcluir = props.onConcluir || props.onSair;
   var flash = props.flash;
 
   var rasc = lerRascunho(studentId, momento) || {};
@@ -366,7 +368,7 @@ function Avaliacao(props){
         e("div",{className:"avfimtit"},"Avaliação enviada"),
         e("div",{className:"avfimtxt"},
           "Obrigado por responder com calma. O Matheus vai olhar isso antes do próximo ajuste."),
-        e("button",{className:"btn", onClick:onSair},"Voltar")));
+        e("button",{className:"btn", onClick:onConcluir},"Voltar ao início")));
   }
 
   /* ----- corpo ----- */
