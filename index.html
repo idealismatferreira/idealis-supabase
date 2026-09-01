@@ -457,6 +457,11 @@
   .dttxt{font-size:12.5px;color:var(--muted);line-height:1.5;margin:6px 0 15px}
   .dorcard{margin:0 4px 8px;padding:13px 15px;border-radius:12px;background:var(--surface);
     border:1px solid var(--line);border-left:3px solid var(--cyan)}
+  .dorfeito{display:flex;align-items:center;gap:11px;margin:0 4px 18px;padding:15px 16px;
+    border-radius:14px;background:var(--lime-bg);border:1px solid var(--lime-line);
+    border-left:3px solid var(--lime)}
+  .dfico{font-size:20px;line-height:1;flex:0 0 auto}
+  .dftxt{font-size:14px;font-weight:700;color:var(--text)}
   .dorcard{display:flex;align-items:center;gap:10px}
   .dornome{flex:1;min-width:0;font-size:14px;font-weight:700;color:var(--text)}
   .dorfim{flex:0 0 auto;background:none;border:none;color:var(--muted);font-family:inherit;
@@ -2039,6 +2044,16 @@ const MARCO_DA_SEMANA={1:'D0', 4:'D28', 8:'D56'};
 /* `avaliacoes.momento` tem CHECK (momento ~ '^D[0-9]{1,3}$'): só aceita
    D seguido de 1 a 3 dígitos. Avaliação fora dos marcos vira D + dias
    corridos do ciclo — válido pela regra e ainda registra QUANDO foi feita. */
+/* segunda-feira da semana corrente — mesma chave usada em checkins_semanais */
+function semanaRefAtual(){
+  const d=new Date(todayISO()+'T00:00:00');
+  d.setDate(d.getDate()-((d.getDay()+6)%7));
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function checkinFeito(s){
+  const ref=semanaRefAtual();
+  return ((s&&s.checkins)||[]).some(c=>String(c.semanaRef).slice(0,10)===ref);
+}
 function momentoAvulso(ciclo){
   const d=(ciclo && ciclo.dias_corridos!=null) ? ciclo.dias_corridos : 0;
   return 'D'+Math.max(0, Math.min(999, Math.round(d)));
@@ -2091,6 +2106,9 @@ function tarefaDaSemana(db, s){
     return {tipo:'avaliacao', momento:marco, semana:c.semana,
             rotulo:'Avaliação da semana '+c.semana};
   }
+  // já respondeu esta semana? não insiste — o banco tem unique
+  // (aluno, dor, semana) e tentar de novo só geraria erro na fila
+  if(checkinFeito(s)) return null;
   return {tipo:'checkin', semana:c.semana, rotulo:'Check-in da semana '+c.semana};
 }
 /* ===== CHECK-IN SEMANAL =====
@@ -2231,6 +2249,17 @@ function TelaDor({db,setDb,nav,studentId,flash}){
         <div className="dttxt">Um minuto para registrar como foi a semana.</div>
         <button className="btn" onClick={()=>nav({name:'checkin',studentId})}>Responder</button>
       </div>}
+      {/* confirmação positiva em vez de simplesmente sumir o cartão:
+          o aluno precisa saber que o registro dele chegou */}
+      {!tarefa && checkinFeito(s) && <div className="dorfeito">
+        <span className="dfico">✅</span>
+        <span className="dftxt">Check-in da semana registrado</span>
+      </div>}
+      {!tarefa && !checkinFeito(s) && (s.avaliacoes||[]).length>0 && dores.length>0 &&
+        <div className="dorfeito">
+          <span className="dfico">✅</span>
+          <span className="dftxt">Tudo em dia por aqui</span>
+        </div>}
       {dores.length>0 && <React.Fragment>
         <div className="secaotit">📍 O que você acompanha</div>
         {dores.map(d=>(
@@ -2964,7 +2993,7 @@ async function fetchDbFromSupabase(){
   if(!sb) return {ok:false, erro:'Sem conexão com o servidor.'};
   try{
     // o RLS já filtra: treinador vê tudo, aluno vê só o dele
-    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg, rPlan, rAcad, rAlAcad, rSem, rDor, rAval] = await Promise.all([
+    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg, rPlan, rAcad, rAlAcad, rSem, rDor, rAval, rChk] = await Promise.all([
       sb.from('alunos').select('id,nome,foto_url,academia,nascimento,fc_max').order('nome'),
       buscarTudo('treinos','id,aluno_id,nome,ordem,concluido_data,fase_id','ordem'),
       buscarTudo('exercicios','id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio,audio_url','ordem'),
@@ -2981,7 +3010,8 @@ async function fetchDbFromSupabase(){
       sb.from('aluno_academias').select('aluno_id,academia_id,principal'),
       sb.from('v_semana_atual').select('*').maybeSingle(),
       sb.from('dores').select('id,aluno_id,regiao,vista,apelido,ativa').eq('ativa',true),
-      sb.from('avaliacoes').select('id,aluno_id,momento,data,status').eq('status','respondida')
+      sb.from('avaliacoes').select('id,aluno_id,momento,data,status').eq('status','respondida'),
+      buscarTudo('checkins_semanais','id,aluno_id,dor_id,semana_ref,dor_media,limitacao','semana_ref')
     ]);
     const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error||rSess.error||rRel.error||rAce.error||rFas.error;
     if(err) return {ok:false, erro:err.message};
@@ -2990,8 +3020,8 @@ async function fetchDbFromSupabase(){
     if(rPlan.error) console.warn('[planejamento]', rPlan.error.message);
     if(rAcad.error||rAlAcad.error) console.warn('[academias]', (rAcad.error||rAlAcad.error).message);
     // módulo de dor é opcional: se falhar, o app de treino segue inteiro
-    if(rSem.error||rDor.error||rAval.error)
-      console.warn('[dor]', (rSem.error||rDor.error||rAval.error).message);
+    if(rSem.error||rDor.error||rAval.error||rChk.error)
+      console.warn('[dor]', (rSem.error||rDor.error||rAval.error||rChk.error).message);
 
     const logsPorEx={};
     (rLogs.data||[]).forEach(l=>{
@@ -3064,6 +3094,12 @@ async function fetchDbFromSupabase(){
       (avalPorAluno[v.aluno_id]=avalPorAluno[v.aluno_id]||[]).push({
         id:v.id, momento:v.momento, data:v.data});
     });
+    const chkPorAluno={};
+    (rChk.data||[]).forEach(c=>{
+      (chkPorAluno[c.aluno_id]=chkPorAluno[c.aluno_id]||[]).push({
+        id:c.id, dorId:c.dor_id, semanaRef:c.semana_ref,
+        dorMedia:c.dor_media, limitacao:c.limitacao});
+    });
     const ciclo=(rSem.data&&!rSem.error)?rSem.data:null;
     const planPorAluno={};
     (rPlan.data||[]).forEach(x=>{
@@ -3090,6 +3126,7 @@ async function fetchDbFromSupabase(){
         academias: acadPorAluno[a.id]||[],
         dores: doresPorAluno[a.id]||[],
         avaliacoes: avalPorAluno[a.id]||[],
+        checkins: chkPorAluno[a.id]||[],
         nascimento: a.nascimento||null, fcMax: a.fc_max||null,
         // vem da view; o app só LÊ — a troca de formato acontece na dashboard
         status: g.status||'ativo',
