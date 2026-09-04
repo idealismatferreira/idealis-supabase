@@ -627,6 +627,44 @@
   .treino .meta .desc{font-size:13px;color:var(--muted);margin-top:2px}
   .exrow{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;transition:.15s;box-shadow:0 1px 2px var(--sombra)}
   .exrow.done{background:var(--lime-bg);border-color:rgba(221,255,0,.5)}
+  /* ---- GRUPO (bi-set / tri-set / circuito) ---- */
+  .gpwrap{border:1px solid rgba(255,196,138,.34);border-left:3px solid var(--soft-orange);
+    border-radius:var(--radius);padding:10px 10px 8px;margin-bottom:10px;background:rgba(255,196,138,.045)}
+  .gphead{display:flex;align-items:center;gap:10px;padding:2px 4px 10px}
+  .gphinfo{flex:1;min-width:0}
+  .gptit{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:800;
+    color:var(--soft-orange);letter-spacing:.02em}
+  .gpsub{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+  .gprest{margin-top:7px;display:inline-flex;align-items:center;gap:6px;font-family:inherit;
+    font-size:12px;font-weight:700;color:var(--soft-orange);background:var(--ctrl-bg);
+    border:1px solid rgba(255,196,138,.35);border-radius:10px;padding:5px 11px;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .gprest:active{background:var(--line)}
+  .gprest.off{color:var(--muted-2);border-color:var(--line);opacity:.6}
+  .gpwrap .exrow{margin-bottom:8px;border-left:2px solid rgba(255,196,138,.28)}
+  .gpwrap .exrow:last-of-type{margin-bottom:0}
+  .gpordem{flex:0 0 22px;height:22px;border-radius:50%;display:grid;place-items:center;
+    font-size:11px;font-weight:800;color:var(--soft-orange);
+    background:rgba(255,196,138,.14);border:1px solid rgba(255,196,138,.4);margin-top:3px}
+  .gpchip{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:2px;
+    min-width:54px;padding:7px 6px;border-radius:12px;font-family:inherit;cursor:pointer;
+    background:transparent;border:2px solid rgba(255,196,138,.45);color:var(--soft-orange);
+    -webkit-tap-highlight-color:transparent;transition:.12s}
+  .gpchip:active{transform:scale(.92)}
+  .gpchip .gcico{font-size:16px;font-weight:800;line-height:1;height:17px}
+  .gpchip .gclab{font-size:9.5px;font-weight:700;letter-spacing:.02em;line-height:1}
+  .gpchip.on{background:var(--soft-orange);border-color:var(--soft-orange);color:var(--on-accent)}
+  .gpchip.fim{background:var(--lime);border-color:var(--lime);color:var(--on-accent)}
+  .gpbtns{display:flex;gap:6px;margin-top:8px}
+  .gpbtns button{flex:1;height:34px;border-radius:10px;font-family:inherit;font-size:12px;
+    font-weight:700;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);
+    cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .gpbtns button:active{background:var(--line)}
+  .gpagrupar{width:100%;height:34px;margin:-4px 0 12px;border-radius:10px;font-family:inherit;
+    font-size:12px;font-weight:700;background:transparent;border:1px dashed var(--line);
+    color:var(--muted-2);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .gpagrupar:active{background:var(--surface-2);color:var(--soft-orange);
+    border-color:rgba(255,196,138,.45)}
   .vidthumb{position:relative;display:block;width:100%;margin-top:12px;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg);cursor:pointer;-webkit-tap-highlight-color:transparent;line-height:0}
   .vidthumb img{width:100%;height:auto;display:block;opacity:.85;transition:.15s}
   .vidthumb:active img{opacity:1;transform:scale(1.01)}
@@ -3024,7 +3062,7 @@ async function fetchDbFromSupabase(){
     const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg, rPlan, rAcad, rAlAcad, rSem, rDor, rAval, rChk] = await Promise.all([
       sb.from('alunos').select('id,nome,foto_url,academia,nascimento,fc_max').order('nome'),
       buscarTudo('treinos','id,aluno_id,nome,ordem,concluido_data,fase_id','ordem'),
-      buscarTudo('exercicios','id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio,audio_url','ordem'),
+      buscarTudo('exercicios','id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio,grupo,audio_url','ordem'),
       buscarTudo('logs','id,exercicio_id,data,carga,reps,intensidade,dor,dor_local,dor_lado,variante,serie,extra','data,serie'),
       buscarTudo('sessoes','id,aluno_id,treino_id,data,origem,duracao','data'),
       buscarTudo('relatos','id,aluno_id,treino_id,exercicio_id,exercicio_nome,data,texto,fixado,created_at','created_at'),
@@ -3065,6 +3103,7 @@ async function fetchDbFromSupabase(){
       (exPorTreino[e.treino_id]=exPorTreino[e.treino_id]||[]).push({
         id:e.id, name:e.nome, series:e.series||'',
         exerciseId:e.cardapio_id, doneDate:e.done_date, descanso:e.descanso||'', filmar:!!e.filmar, observacao:e.observacao||'', metodo:e.metodo||null, cardio:e.cardio||null,
+        grupo:e.grupo||null,
         audioUrl:e.audio_url||'',
         logs: logsPorEx[e.id]||[]
       });
@@ -3184,22 +3223,72 @@ async function fetchDbFromSupabase(){
    levam 70 e 36 minutos. O descanso é a variável que mais muda o tempo. */
 const EXEC_POR_SERIE=40;   // ~12 reps em ritmo controlado
 const TROCA_APARELHO=60;   // deslocar, ajustar banco, esperar liberar
+/* ===== GRUPOS: bi-set / tri-set / circuito =====
+   Um grupo é um conjunto de exercícios CONSECUTIVOS que compartilham o mesmo
+   `grupo.id`. Cada exercício continua sendo uma linha própria em `exercicios`
+   — com log, histórico, vídeo e vínculo com o Cardápio intactos. O que muda é
+   só a execução: não há descanso ENTRE os membros, só no fim da rodada.
+   A adjacência é a fonte da verdade; se alguém entrar no meio, o grupo quebra
+   sozinho em dois — e é por isso que `moveEx` move blocos, não exercícios. */
+function grupoIdDe(ex){ return (ex && ex.grupo && ex.grupo.id) ? String(ex.grupo.id) : null; }
+function rotuloGrupo(n){ return n<=2?'Bi-set':(n===3?'Tri-set':'Circuito'); }
+/* quebra a lista de exercícios em blocos: soltos viram bloco de 1 */
+function blocosDoTreino(exs){
+  const out=[];
+  (exs||[]).forEach((ex,idx)=>{
+    const g=grupoIdDe(ex);
+    const ant=out.length?out[out.length-1]:null;
+    if(g && ant && ant.grupo===g){ ant.itens.push({ex,idx}); return; }
+    out.push({grupo:g, itens:[{ex,idx}]});
+  });
+  // grupo que sobrou com 1 membro (deleção, reordenação) não é grupo
+  out.forEach(b=>{ if(b.grupo && b.itens.length<2) b.grupo=null; });
+  return out;
+}
+/* nº de rodadas = maior nº de séries entre os membros. Quem tiver menos,
+   simplesmente descansa naquela rodada — não inventamos série pra ele. */
+function rodadasDoBloco(bl){
+  return Math.max(1, ...bl.itens.map(it=>totalSeries(it.ex)||1));
+}
 function tempoEstimado(exercicios){
   let seg=0, nEx=0;
-  (exercicios||[]).forEach(ex=>{
-    if(ex.cardio){ seg+=totalCardioSeg(ex.cardio)+TROCA_APARELHO; nEx++; return; }
-    const n=totalSeries(ex); if(!n) return;
-    nEx++;
-    const d=parseDescanso(ex.descanso);
-    // sem descanso definido, usa 75s — média do que costuma ser prescrito
-    const desc=d ? Math.round((d.min+d.max)/2) : 75;
-    seg += n*(EXEC_POR_SERIE+desc) + TROCA_APARELHO;
-    // pausas internas do método (cluster, drop) entram como tempo real
-    const m=ex.metodo;
-    if(m && Array.isArray(m.series)) m.series.forEach(sr=>{
-      (sr.blocos||[]).forEach(b=>{ const p=parseDescanso(b.pausa);
-        if(p) seg += Math.round((p.min+p.max)/2); });
+  blocosDoTreino(exercicios).forEach(bl=>{
+    // --- exercício solto: comportamento original ---
+    if(!bl.grupo){
+      const ex=bl.itens[0].ex;
+      if(ex.cardio){ seg+=totalCardioSeg(ex.cardio)+TROCA_APARELHO; nEx++; return; }
+      const n=totalSeries(ex); if(!n) return;
+      nEx++;
+      const d=parseDescanso(ex.descanso);
+      // sem descanso definido, usa 75s — média do que costuma ser prescrito
+      const desc=d ? Math.round((d.min+d.max)/2) : 75;
+      seg += n*(EXEC_POR_SERIE+desc) + TROCA_APARELHO;
+      // pausas internas do método (cluster, drop) entram como tempo real
+      const m=ex.metodo;
+      if(m && Array.isArray(m.series)) m.series.forEach(sr=>{
+        (sr.blocos||[]).forEach(b=>{ const p=parseDescanso(b.pausa);
+          if(p) seg += Math.round((p.min+p.max)/2); });
+      });
+      return;
+    }
+    // --- grupo: execução de todos os membros, descanso UMA vez por rodada ---
+    const rodadas=rodadasDoBloco(bl);
+    const ultimo=bl.itens[bl.itens.length-1].ex;
+    const dU=parseDescanso(descansoDaSerie(ultimo,0)||ultimo.descanso);
+    const descRodada = dU ? Math.round((dU.min+dU.max)/2) : 75;
+    bl.itens.forEach(it=>{
+      const ex=it.ex; nEx++;
+      if(ex.cardio){ seg+=totalCardioSeg(ex.cardio); return; }
+      const n=totalSeries(ex)||rodadas;
+      // troca de aparelho continua contando: o aluno anda entre os dois
+      seg += n*EXEC_POR_SERIE + TROCA_APARELHO;
+      const m=ex.metodo;
+      if(m && Array.isArray(m.series)) m.series.forEach(sr=>{
+        (sr.blocos||[]).forEach(b=>{ const p=parseDescanso(b.pausa);
+          if(p) seg += Math.round((p.min+p.max)/2); });
+      });
     });
+    seg += rodadas*descRodada;
   });
   if(!nEx) return null;
   const min=Math.round(seg/60);
@@ -3224,14 +3313,15 @@ function numSeries(series){
   return null;
 }
 /* Anel de progresso das séries (só na sessão, não persiste) */
-function SerieRing({total,feitas,onAvancar,onZerar}){
+function SerieRing({total,feitas,onAvancar,onZerar,rotulo}){
   const completo = feitas>=total;
   const R=17, C=2*Math.PI*R;
   const frac = total>0 ? Math.min(1,feitas/total) : 0;
+  const lab = rotulo || 'Série';
   return (<button className={'seriering'+(completo?' full':'')}
     onClick={()=>{ if(completo) onZerar(); else onAvancar(); }}
-    aria-label={completo?'Zerar séries':'Concluir série '+(feitas+1)}>
-    <span className="srtop">Série</span>
+    aria-label={completo?('Zerar '+lab.toLowerCase()):('Concluir '+lab.toLowerCase()+' '+(feitas+1))}>
+    <span className="srtop">{lab}</span>
     <span className="srring">
       <svg viewBox="0 0 44 44" width="44" height="44">
         <circle cx="22" cy="22" r={R} className="srtrack"/>
@@ -3347,6 +3437,7 @@ function buildEstruturaSnapshot(db){
         exercises:(t.exercises||[]).map(ex=>({
           id:ex.id, name:ex.name, series:ex.series,
           filmar:!!ex.filmar, observacao:ex.observacao||'', metodo:ex.metodo||null, cardio:ex.cardio||null,
+          grupo:ex.grupo||null,
           logs:(ex.logs||[]).map(l=>({id:l.id,date:l.date,carga:l.carga,reps:l.reps,intensidade:l.intensidade,dor:l.dor,variante:l.variante||'',serie:(l.serie!=null?l.serie:null)}))
           // doneDate propositalmente omitido (efêmero do dia)
         }))
@@ -4803,17 +4894,25 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
       // Observações VÊM: redigitar dica técnica em 87 alunos vira trabalho braçal.
       treinos.filter(t=>t.faseId===faseAtual.id).forEach((t,i)=>{
         const tid=uid();
+        // grupos vêm junto (bi-set é prescrição, não estado do dia), mas com id
+        // NOVO: reaproveitar o id antigo faria dois treinos de fases diferentes
+        // compartilharem o mesmo grupo se algum dia a adjacência mudasse.
+        const mapaGrupo={};
         const exs=(t.exercises||[]).map((ex,j)=>{
           const eid=uid();
+          const gAnt=grupoIdDe(ex);
+          if(gAnt && !mapaGrupo[gAnt]) mapaGrupo[gAnt]=uid();
+          const gNovo=gAnt?{id:mapaGrupo[gAnt], tipo:(ex.grupo&&ex.grupo.tipo)||'combo'}:null;
           // audioUrl não vem: dois exercícios apontando para o mesmo arquivo faria
           // "remover" em um quebrar o outro. E dica de ciclo anterior costuma
           // não valer para o novo — melhor regravar de propósito.
-          const copia={...ex, id:eid, doneDate:null, logs:[], audioUrl:''};
+          const copia={...ex, id:eid, doneDate:null, logs:[], audioUrl:'', grupo:gNovo};
           enqueueOp({tipo:'insert',tabela:'exercicios',dados:{
             id:eid, treino_id:tid, nome:ex.name, series:ex.series,
             cardapio_id:ex.exerciseId!=null?ex.exerciseId:null, ordem:j,
             done_date:null, descanso:ex.descanso||null, filmar:!!ex.filmar,
-            observacao:ex.observacao||null, metodo:ex.metodo||null, cardio:ex.cardio||null}});
+            observacao:ex.observacao||null, metodo:ex.metodo||null, cardio:ex.cardio||null,
+            grupo:gNovo}});
           return copia;
         });
         const novoT={id:tid, nome:t.nome, faseId:nova.id, exercises:exs, sessoes:[], relatos:[], acessos:[]};
@@ -6247,7 +6346,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
   const updExercises=(exs)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,treinos:x.treinos.map(tt=>tt.id===treinoId?{...tt,exercises:exs}:tt)}:x)});
   const saveEx=(data)=>{
     if(editingEx==='new'){
-      const novo={id:uid(),name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,observacao:data.observacao||'',metodo:data.metodo||null,cardio:data.cardio||null, audioUrl:data.audioUrl||'',logs:[]};
+      const novo={id:uid(),name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,observacao:data.observacao||'',metodo:data.metodo||null,cardio:data.cardio||null, grupo:null, audioUrl:data.audioUrl||'',logs:[]};
       updExercises([...(t.exercises||[]),novo]);
       enqueueOp({tipo:'insert',tabela:'exercicios',dados:{
         id:novo.id, treino_id:treinoId, nome:novo.name, series:novo.series||null,
@@ -6273,8 +6372,41 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
     const alvo=(t.exercises||[]).find(e=>e.id===id);
     // o áudio é arquivo, não linha: o cascade do banco não alcança o Storage
     if(alvo && alvo.audioUrl) apagarAudio(alvo.audioUrl);
-    updExercises(t.exercises.filter(e=>e.id!==id));
+    let resto=t.exercises.filter(e=>e.id!==id);
+    // grupo que ficou com 1 membro deixa de ser grupo — senão sobra um card
+    // laranja de "bi-set" com um exercício só dentro, que não quer dizer nada
+    const g=grupoIdDe(alvo);
+    if(g && resto.filter(e=>grupoIdDe(e)===g).length<2){
+      resto=resto.map(e=>{
+        if(grupoIdDe(e)!==g) return e;
+        enqueueOp({tipo:'update',tabela:'exercicios',id:e.id,dados:{grupo:null}});
+        return {...e, grupo:null};
+      });
+    }
+    updExercises(resto);
     enqueueOp({tipo:'delete',tabela:'exercicios',id});
+  };
+  /* ---- grupos: bi-set / tri-set / circuito ----
+     Agrupar é juntar dois BLOCOS vizinhos (não dois exercícios): isso deixa
+     "agrupar o 3º ao bi-set que já existe" ser o mesmo gesto de sempre. */
+  const persistirGrupo=(ids,grupo)=>{
+    updExercises(t.exercises.map(e=>ids.indexOf(e.id)>=0?{...e,grupo}:e));
+    ids.forEach(id=>enqueueOp({tipo:'update',tabela:'exercicios',id,dados:{grupo}}));
+  };
+  const agruparComProximo=(bIdx)=>{
+    const bls=blocosDoTreino(t.exercises);
+    const a=bls[bIdx], b=bls[bIdx+1];
+    if(!a||!b) return;
+    const gid=a.grupo||b.grupo||uid();
+    const ids=a.itens.concat(b.itens).map(it=>it.ex.id);
+    persistirGrupo(ids,{id:gid, tipo:'combo'});
+    flash(rotuloGrupo(ids.length)+' criado 🔗');
+  };
+  const desagrupar=(bl)=>{
+    const ids=bl.itens.map(it=>it.ex.id);
+    persistirGrupo(ids,null);
+    // séries já marcadas continuam válidas: o que muda é só como descansa
+    flash('Grupo desfeito');
   };
   // ---- sessões (append-only): fonte de verdade do histórico de presença ----
   const sessoes = t.sessoes||[];
@@ -6428,15 +6560,25 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
     updExercises(t.exercises.map(e=>e.id===id?{...e,doneDate:novaData}:e));
     enqueueOp({tipo:'update',tabela:'exercicios',id,dados:{done_date:novaData}});
   };
-  const moveEx=(idx,dir)=>{
-    const arr=[...t.exercises];
-    const alvo=idx+dir;
-    if(alvo<0||alvo>=arr.length) return;
-    const tmp=arr[idx]; arr[idx]=arr[alvo]; arr[alvo]=tmp;
+  /* Reordenação por BLOCO. Trocar exercício a exercício quebraria o grupo:
+     bastaria subir o 2º membro do bi-set uma vez pra ele deixar de ser vizinho
+     do 1º e o grupo se dissolver sozinho na próxima renderização. */
+  const moveEx=(bIdx,dir)=>{
+    const bls=blocosDoTreino(t.exercises);
+    const alvo=bIdx+dir;
+    if(alvo<0||alvo>=bls.length) return;
+    const nova=[...bls];
+    const tmp=nova[bIdx]; nova[bIdx]=nova[alvo]; nova[alvo]=tmp;
+    const arr=[];
+    nova.forEach(b=>b.itens.forEach(it=>arr.push(it.ex)));
     updExercises(arr);
-    // persiste a nova ordem dos dois que trocaram
-    enqueueOp({tipo:'update',tabela:'exercicios',id:arr[idx].id,dados:{ordem:idx}});
-    enqueueOp({tipo:'update',tabela:'exercicios',id:arr[alvo].id,dados:{ordem:alvo}});
+    // reescreve a ordem só do trecho afetado (do primeiro bloco movido em diante)
+    const ini=Math.min(bIdx,alvo);
+    let n=0;
+    nova.forEach((b,i)=>{ b.itens.forEach(it=>{
+      if(i>=ini) enqueueOp({tipo:'update',tabela:'exercicios',id:it.ex.id,dados:{ordem:n}});
+      n++;
+    }); });
   };
   /* Renomeia uma variante em TODOS os logs do exercício.
      ehBase=true -> alcança também os logs sem variante (null). */
@@ -6528,6 +6670,47 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
     if(f && timer) timer.start(f, ex.name);
   };
   const zerarSerie=(exId)=>setSeriesFeitas(m=>({...m,[exId]:0}));
+  /* ---- execução em grupo ----
+     A rodada do bloco é o MENOR nº de séries feitas entre os membros: só fecha
+     quando todo mundo passou. É isso que garante que o descanso dispare uma
+     única vez, no fim, e não entre A e B. */
+  const rodadaFeita=(bl)=>Math.min(...bl.itens.map(it=>seriesFeitas[it.ex.id]||0));
+  const feitoNaRodada=(bl,ex)=>(seriesFeitas[ex.id]||0)>rodadaFeita(bl);
+  const avancarNoGrupo=(bl,ex)=>{
+    const antes=rodadaFeita(bl);
+    if((seriesFeitas[ex.id]||0)>antes) return; // já passou nesta rodada
+    const tot=totalSeries(ex)||rodadasDoBloco(bl);
+    const novo=Math.min(tot,(seriesFeitas[ex.id]||0)+1);
+    const simulado={...seriesFeitas,[ex.id]:novo};
+    setSeriesFeitas(m=>({...m,[ex.id]:novo}));
+    if(inicio==null) setInicio(marcarInicio(treinoId));
+    const depois=Math.min(...bl.itens.map(it=>simulado[it.ex.id]||0));
+    if(depois>antes){
+      const ultimo=bl.itens[bl.itens.length-1].ex;
+      const f=parseDescanso(descansoDaSerie(ultimo, depois-1)||ultimo.descanso);
+      if(f && timer) timer.start(f, rotuloGrupo(bl.itens.length)+' · rodada '+depois);
+      else flash('Rodada '+depois+' completa ✓');
+    }
+  };
+  const desfazerNoGrupo=(bl,ex)=>setSeriesFeitas(m=>({...m,[ex.id]:Math.max(0,(m[ex.id]||0)-1)}));
+  /* anel do cabeçalho: fecha a rodada inteira de uma vez */
+  const avancarRodada=(bl)=>{
+    const antes=rodadaFeita(bl);
+    const patch={};
+    bl.itens.forEach(it=>{
+      const tot=totalSeries(it.ex)||rodadasDoBloco(bl);
+      patch[it.ex.id]=Math.min(tot,Math.max(seriesFeitas[it.ex.id]||0, antes+1));
+    });
+    setSeriesFeitas(m=>({...m,...patch}));
+    if(inicio==null) setInicio(marcarInicio(treinoId));
+    const ultimo=bl.itens[bl.itens.length-1].ex;
+    const f=parseDescanso(descansoDaSerie(ultimo, antes)||ultimo.descanso);
+    if(f && timer) timer.start(f, rotuloGrupo(bl.itens.length)+' · rodada '+(antes+1));
+  };
+  const zerarBloco=(bl)=>{
+    const patch={}; bl.itens.forEach(it=>{ patch[it.ex.id]=0; });
+    setSeriesFeitas(m=>({...m,...patch}));
+  };
   // mapa cardapio_id -> url de vídeo (do cache do Cardápio)
   const videoPorId=React.useMemo(()=>{
     const m={}; loadCatalogo().forEach(c=>{ if(c.video) m[String(c.id)]=c.video; }); return m;
@@ -6551,18 +6734,23 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
         <div className="cronohint">O relógio conta quando você registra a primeira série 👇</div>}
       {(t.exercises||[]).length===0 && <div className="empty"><div className="big">＋</div>
         <p>{ehAluno?'Este treino ainda não tem exercícios. Fale com seu treinador.':'Treino vazio. Toque em “+ Exercício” para montar. Depois, a cada aula, você só registra a carga.'}</p></div>}
-      {(t.exercises||[]).map((ex,idx)=>{
+      {(()=>{
+      const blocos=blocosDoTreino(t.exercises);
+      const nBlocos=blocos.length;
+      const renderEx=(ex,bl,pos,bIdx)=>{
         const last=lastLogOfExercise(s,ex.name,ex.exerciseId);
-        const total=(t.exercises||[]).length;
         const done = ex.doneDate===todayISO();
         const totSeries = totalSeries(ex);
         const concluido = totSeries ? ((seriesFeitas[ex.id]||0)>=totSeries) : done;
+        const naRodada = bl ? feitoNaRodada(bl,ex) : false;
+        const fimDoBloco = bl ? (rodadaFeita(bl)>=rodadasDoBloco(bl)) : false;
         return (<div key={ex.id} className={'exrow'+(concluido?' done':'')}>
           <div className="exhead">
-            {!ehAluno && <div className="reorder">
-              <button disabled={idx===0} onClick={()=>moveEx(idx,-1)} aria-label="Subir">▲</button>
-              <button disabled={idx===total-1} onClick={()=>moveEx(idx,1)} aria-label="Descer">▼</button>
+            {!ehAluno && !bl && <div className="reorder">
+              <button disabled={bIdx===0} onClick={()=>moveEx(bIdx,-1)} aria-label="Subir">▲</button>
+              <button disabled={bIdx===nBlocos-1} onClick={()=>moveEx(bIdx,1)} aria-label="Descer">▼</button>
             </div>}
+            {bl && <div className="gpordem">{'ABCDEFGH'.charAt(pos)||String(pos+1)}</div>}
             <div className="exinfo">
               <div className="exname">{ex.name}</div>
               <div className="exmeta">
@@ -6572,19 +6760,29 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
                   if(ex.metodo) return <span className={cl}>🔺 {ex.metodo.nome}</span>;
                   return ex.series ? <span className={cl}>{ex.series}</span> : null; })()}
                 {ex.filmar && <span className="exfilm">🎥 Recomendado Filmar</span>}
-                {!ex.cardio && (()=>{ const d=descansoDaSerie(ex, seriesFeitas[ex.id]||0); const f=parseDescanso(d);
+                {/* dentro de um grupo o descanso é do BLOCO, não do exercício:
+                    deixar o botão aqui convidaria exatamente o erro que o método
+                    tenta evitar — parar entre A e B. */}
+                {!ex.cardio && !bl && (()=>{ const d=descansoDaSerie(ex, seriesFeitas[ex.id]||0); const f=parseDescanso(d);
                   return f ? <button className="exrest" onClick={()=>timer.start(f, ex.name)}>
                     🕐 Descansar <span className="exresth">{String(d).replace('~','–')}</span>
                   </button> : null; })()}
               </div>
             </div>
-            {!ex.cardio && totalSeries(ex)
-              ? <SerieRing total={totalSeries(ex)} feitas={seriesFeitas[ex.id]||0}
-                  onAvancar={()=>avancarSerie(ex)} onZerar={()=>zerarSerie(ex.id)}/>
-              : <button className={'donecheck'+(done?' on':'')} onClick={()=>toggleDone(ex.id)} aria-label={done?'Marcar como não feito':'Marcar como feito'}>
-                  <span className="dcicon">{done?'✓':''}</span>
-                  <span className="dclabel">Feito</span>
-                </button>}
+            {bl
+              ? <button className={'gpchip'+(naRodada?' on':'')+(fimDoBloco?' fim':'')}
+                  onClick={()=>naRodada?desfazerNoGrupo(bl,ex):avancarNoGrupo(bl,ex)}
+                  aria-label={naRodada?'Desfazer esta série':'Marcar esta série como feita'}>
+                  <span className="gcico">{naRodada?'✓':((seriesFeitas[ex.id]||0)+1)+'ª'}</span>
+                  <span className="gclab">{naRodada?'feita':'marcar'}</span>
+                </button>
+              : (!ex.cardio && totalSeries(ex)
+                ? <SerieRing total={totalSeries(ex)} feitas={seriesFeitas[ex.id]||0}
+                    onAvancar={()=>avancarSerie(ex)} onZerar={()=>zerarSerie(ex.id)}/>
+                : <button className={'donecheck'+(done?' on':'')} onClick={()=>toggleDone(ex.id)} aria-label={done?'Marcar como não feito':'Marcar como feito'}>
+                    <span className="dcicon">{done?'✓':''}</span>
+                    <span className="dclabel">Feito</span>
+                  </button>)}
           </div>
           {ex.exerciseId!=null && videoPorId[String(ex.exerciseId)] && <VideoExercicio url={videoPorId[String(ex.exerciseId)]}/>}
           {ex.cardio && (()=>{ const bl=expandirCardio(ex.cardio); return (
@@ -6734,7 +6932,55 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
             {!ehAluno && <button className="mini" onClick={()=>delEx(ex.id)}>🗑</button>}
           </div>
         </div>);
-      })}
+      };
+      const btnAgrupar=(bIdx)=>(!ehAluno && bIdx<nBlocos-1)
+        ? <button className="gpagrupar" key={'ag'+bIdx} onClick={()=>agruparComProximo(bIdx)}>
+            🔗 Agrupar com o próximo
+          </button>
+        : null;
+      return blocos.map((bl,bIdx)=>{
+        if(!bl.grupo) return (<React.Fragment key={bl.itens[0].ex.id}>
+          {renderEx(bl.itens[0].ex,null,0,bIdx)}
+          {btnAgrupar(bIdx)}
+        </React.Fragment>);
+        const n=bl.itens.length;
+        const rodadas=rodadasDoBloco(bl);
+        const feitas=rodadaFeita(bl);
+        const ultimo=bl.itens[n-1].ex;
+        const dDesc=descansoDaSerie(ultimo, Math.min(feitas, rodadas-1))||ultimo.descanso;
+        const fDesc=parseDescanso(dDesc);
+        return (<React.Fragment key={bl.grupo}>
+          <div className="gpwrap">
+            <div className="gphead">
+              {!ehAluno && <div className="reorder">
+                <button disabled={bIdx===0} onClick={()=>moveEx(bIdx,-1)} aria-label="Subir">▲</button>
+                <button disabled={bIdx===nBlocos-1} onClick={()=>moveEx(bIdx,1)} aria-label="Descer">▼</button>
+              </div>}
+              <div className="gphinfo">
+                <div className="gptit">🔗 {rotuloGrupo(n)} · {rodadas} {rodadas===1?'rodada':'rodadas'}</div>
+                <div className="gpsub">
+                  {n===2
+                    ? 'A e B sem parar no meio. O descanso vem só depois de B.'
+                    : 'Um atrás do outro, sem parar. O descanso vem só no fim da rodada.'}
+                </div>
+                {fDesc
+                  ? <button className="gprest" onClick={()=>timer.start(fDesc, rotuloGrupo(n))}>
+                      🕐 Descansar <b>{String(dDesc).replace('~','–')}</b>
+                    </button>
+                  : <span className="gprest off">🕐 sem descanso definido</span>}
+              </div>
+              <SerieRing total={rodadas} feitas={feitas} rotulo="Rodada"
+                onAvancar={()=>avancarRodada(bl)} onZerar={()=>zerarBloco(bl)}/>
+            </div>
+            {bl.itens.map((it,pos)=>renderEx(it.ex,bl,pos,bIdx))}
+            {!ehAluno && <div className="gpbtns">
+              <button onClick={()=>desagrupar(bl)}>✕ Desagrupar</button>
+              {bIdx<nBlocos-1 && <button onClick={()=>agruparComProximo(bIdx)}>+ Somar o próximo</button>}
+            </div>}
+          </div>
+        </React.Fragment>);
+      });
+      })()}
       {ehAluno && (t.exercises||[]).length>0 && (
         treinoConcluidoHoje
           ? <div className="fimbox done">
