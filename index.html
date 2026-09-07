@@ -1084,6 +1084,69 @@
   .relfix:active{background:rgba(0,201,204,.11)}
   .relfix .rfseta{margin-left:auto;font-size:10px;opacity:.7}
   .exactions .rel.on{border-color:var(--cyan);background:rgba(0,201,204,.16);color:var(--cyan-2)}
+  /* ===== CORREÇÕES DE EXECUÇÃO (🔧) =====
+     Voz do treinador sobre COMO executar, datada e respondendo a um vídeo.
+     Não confundir com .exobs (💬 observação permanente do exercício) nem com
+     .exrel (✍️ anotação do aluno). Cor própria — laranja — para os três
+     canais nunca se misturarem na leitura. */
+  .trwrap{margin-bottom:12px}
+  .trwrap .treino{margin-bottom:0}
+  .trwrap.aberto .treino{border-bottom-left-radius:0;border-bottom-right-radius:0}
+  .corrtag{margin-left:5px;font-weight:700;color:var(--soft-orange);
+    background:none;border:none;padding:0;font-family:inherit;font-size:13px;cursor:pointer}
+  .corrdot{display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--danger);margin-left:5px;vertical-align:middle}
+  .trabas{border:1px solid var(--line);border-top:none;
+    border-radius:0 0 var(--radius) var(--radius);background:var(--surface-2);
+    padding:9px;display:flex;flex-direction:column;gap:8px}
+  .trab{width:100%;display:flex;align-items:center;gap:9px;padding:13px 14px;
+    border-radius:12px;border:1px solid var(--line);background:var(--surface);
+    font-family:inherit;font-size:14px;font-weight:700;color:var(--text);
+    text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .trab.principal{border-color:var(--cyan);background:rgba(0,201,204,.1);color:var(--cyan-2)}
+  .trab.off{opacity:.6;cursor:default}
+  .trab .tabtxt{min-width:0;flex:1}
+  .trab .tabsub{display:block;font-size:11px;font-weight:600;color:var(--muted);
+    line-height:1.35;margin-top:2px}
+  .trab .tabn{flex:0 0 auto;min-width:21px;height:21px;padding:0 6px;border-radius:999px;
+    background:var(--danger);color:#fff;font-size:11px;font-weight:800;
+    display:grid;place-items:center}
+  .crcard{margin:0 0 10px;padding:13px 14px;border-radius:13px;background:var(--surface);
+    border:1px solid rgba(255,196,138,.34);border-left:3px solid var(--soft-orange)}
+  .crcard.nova{background:rgba(255,196,138,.08)}
+  .crtopo{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .crex{flex:1;min-width:0;font-size:13px;font-weight:800;color:var(--soft-orange);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .crdata{font-size:10.5px;color:var(--muted-2);flex:0 0 auto}
+  .crnovo{flex:0 0 auto;font-size:9.5px;font-weight:800;letter-spacing:.05em;
+    text-transform:uppercase;color:#fff;background:var(--danger);border-radius:999px;padding:2px 7px}
+  .crtxt{font-size:13.5px;line-height:1.55;color:var(--text);white-space:pre-wrap}
+  .crstatus{font-size:11px;color:var(--muted);margin-top:9px}
+  .crbtns{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+  .crbtns button{padding:8px 12px;border-radius:10px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--muted);font-family:inherit;font-size:12px;
+    font-weight:700;cursor:pointer}
+  .crbtns button.perigo{color:var(--danger);border-color:rgba(255,92,108,.32)}
+  .crchip{width:100%;display:flex;align-items:center;gap:8px;margin:8px 0 2px;padding:9px 12px;
+    border-radius:11px;background:rgba(255,196,138,.06);border:1px dashed rgba(255,196,138,.42);
+    font-family:inherit;font-size:12px;font-weight:700;color:var(--soft-orange);cursor:pointer;
+    text-align:left;-webkit-tap-highlight-color:transparent}
+  .crchip:active{background:rgba(255,196,138,.14)}
+  .crchip .cseta{margin-left:auto;font-size:10px;opacity:.7}
+  .crbox{display:flex;gap:9px;align-items:flex-start;margin:8px 0 2px;padding:11px 13px;
+    border-radius:11px;background:rgba(255,196,138,.07);
+    border:1px solid rgba(255,196,138,.34);border-left:3px solid var(--soft-orange)}
+  .crbox .cbico{flex:0 0 auto;font-size:13px;line-height:1.5}
+  .crbox .cbbody{min-width:0;flex:1}
+  .crbox .cbdata{display:block;font-size:10.5px;font-weight:700;color:var(--soft-orange);
+    letter-spacing:.03em;text-transform:uppercase;margin-bottom:2px}
+  .crbox .cbtxt{font-size:13px;line-height:1.5;color:var(--text);white-space:pre-wrap}
+  .crvazio{text-align:center;padding:52px 24px;color:var(--muted)}
+  .crvazio .big{font-size:38px;margin-bottom:13px}
+  .crvazio p{font-size:14.5px;line-height:1.5;margin:0}
+  .crsep{font-size:12.5px;font-weight:800;color:var(--text);margin:22px 4px 10px}
+  .exactions .corr{color:var(--soft-orange);border-color:rgba(255,196,138,.45)}
+  .btn:disabled{opacity:.42;cursor:default}
   /* folha de relato */
   .rlwrap{padding:2px 2px 4px}
   .rltit{font-size:15px;font-weight:800;color:var(--text);margin-bottom:3px}
@@ -1662,11 +1725,13 @@ function PlanoFases({db,nav,studentId}){
             {encerrada && <span className="plnchip fim">Concluída</span>}
           </div>
           <div className="plnnome">{f.nome}</div>
-          <div className="plnper">{fmtBR(f.inicio)} → {fmtBR(f.fim)}
-            {ativa && f.diasRestantes!=null && f.diasRestantes>=0 &&
-              <b>{f.diasRestantes===0?' · último dia'
-                 :(f.diasRestantes===1?' · falta 1 dia':' · faltam '+f.diasRestantes+' dias')}</b>}
-          </div>
+          <div className="plnper"><b>{
+            f.situacao==='futura'    ? 'Começa em '+fmtBR(f.inicio)
+          : f.situacao==='encerrada' ? 'Encerrada em '+fmtBR(f.fim)
+          : (f.diasRestantes==null ? fmtBR(f.fim)
+             : (f.diasRestantes<=0 ? 'Último dia'
+                : (f.diasRestantes===1?'Falta 1 dia':'Faltam '+f.diasRestantes+' dias')))
+          }</b></div>
           {f.categoria && <div className="plncat"
             style={f.cor?{color:f.cor,borderColor:f.cor}:null}>{f.categoria}</div>}
           {aberta && <React.Fragment>
@@ -2892,6 +2957,57 @@ function allLogsOfExercise(student, exName, exId){
 }
 function lastLogOfExercise(student, exName, exId){ const logs=allLogsOfExercise(student,exName,exId); return logs.length?logs[logs.length-1]:null; }
 
+/* ===== CORREÇÕES DE EXECUÇÃO =====
+   A correção pertence ao par ALUNO + EXERCÍCIO, nunca ao treino. O treino é
+   descartável: a cada fase ele é duplicado e ganha id novo. Já a orientação de
+   execução do "Levantamento Terra da Fulana" é permanente até o treinador
+   arquivar. Por isso o casamento usa a MESMA regra de allLogsOfExercise —
+   cardapio_id quando os dois lados têm, senão o nome normalizado. É o que faz
+   a correção atravessar a troca de fase sozinha, como o histórico de carga já
+   atravessa. `treinoId` na linha é só contexto de onde ela nasceu. */
+function corrCasa(c, ex){
+  if(!c || !ex) return false;
+  if(c.cardapioId!=null && ex.exerciseId!=null) return String(c.cardapioId)===String(ex.exerciseId);
+  return !!c.exChave && c.exChave===normAcc(ex.name);
+}
+const corrRecentes=(a,b)=>String(b.criadoEm||'').localeCompare(String(a.criadoEm||''));
+function corrDoEx(s, ex){
+  return (s&&s.correcoes||[]).filter(c=>!c.arquivadaEm && corrCasa(c,ex)).sort(corrRecentes);
+}
+/* correções que aparecem num treino: união das dos seus exercícios.
+   SEMPRE calculada, nunca gravada — é isso que faz o número acompanhar a
+   duplicação de fase sem nenhuma migração de dados. */
+function corrDoTreino(s, t){
+  const vistos={}, out=[];
+  ((t&&t.exercises)||[]).forEach(ex=>corrDoEx(s,ex).forEach(c=>{
+    if(vistos[c.id]) return; vistos[c.id]=1; out.push(c);
+  }));
+  return out.sort(corrRecentes);
+}
+const corrNaoVistas=(lista)=>(lista||[]).filter(c=>!c.vistaEm).length;
+function fmtCorrData(iso){
+  if(!iso) return '';
+  try{
+    const d=new Date(iso);
+    if(isNaN(d.getTime())) return '';
+    return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')
+      +' · '+String(d.getHours()).padStart(2,'0')+'h'+String(d.getMinutes()).padStart(2,'0');
+  }catch(e){ return ''; }
+}
+/* preferência de EXIBIÇÃO do aparelho: mostrar (ou não) o 🔧 dentro do treino.
+   Desligada por padrão. A correção já chegou por WhatsApp e o portão fica no
+   card do treino; aqui é reforço, e quem decide é o aluno.
+   Fica no localStorage de propósito: não é dado de treino, funciona offline e
+   não pede coluna nova. Custo aceito: reseta se ele trocar de aparelho. */
+const chaveCorrTreino=(alunoId)=>'idealis_corr_treino_'+String(alunoId||'');
+function corrNoTreinoLigado(alunoId){
+  try{ return LS_OK && window.localStorage.getItem(chaveCorrTreino(alunoId))==='1'; }
+  catch(e){ return false; }
+}
+function setCorrNoTreino(alunoId,on){
+  try{ if(LS_OK) window.localStorage.setItem(chaveCorrTreino(alunoId), on?'1':'0'); }catch(e){}
+}
+
 /* ===== CAMADA 3: ESCRITA NO SUPABASE (fila offline) =====
    Cada operação vira um item da fila. A tela já foi atualizada
    otimisticamente; a fila garante que o banco receba, mesmo offline. */
@@ -3059,7 +3175,7 @@ async function fetchDbFromSupabase(){
   if(!sb) return {ok:false, erro:'Sem conexão com o servidor.'};
   try{
     // o RLS já filtra: treinador vê tudo, aluno vê só o dele
-    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg, rPlan, rAcad, rAlAcad, rSem, rDor, rAval, rChk] = await Promise.all([
+    const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg, rPlan, rAcad, rAlAcad, rSem, rDor, rAval, rChk, rCorr] = await Promise.all([
       sb.from('alunos').select('id,nome,foto_url,academia,nascimento,fc_max').order('nome'),
       buscarTudo('treinos','id,aluno_id,nome,ordem,concluido_data,fase_id','ordem'),
       buscarTudo('exercicios','id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio,grupo,audio_url','ordem'),
@@ -3077,7 +3193,8 @@ async function fetchDbFromSupabase(){
       sb.from('v_semana_atual').select('*').maybeSingle(),
       sb.from('dores').select('id,aluno_id,regiao,vista,apelido,ativa').eq('ativa',true),
       sb.from('avaliacoes').select('id,aluno_id,momento,data,status').eq('status','respondida'),
-      buscarTudo('checkins_semanais','id,aluno_id,dor_id,semana_ref,dor_media,limitacao','semana_ref')
+      buscarTudo('checkins_semanais','id,aluno_id,dor_id,semana_ref,dor_media,limitacao','semana_ref'),
+      buscarTudo('correcoes','id,aluno_id,cardapio_id,exercicio_nome,exercicio_chave,texto,audio_url,treino_id,criado_em,editada_em,vista_em,arquivada_em','criado_em')
     ]);
     const err = rAlunos.error||rTreinos.error||rEx.error||rLogs.error||rSess.error||rRel.error||rAce.error||rFas.error;
     if(err) return {ok:false, erro:err.message};
@@ -3088,6 +3205,9 @@ async function fetchDbFromSupabase(){
     // módulo de dor é opcional: se falhar, o app de treino segue inteiro
     if(rSem.error||rDor.error||rAval.error||rChk.error)
       console.warn('[dor]', (rSem.error||rDor.error||rAval.error||rChk.error).message);
+    // correções são ADITIVAS: se a tabela ainda não existe no banco, o app
+    // inteiro continua funcionando — só não mostra correção nenhuma.
+    if(rCorr.error) console.warn('[correcoes]', rCorr.error.message);
 
     const logsPorEx={};
     (rLogs.data||[]).forEach(l=>{
@@ -3167,6 +3287,17 @@ async function fetchDbFromSupabase(){
         id:c.id, dorId:c.dor_id, semanaRef:c.semana_ref,
         dorMedia:c.dor_media, limitacao:c.limitacao});
     });
+    const corrPorAluno={};
+    (rCorr.data||[]).forEach(c=>{
+      (corrPorAluno[c.aluno_id]=corrPorAluno[c.aluno_id]||[]).push({
+        id:c.id, cardapioId:(c.cardapio_id!=null?c.cardapio_id:null),
+        exNome:c.exercicio_nome||'', exChave:c.exercicio_chave||'',
+        texto:c.texto||'', audioUrl:c.audio_url||'',
+        treinoId:c.treino_id||null, criadoEm:c.criado_em||null,
+        editadaEm:c.editada_em||null, vistaEm:c.vista_em||null,
+        arquivadaEm:c.arquivada_em||null
+      });
+    });
     const ciclo=(rSem.data&&!rSem.error)?rSem.data:null;
     const planPorAluno={};
     (rPlan.data||[]).forEach(x=>{
@@ -3194,6 +3325,7 @@ async function fetchDbFromSupabase(){
         dores: doresPorAluno[a.id]||[],
         avaliacoes: avalPorAluno[a.id]||[],
         checkins: chkPorAluno[a.id]||[],
+        correcoes: corrPorAluno[a.id]||[],
         nascimento: a.nascimento||null, fcMax: a.fc_max||null,
         // vem da view; o app só LÊ — a troca de formato acontece na dashboard
         status: g.status||'ativo',
@@ -4067,6 +4199,7 @@ function App({auth}){
   else if(view.name==='progresso') screen=<Progresso db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
   else if(view.name==='agenda') screen=<Agenda db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
   else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} faseId={view.faseId||null} flash={flash} ehAluno={ehAluno} onSair={auth?auth.sair:null}/>;
+  else if(view.name==='correcoes') screen=<Correcoes db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} flash={flash} ehAluno={ehAluno}/>;
   else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio}/>;
   else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={ehAluno}/>;
   // FCmáx do aluno cuja tela está aberta (o cardio roda por cima de qualquer view)
@@ -4079,6 +4212,7 @@ function App({auth}){
   // então ela precisa oferecer o mesmo caminho de volta
   const voltarDaTela = (
     view.name==='treino'    ? ()=>nav({name:'student',studentId:view.studentId,faseId:view.deFase||null}) :
+    view.name==='correcoes' ? ()=>nav({name:'student',studentId:view.studentId,faseId:view.deFase||null}) :
     view.name==='evolution' ? ()=>nav(view.back||{name:'student',studentId:view.studentId}) :
     view.name==='agenda'    ? ()=>nav({name:'student',studentId:view.studentId}) :
     view.name==='avaliacao' ? ()=>nav({name:'dor',studentId:view.studentId}) :
@@ -4628,6 +4762,137 @@ function Avatar({nome,foto,size,onPick,busy}){
   </div>);
 }
 
+/* folha de escrita da correção — só o treinador chega aqui.
+   Separada da ficha do exercício de propósito: "Observação para o aluno" é
+   instrução permanente da prescrição; correção é datada e responde a um vídeo.
+   Misturar as duas no mesmo campo era exatamente o improviso que isto substitui. */
+function CorrecaoSheet({exNome,inicial,onSalvar,onClose,flash}){
+  const [txt,setTxt]=useState(inicial?inicial.texto:'');
+  const [audio,setAudio]=useState(inicial?(inicial.audioUrl||''):'');
+  // id estável do arquivo: sem o ref, cada render geraria um path novo no Storage
+  const idAudio=React.useRef(inicial?('corr_'+inicial.id):('corr_'+uid()));
+  const limpo=txt.trim();
+  return (<div className="backdrop" onClick={onClose}>
+    <div className="sheet" onClick={e=>e.stopPropagation()}>
+      <h2>{inicial?'Editar correção':'Nova correção'}</h2>
+      <div className="h2sub">🔧 {exNome}</div>
+      <div className="field">
+        <label>O que corrigir <span className="obscount">{txt.length}/1000</span></label>
+        <textarea className="obstext" rows={4} maxLength={1000} autoFocus value={txt}
+          onChange={e=>setTxt(e.target.value)}
+          placeholder="Ex: evite arredondar a lombar na subida. Empurre o chão com o pé."/>
+      </div>
+      <div className="field">
+        <label>Áudio <span className="obscount">opcional</span></label>
+        <GravadorAudio exId={idAudio.current} valor={audio} onMudar={setAudio} flash={flash}/>
+      </div>
+      <div className="audioexp">Fica colada no exercício deste aluno e acompanha a
+        duplicação das próximas fases, até você arquivar.</div>
+      <div className="sheetactions">
+        <button className="btn ghost" onClick={onClose}>Cancelar</button>
+        <button className="btn" disabled={!limpo} onClick={()=>onSalvar(limpo,audio)}>
+          {inicial?'Salvar':'Enviar'}</button>
+      </div>
+    </div></div>);
+}
+/* tela de correções de um treino.
+   ALUNO: lê, e o simples fato de abrir marca como vista.
+   TREINADOR: mesma lista com status, editar, reenviar e arquivar. Escrever é
+   no card do exercício, dentro do treino — lá o contexto já está na tela. */
+function Correcoes({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno}){
+  const s=db.students.find(x=>x.id===studentId);
+  const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
+  const [editando,setEditando]=useState(null);
+  const [noTreino,setNoTreino]=useState(()=>corrNoTreinoLigado(studentId));
+  const lista=(s&&t)?corrDoTreino(s,t):[];
+  // string estável: com array o efeito dispararia a cada render
+  const pendentes=lista.filter(c=>!c.vistaEm).map(c=>c.id).join(',');
+  /* marcar como vista ao ABRIR. Vai pela fila: funciona offline e sobe depois.
+     É o único campo que a policy do aluno deixa ele tocar. */
+  useEffect(()=>{
+    if(!ehAluno || !pendentes) return;
+    const ids=pendentes.split(',');
+    const agora=new Date().toISOString();
+    setDb(d=>({...d,students:d.students.map(x=>x.id!==studentId?x:{...x,
+      correcoes:(x.correcoes||[]).map(c=>ids.indexOf(c.id)>=0?{...c,vistaEm:agora}:c)})}));
+    ids.forEach(id=>enqueueOp({tipo:'update',tabela:'correcoes',id,dados:{vista_em:agora}}));
+  },[ehAluno,pendentes,studentId]);
+  // hooks acima de qualquer saída antecipada — hook depois de return faz o
+  // React executar quantidades diferentes entre renders (erro #310)
+  const voltar=()=>nav({name:'student',studentId,faseId:deFase||null});
+  if(!s || !t) return (<React.Fragment>
+    <TopBar title="Correções" onBack={voltar}/>
+    <div className="screen"><div className="empty"><div className="big">🔍</div>
+      <p>Este treino não está mais disponível.</p></div></div>
+  </React.Fragment>);
+  const updCorr=(id,patch,dados,msg)=>{
+    setDb(d=>({...d,students:d.students.map(x=>x.id!==studentId?x:{...x,
+      correcoes:(x.correcoes||[]).map(c=>c.id===id?{...c,...patch}:c)})}));
+    enqueueOp({tipo:'update',tabela:'correcoes',id,dados});
+    if(msg) flash(msg);
+  };
+  const arquivar=(c)=>{
+    const agora=new Date().toISOString();
+    // soft-delete: some da tela do aluno, mas o histórico do que já foi
+    // orientado continua existindo para consulta e para a dashboard
+    updCorr(c.id,{arquivadaEm:agora},{arquivada_em:agora},'Correção arquivada');
+  };
+  const reenviar=(c)=>updCorr(c.id,{vistaEm:null},{vista_em:null},'Vai aparecer como nova ✓');
+  const salvarEdicao=(txt,audio)=>{
+    const agora=new Date().toISOString();
+    updCorr(editando.id,{texto:txt,audioUrl:audio,editadaEm:agora},
+      {texto:txt, audio_url:audio||null, editada_em:agora},'Correção atualizada ✓');
+    setEditando(null);
+  };
+  return (<React.Fragment>
+    <TopBar title="Correções" sub={t.nome+(ehAluno?'':' · '+s.name)} onBack={voltar}/>
+    <div className="screen">
+      {lista.length===0
+        ? <div className="crvazio"><div className="big">💬</div>
+            <p>{ehAluno
+              ? 'Nenhuma correção neste treino ainda. Mande um vídeo pro Matheus e ele responde por aqui.'
+              : 'Nenhuma correção ativa. Abra o treino e toque no 🔧 do exercício para escrever.'}</p>
+          </div>
+        : lista.map(c=>(
+          <div key={c.id} className={'crcard'+((ehAluno && !c.vistaEm)?' nova':'')}>
+            <div className="crtopo">
+              <span className="crex">🔧 {c.exNome||'Exercício'}</span>
+              {!c.vistaEm && <span className="crnovo">nova</span>}
+              <span className="crdata">{fmtCorrData(c.criadoEm)}</span>
+            </div>
+            <div className="crtxt">{c.texto}</div>
+            {c.audioUrl && <div className="exaudio" style={{marginTop:9}}>
+              <span className="eaico">🎧</span>
+              <audio className="audioplayer" controls preload="none" src={c.audioUrl}/>
+            </div>}
+            {c.editadaEm && <div className="crstatus">editada em {fmtCorrData(c.editadaEm)}</div>}
+            {!ehAluno && <React.Fragment>
+              <div className="crstatus">
+                {c.vistaEm?('✓ vista em '+fmtCorrData(c.vistaEm)):'• ainda não vista'}</div>
+              <div className="crbtns">
+                <button onClick={()=>setEditando(c)}>✎ editar</button>
+                {c.vistaEm && <button onClick={()=>reenviar(c)}>↻ reenviar</button>}
+                <button className="perigo" onClick={()=>arquivar(c)}>🗑 arquivar</button>
+              </div>
+            </React.Fragment>}
+          </div>))}
+      {/* o switch mora AQUI, e não em ajustes: este é o momento em que o aluno
+          está lendo a correção — é onde faz sentido perguntar se ele quer vê-la
+          de novo na hora de executar. Em ajustes ninguém acharia. */}
+      {ehAluno && lista.length>0 && <label className="swrow">
+        <input type="checkbox" checked={noTreino}
+          onChange={e=>{ setNoTreino(e.target.checked); setCorrNoTreino(studentId,e.target.checked); }}/>
+        <span className="swtrack"></span>
+        <span className="swtxt">
+          <span className="swtit">🔧 Mostrar correções dentro do treino</span>
+          <span className="swsub">Marca os exercícios que têm correção enquanto você treina.</span>
+        </span>
+      </label>}
+    </div>
+    {editando && !ehAluno && <CorrecaoSheet exNome={editando.exNome} inicial={editando}
+      onSalvar={salvarEdicao} onClose={()=>setEditando(null)} flash={flash}/>}
+  </React.Fragment>);
+}
 function Students({db,setDb,nav}){
   const [q,setQ]=useState('');
   const [adding,setAdding]=useState(false);
@@ -4816,6 +5081,7 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
   const [retro,setRetro]=useState(false);
   const [faseSel,setFaseSel]=useState(null);      // fase aberta na lista
   const [editandoFase,setEditandoFase]=useState(null); // 'nova' | objeto
+  const [trAberto,setTrAberto]=useState(null);    // treino com a aba aberta (aluno)
   /* RETROSPECTIVA: 1x por fase, a partir de 7 dias do fim.
      Mínimo de 6 sessões — abaixo disso a tela sairia constrangedora justo
      para quem mais precisaria de estímulo. */
@@ -5033,11 +5299,16 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
       {ehAluno && faseId && <div className="fasetopo">
         <div className="fasetit">{faseAberta?faseAberta.nome:'Outros treinos'}</div>
         {faseAberta && faseAberta.objetivo && <div className="faseobj">{faseAberta.objetivo}</div>}
-        {faseAberta && (()=>{ const d=diasRestantes(faseAberta);
-          return d!=null && <div className="faseper">
-            {fmtDate(faseAberta.inicio)} → {fmtDate(faseAberta.fim)}
-            {d>=0 && <b>{d===0?' · último dia':(d===1?' · falta 1 dia':' · faltam '+d+' dias')}</b>}
-          </div>; })()}
+        {/* contagem em vez de intervalo: "faltam 8 dias" é acionável, "01/03 →
+            30/03" obriga o aluno a fazer a conta. As datas editáveis do
+            treinador, no card de fase abaixo, seguem intactas. */}
+        {faseAberta && (()=>{ const d=diasRestantes(faseAberta); if(d==null) return null;
+          const sit=faseSituacao(faseAberta);
+          return <div className="faseper"><b>{
+            sit==='futura'  ? 'Começa em '+fmtDate(faseAberta.inicio)
+          : sit==='vencida' ? 'Encerrada em '+fmtDate(faseAberta.fim)
+          : (d<=0?'Último dia':(d===1?'Falta 1 dia':'Faltam '+d+' dias'))
+          }</b></div>; })()}
       </div>}
       {!ehAluno && <React.Fragment>
         <div className="fasetabs">
@@ -5099,8 +5370,17 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
         <p>{ehAluno?'Nenhum treino montado ainda. Fale com seu treinador.':'Nenhum treino ainda. Crie o '}{!ehAluno && <b>Treino A</b>}{!ehAluno && ' e adicione os exercícios — ele fica fixo pelas próximas semanas.'}</p></div>}
       {treinosVisiveis.map(t=>{
         const letra=(t.nome.match(/\b([A-Z])\b/)||[])[1] || t.nome.slice(0,1).toUpperCase();
-        return (<div key={t.id} className="treino"
-          onClick={()=>nav({name:'treino',studentId,treinoId:t.id,deFase:(faseId||null)})}>
+        const corrs=corrDoTreino(s,t);
+        const novas=corrNaoVistas(corrs);
+        const abrirTreino=()=>nav({name:'treino',studentId,treinoId:t.id,deFase:(faseId||null)});
+        const abrirCorr=()=>nav({name:'correcoes',studentId,treinoId:t.id,deFase:(faseId||null)});
+        const aberto = ehAluno && trAberto===t.id;
+        /* ALUNO: tocar no card ABRE A ABA, não o treino. O portão explícito
+           ("Acessar treino" / "Ver correções") é o que garante que a correção
+           nunca fica escondida, mesmo com o 🔧 desligado lá dentro.
+           TREINADOR: continua indo direto — ele monta treino o dia inteiro. */
+        const card=(<div key={t.id} className="treino"
+          onClick={()=>{ if(ehAluno) setTrAberto(aberto?null:t.id); else abrirTreino(); }}>
           <div className="tag">{letra}</div>
           <div className="meta"><div className="name">{t.nome}</div>
             <div className="desc">
@@ -5112,9 +5392,38 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
                 const ult=ses[ses.length-1].data; const q=haQuantoTempo(ult);
                 const hoje=ult===todayISO();
                 return <span className={'tfeito'+(hoje?' hoje':'')}>· {hoje?'feito hoje ✓':'feito '+q}</span>; })()}
+              {corrs.length>0 && (ehAluno
+                ? <span className="corrtag">· 💬 {corrs.length===1?'1 correção':corrs.length+' correções'}
+                    {novas>0 && <span className="corrdot"></span>}</span>
+                : <button className="corrtag" title="Ver e gerenciar as correções"
+                    onClick={e=>{e.stopPropagation();abrirCorr();}}>
+                    · 💬 {corrs.length===1?'1 correção':corrs.length+' correções'}
+                    {novas>0 && <span className="corrdot"></span>}</button>)}
             </div></div>
           {!ehAluno && <button className="menudot" onClick={e=>{e.stopPropagation();setMenu(t);}}>⋯</button>}
-          <div className="chev" style={{color:'var(--muted)',fontSize:20}}>›</div>
+          <div className="chev" style={{color:'var(--muted)',fontSize:20}}>{aberto?'⌄':'›'}</div>
+        </div>);
+        if(!ehAluno) return card;
+        return (<div key={t.id} className={'trwrap'+(aberto?' aberto':'')}>
+          {card}
+          {aberto && <div className="trabas">
+            <button className="trab principal" onClick={abrirTreino}>
+              <span className="tabtxt">▶ Acessar treino</span></button>
+            {/* sem correção o botão continua VISÍVEL, só desabilitado: é assim
+                que o aluno descobre que este canal existe e passa a mandar vídeo */}
+            {corrs.length>0
+              ? <button className="trab" onClick={abrirCorr}>
+                  <span className="tabtxt">💬 Ver correções do treino
+                    <span className="tabsub">Ajustes de execução que o Matheus mandou pra você.</span>
+                  </span>
+                  {novas>0 && <span className="tabn">{novas}</span>}
+                </button>
+              : <div className="trab off">
+                  <span className="tabtxt">💬 Nenhuma correção ainda
+                    <span className="tabsub">Mande um vídeo pro Matheus e ele responde por aqui.</span>
+                  </span>
+                </div>}
+          </div>}
         </div>);
       })}
     </div>
@@ -6324,6 +6633,12 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
   const [registering,setRegistering]=useState(null);
   const [relatando,setRelatando]=useState(null); // {exId|null, exNome|null, atual}
   const [fixAberto,setFixAberto]=useState({});   // exId -> anotações fixadas expandidas
+  const [corrAberto,setCorrAberto]=useState({}); // exId -> correções expandidas
+  const [corrigindo,setCorrigindo]=useState(null); // {ex, atual} — só treinador
+  /* o aluno decide se quer o 🔧 aqui dentro (padrão: não). Lido uma vez na
+     montagem: trocar de tela remonta a view, então a preferência recém-ligada
+     na tela de correções já vale ao voltar pro treino. */
+  const [corrNoTreino]=useState(()=>ehAluno?corrNoTreinoLigado(studentId):true);
   const [finalizando,setFinalizando]=useState(false);
   const [retroDor,setRetroDor]=useState(null);   // {dataRef} da retrospectiva pendente
   // --- conclusão de treino: só confirmação MANUAL do aluno ---
@@ -6367,6 +6682,46 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
       flash('Atualizado ✓');
     }
     setEditingEx(null);
+  };
+  /* correções: gravadas no par aluno+exercício. `treino_id` vai junto só como
+     contexto de onde ela nasceu — não é o que faz o casamento. */
+  const salvarCorrecao=(txt,audio)=>{
+    if(!corrigindo) return;
+    const ex=corrigindo.ex;
+    if(corrigindo.atual){
+      const agora=new Date().toISOString();
+      setDb(d=>({...d,students:d.students.map(x=>x.id!==studentId?x:{...x,
+        correcoes:(x.correcoes||[]).map(c=>c.id===corrigindo.atual.id
+          ? {...c, texto:txt, audioUrl:audio, editadaEm:agora} : c)})}));
+      enqueueOp({tipo:'update',tabela:'correcoes',id:corrigindo.atual.id,
+        dados:{texto:txt, audio_url:audio||null, editada_em:agora}});
+      flash('Correção atualizada ✓');
+    }else{
+      const nova={id:uid(), cardapioId:(ex.exerciseId!=null?ex.exerciseId:null),
+        exNome:ex.name, exChave:normAcc(ex.name), texto:txt, audioUrl:audio||'',
+        treinoId:treinoId, criadoEm:new Date().toISOString(),
+        editadaEm:null, vistaEm:null, arquivadaEm:null};
+      setDb(d=>({...d,students:d.students.map(x=>x.id!==studentId?x:{...x,
+        correcoes:[...(x.correcoes||[]), nova]})}));
+      enqueueOp({tipo:'insert',tabela:'correcoes',dados:{
+        id:nova.id, aluno_id:studentId, cardapio_id:nova.cardapioId,
+        exercicio_nome:nova.exNome, exercicio_chave:nova.exChave,
+        texto:nova.texto, audio_url:nova.audioUrl||null, treino_id:treinoId}});
+      flash('Correção enviada ✓');
+    }
+    setCorrigindo(null);
+  };
+  /* ela abriu o 🔧 dentro do treino: isso É leitura. Sem marcar aqui, quem
+     usa o switch nunca constaria como tendo visto, e o "não vista" do
+     treinador viraria mentira. */
+  const marcarVistas=(cs)=>{
+    if(!ehAluno) return;
+    const ids=cs.filter(c=>!c.vistaEm).map(c=>c.id);
+    if(!ids.length) return;
+    const agora=new Date().toISOString();
+    setDb(d=>({...d,students:d.students.map(x=>x.id!==studentId?x:{...x,
+      correcoes:(x.correcoes||[]).map(c=>ids.indexOf(c.id)>=0?{...c,vistaEm:agora}:c)})}));
+    ids.forEach(id=>enqueueOp({tipo:'update',tabela:'correcoes',id,dados:{vista_em:agora}}));
   };
   const delEx=(id)=>{
     const alvo=(t.exercises||[]).find(e=>e.id===id);
@@ -6881,6 +7236,38 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
               </button>
             </React.Fragment>);
           })()}
+          {/* 🔧 CORREÇÃO — colapsada. Para o aluno só aparece se ele tiver ligado
+              o switch na tela de correções; o portão principal continua sendo o
+              card do treino. Para o treinador aparece sempre: é o histórico do
+              que já orientou naquele movimento. */}
+          {(()=>{
+            const cs=corrDoEx(s,ex);
+            if(!cs.length || !corrNoTreino) return null;
+            if(!corrAberto[ex.id]) return (
+              <button className="crchip" onClick={()=>{ setCorrAberto(m=>({...m,[ex.id]:true})); marcarVistas(cs); }}>
+                🔧 {cs.length===1?'1 correção':cs.length+' correções'}
+                {cs.some(c=>!c.vistaEm) && <span className="corrdot"></span>}
+                <span className="cseta">▾ ver</span>
+              </button>);
+            return (<React.Fragment>
+              {cs.map(c=>(
+                <div className="crbox" key={c.id}>
+                  <div className="cbico">🔧</div>
+                  <div className="cbbody">
+                    <span className="cbdata">Correção · {fmtCorrData(c.criadoEm)}</span>
+                    <div className="cbtxt">{c.texto}</div>
+                    {c.audioUrl && <audio className="audioplayer" style={{marginTop:7}}
+                      controls preload="none" src={c.audioUrl}/>}
+                    {!ehAluno && <div className="crbtns">
+                      <button onClick={()=>setCorrigindo({ex, atual:c})}>✎ editar</button>
+                    </div>}
+                  </div>
+                </div>))}
+              <button className="crchip" onClick={()=>setCorrAberto(m=>({...m,[ex.id]:false}))}>
+                🔧 esconder <span className="cseta">▴</span>
+              </button>
+            </React.Fragment>);
+          })()}
           {(()=>{
             const todos=allLogsOfExercise(s,ex.name,ex.exerciseId);
             const ses=agruparSessoes(todos, varPadrao(s.academia));
@@ -6928,6 +7315,8 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
             {ehAluno && (()=>{ const r=relatoDoEx(ex.id); return (
               <button className={'mini rel'+(r?' on':'')} title="Anotar algo sobre este exercício"
                 onClick={()=>setRelatando({exId:ex.id, exNome:ex.name, atual:r})}>✍️</button>); })()}
+            {!ehAluno && <button className="mini corr" title="Correção de execução"
+              onClick={()=>setCorrigindo({ex, atual:null})}>🔧</button>}
             {!ehAluno && <button className="mini" onClick={()=>setEditingEx(ex)}>✎</button>}
             {!ehAluno && <button className="mini" onClick={()=>delEx(ex.id)}>🗑</button>}
           </div>
@@ -7035,6 +7424,9 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
       </div>}
     </div>
     {!ehAluno && <button className="fab" onClick={()=>setEditingEx('new')}>＋ Exercício</button>}
+    {corrigindo && !ehAluno && <CorrecaoSheet exNome={corrigindo.ex.name}
+      inicial={corrigindo.atual} onSalvar={salvarCorrecao}
+      onClose={()=>setCorrigindo(null)} flash={flash}/>}
     {editingEx && !ehAluno && <ExerciseSheet initial={editingEx==='new'?null:editingEx} onSave={saveEx} onClose={()=>setEditingEx(null)} flash={flash}/>}
     {relatando && <RelatoSheet exNome={relatando.exNome}
       inicial={relatando.atual?relatando.atual.texto:''}
