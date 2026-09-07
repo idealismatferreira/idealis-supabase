@@ -5392,13 +5392,14 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
                 const ult=ses[ses.length-1].data; const q=haQuantoTempo(ult);
                 const hoje=ult===todayISO();
                 return <span className={'tfeito'+(hoje?' hoje':'')}>· {hoje?'feito hoje ✓':'feito '+q}</span>; })()}
-              {corrs.length>0 && (ehAluno
-                ? <span className="corrtag">· 💬 {corrs.length===1?'1 correção':corrs.length+' correções'}
-                    {novas>0 && <span className="corrdot"></span>}</span>
-                : <button className="corrtag" title="Ver e gerenciar as correções"
-                    onClick={e=>{e.stopPropagation();abrirCorr();}}>
-                    · 💬 {corrs.length===1?'1 correção':corrs.length+' correções'}
-                    {novas>0 && <span className="corrdot"></span>}</button>)}
+              {/* o contador é do TREINADOR. Na linha do aluno ele seria ruído:
+                  a correção já chegou por WhatsApp, e quem revela o canal é a
+                  aba que abre ao tocar no card — não um número no cabeçalho. */}
+              {!ehAluno && corrs.length>0 &&
+                <button className="corrtag" title="Ver e gerenciar as correções"
+                  onClick={e=>{e.stopPropagation();abrirCorr();}}>
+                  · 💬 {corrs.length===1?'1 correção':corrs.length+' correções'}
+                  {novas>0 && <span className="corrdot"></span>}</button>}
             </div></div>
           {!ehAluno && <button className="menudot" onClick={e=>{e.stopPropagation();setMenu(t);}}>⋯</button>}
           <div className="chev" style={{color:'var(--muted)',fontSize:20}}>{aberto?'⌄':'›'}</div>
