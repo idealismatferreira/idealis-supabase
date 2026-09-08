@@ -1538,6 +1538,45 @@
   .rtpresets{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
   .rtpreset{font-family:inherit;font-weight:700;font-size:17px;color:var(--cyan);background:var(--bg);border:1px solid rgba(0,201,204,.35);border-radius:14px;padding:18px 0;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:.1s}
   .rtpreset:active{transform:scale(.93);background:rgba(0,201,204,.12)}
+  /* ===== SELETOR DE SESSOES (copiar fase / importar sessao) =====
+     Vive por cima da folha de fase (z-index acima do .backdrop padrao):
+     a escolha da origem acontece SEM perder o que ja foi digitado no nome,
+     no objetivo e nas datas da fase nova. */
+  .selbd{z-index:60}
+  .seltopo{display:flex;align-items:center;gap:8px;margin:0 0 4px}
+  .seltopo h2{margin:0}
+  .selvolta{font-family:inherit;font-size:14px;font-weight:700;color:var(--cyan);
+    background:none;border:0;padding:4px 4px 4px 0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .selbusca{width:100%;padding:13px 14px;background:var(--bg);border:1px solid var(--line);
+    border-radius:12px;color:var(--text);font-size:16px;outline:none;margin-bottom:12px}
+  .selbusca:focus{border-color:var(--cyan)}
+  .sellista{max-height:46vh;overflow-y:auto;margin:0 -2px;padding:0 2px}
+  .selgrupo{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted-2);margin:14px 2px 7px}
+  .selitem{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+    font-family:inherit;padding:12px 13px;margin-bottom:7px;border-radius:12px;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--text);
+    cursor:pointer;-webkit-tap-highlight-color:transparent;transition:.1s}
+  .selitem:active{transform:scale(.99)}
+  .selitem.on{border-color:var(--cyan);background:rgba(0,201,204,.10)}
+  .selitem:disabled{opacity:.42;cursor:default}
+  .selcorpo{flex:1;min-width:0}
+  .selnome{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .selsub{font-size:12px;color:var(--muted);margin-top:2px}
+  .selmark{width:22px;height:22px;flex:0 0 22px;border-radius:7px;background:var(--bg);
+    border:1px solid var(--ctrl-line);display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:800;color:var(--bg)}
+  .selitem.on .selmark{background:var(--cyan);border-color:var(--cyan)}
+  .selvoce{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--on-cyan);background:var(--cyan);border-radius:999px;padding:3px 8px;margin-left:8px}
+  .selavi{margin-top:12px;padding:11px 13px;border-radius:12px;font-size:13px;line-height:1.45;
+    color:var(--yellow);background:rgba(241,217,74,.10);border:1px solid rgba(241,217,74,.32)}
+  .selresumo{display:flex;align-items:center;gap:10px;margin-top:10px;padding:12px 13px;
+    border-radius:12px;background:rgba(0,201,204,.10);border:1px solid rgba(0,201,204,.35)}
+  .selresumo .selnome{font-size:14px;font-weight:700;white-space:normal}
+  .seltroca{font-family:inherit;font-size:13px;font-weight:700;color:var(--cyan);
+    background:none;border:0;padding:6px;cursor:pointer;text-decoration:underline;
+    -webkit-tap-highlight-color:transparent}
 </style>
 </head>
 <body>
@@ -1636,7 +1675,7 @@ function useAuth(){
 const DB_KEY = 'idealis_presencial_v2';
 /* folha de fase: criar ou editar. Datas obrigatórias — é o prazo que faz
    "vencida" existir, e sem isso o alerta de renovação nunca dispararia. */
-function FaseSheet({inicial,podeDuplicar,onSalvar,onClose}){
+function FaseSheet({inicial,db,studentId,onSalvar,onClose}){
   const ed=!!inicial;
   const [nome,setNome]=useState(ed?inicial.nome:'');
   const [obj,setObj]=useState(ed?(inicial.objetivo||''):'');
@@ -1645,7 +1684,12 @@ function FaseSheet({inicial,podeDuplicar,onSalvar,onClose}){
     const d=new Date(); d.setDate(d.getDate()+30);
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   })());
-  const [dup,setDup]=useState(false);
+  /* origem da cópia: {treinos, limparObs, alunoNome, faseNome}.
+     Fica NESTE estado (e não no pai) para o treinador poder escolher a
+     origem, desistir, trocar de novo — tudo sem perder nome, objetivo e
+     datas que ele já digitou. */
+  const [origem,setOrigem]=useState(null);
+  const [selAberto,setSelAberto]=useState(false);
   const ok = nome.trim() && ini && fim && fim>=ini;
   return (<div className="backdrop" onClick={onClose}>
     <div className="sheet" onClick={e=>e.stopPropagation()}>
@@ -1668,21 +1712,50 @@ function FaseSheet({inicial,podeDuplicar,onSalvar,onClose}){
           Duração: {Math.round((Date.parse(fim)-Date.parse(ini))/86400000)+1} dias</div>}
       {fim && ini && fim<ini &&
         <div className="loginerro">A data de fim não pode ser antes do início.</div>}
-      {!ed && podeDuplicar &&
+      {/* Substitui o antigo "copiar treinos da fase atual", que era travado na
+          fase vigente DESTE aluno. O caso comum (a própria fase anterior)
+          continua a dois toques: o aluno em foco abre a lista já destacado. */}
+      {!ed && <React.Fragment>
         <label className="swrow">
-          <input type="checkbox" checked={dup} onChange={e=>setDup(e.target.checked)}/>
+          <input type="checkbox" checked={!!origem}
+            onChange={e=>{ if(e.target.checked) setSelAberto(true); else setOrigem(null); }}/>
           <span className="swtrack"></span>
           <span className="swtxt">
-            <span className="swtit">📋 Copiar treinos da fase atual</span>
-            <span className="swsub">Traz exercícios, séries, métodos e suas observações. As marcações de "feito" não vêm.</span>
+            <span className="swtit">📋 Copiar sessões de uma fase</span>
+            <span className="swsub">De qualquer fase, de qualquer aluno — inclusive dele mesmo. Traz exercícios, séries, métodos e observações. As marcações de "feito" e o histórico de carga não vêm.</span>
           </span>
-        </label>}
+        </label>
+        {origem && <div className="selresumo">
+          <div className="selcorpo">
+            <div className="selnome">{origem.alunoNome} · {origem.faseNome}</div>
+            <div className="selsub">
+              {origem.treinos.length} {origem.treinos.length===1?'sessão':'sessões'}
+              {origem.limparObs?' · sem observações':''}
+            </div>
+          </div>
+          <button className="seltroca" onClick={()=>setSelAberto(true)}>trocar</button>
+        </div>}
+      </React.Fragment>}
       <div className="sheetactions">
         <button className="btn ghost" onClick={onClose}>Cancelar</button>
         <button className="btn" disabled={!ok}
-          onClick={()=>onSalvar({nome:nome.trim(), objetivo:obj.trim()||null, inicio:ini, fim, duplicar:dup})}>
+          onClick={()=>onSalvar({nome:nome.trim(), objetivo:obj.trim()||null, inicio:ini, fim, origem:(ed?null:origem)})}>
           {ed?'Salvar':'Criar fase'}</button>
       </div>
+      {/* dentro da .sheet: o clique no véu do seletor não vaza para o véu da
+          folha de fase, então fechar o seletor não fecha a fase junto */}
+      {selAberto && db && <SeletorSessoes db={db} alunoAtualId={studentId}
+        nomesExistentes={[]}
+        titulo="Copiar sessões"
+        subtitulo="De qual aluno vêm as sessões desta fase nova?"
+        rotuloAcao="Usar"
+        onConfirmar={(r)=>{
+          setOrigem({treinos:r.treinos, limparObs:!!r.limparObs,
+            alunoNome:(r.alunoOrigem&&r.alunoOrigem.name)||'',
+            faseNome:(r.faseOrigem&&r.faseOrigem.nome)||'Sem fase'});
+          setSelAberto(false);
+        }}
+        onFechar={()=>setSelAberto(false)}/>}
     </div></div>);
 }
 /* ===== PLANEJAMENTO DE PERIODIZAÇÃO =====
@@ -5071,6 +5144,220 @@ function Students({db,setDb,nav}){
       onClose={()=>setMenu(null)}/>}
   </React.Fragment>);
 }
+/* ===== COPIAR SESSÕES ENTRE FASES E ENTRE ALUNOS =====
+   Um treino é DUPLICADO a cada fase e recebe id novo. Isso já valia para a
+   duplicação dentro do mesmo aluno; aqui a origem passa a ser qualquer fase
+   de qualquer aluno. O motor é o mesmo nos dois caminhos (criar fase nova e
+   importar para fase já aberta) de propósito: duas cópias da regra de cópia
+   divergiriam no primeiro ajuste.
+
+   O QUE VEM: nome, séries, descanso, filmar, método, cardio, cardapio_id,
+   observação (salvo se o treinador pedir para limpar) e os grupos — bi-set é
+   prescrição, não estado do dia. Cada grupo ganha id NOVO: reaproveitar o
+   antigo faria dois treinos de fases diferentes compartilharem o mesmo grupo.
+
+   O QUE NÃO VEM: done_date e logs (a fase nova começaria "já feita"),
+   audio_url (dois exercícios apontando pro mesmo arquivo faria "remover" em
+   um quebrar o outro, e dica gravada pro aluno Y não serve pro X), sessões,
+   relatos e acessos — histórico de execução pertence a quem executou.
+
+   Correções e histórico de carga NÃO são copiados e nem precisam ser: eles
+   casam por cardapio_id + exercicio_chave DENTRO do aluno. O aluno de destino
+   abre a sessão importada já vendo a carga e as correções DELE. */
+function copiarTreinos(opts){
+  const treinosOrigem=(opts&&opts.treinosOrigem)||[];
+  const alunoDestinoId=opts&&opts.alunoDestinoId;
+  const faseDestinoId=(opts&&opts.faseDestinoId)||null;
+  const ordemInicial=(opts&&opts.ordemInicial)||0;
+  const limparObs=!!(opts&&opts.limparObs);
+  const novos=[];
+  treinosOrigem.forEach((t,i)=>{
+    const tid=uid();
+    const mapaGrupo={};
+    const exs=(t.exercises||[]).map((ex,j)=>{
+      const eid=uid();
+      const gAnt=grupoIdDe(ex);
+      if(gAnt && !mapaGrupo[gAnt]) mapaGrupo[gAnt]=uid();
+      const gNovo=gAnt?{id:mapaGrupo[gAnt], tipo:(ex.grupo&&ex.grupo.tipo)||'combo'}:null;
+      const obs=limparObs?'':(ex.observacao||'');
+      const copia={...ex, id:eid, doneDate:null, logs:[], audioUrl:'', grupo:gNovo, observacao:obs};
+      enqueueOp({tipo:'insert',tabela:'exercicios',dados:{
+        id:eid, treino_id:tid, nome:ex.name, series:ex.series||null,
+        cardapio_id:ex.exerciseId!=null?ex.exerciseId:null, ordem:j,
+        done_date:null, descanso:ex.descanso||null, filmar:!!ex.filmar,
+        observacao:obs||null, metodo:ex.metodo||null, cardio:ex.cardio||null,
+        grupo:gNovo}});
+      return copia;
+    });
+    novos.push({id:tid, nome:t.nome, faseId:faseDestinoId, exercises:exs,
+                sessoes:[], relatos:[], acessos:[], concluidoData:null});
+    enqueueOp({tipo:'insert',tabela:'treinos',dados:{
+      id:tid, aluno_id:alunoDestinoId, nome:t.nome,
+      ordem:ordemInicial+i, fase_id:faseDestinoId}});
+  });
+  return novos;
+}
+
+/* ===== SELETOR DE SESSÕES =====
+   Três passos: aluno → fase → sessões. O aluno em foco vem SEMPRE primeiro e
+   destacado, porque copiar a própria fase anterior é de longe o caso mais
+   frequente; os demais entram por busca. Inativos aparecem no fim: fase boa de
+   aluno que saiu continua sendo material bom.
+
+   Não renomeia nada automaticamente. Se o nome colide com uma sessão que já
+   existe no destino, AVISA e deixa passar — o treinador ajusta o nome na hora,
+   e renomear sozinho criaria "Treino D" onde ele queria um segundo A. */
+function SeletorSessoes({db, alunoAtualId, nomesExistentes, titulo, subtitulo, rotuloAcao, onConfirmar, onFechar}){
+  const [passo,setPasso]=useState('aluno');
+  const [busca,setBusca]=useState('');
+  const [aluno,setAluno]=useState(null);
+  const [fase,setFase]=useState(null);
+  const [faseToda,setFaseToda]=useState(true);
+  const [marcados,setMarcados]=useState({});
+  const [limparObs,setLimparObs]=useState(false);
+
+  const q=norm(busca);
+  const comTreinos=(db.students||[]).filter(a=>(a.treinos||[]).length>0);
+  const filtrados=comTreinos.filter(a=>!q || norm(a.name).indexOf(q)>=0);
+  const eu=filtrados.filter(a=>a.id===alunoAtualId);
+  const resto=filtrados.filter(a=>a.id!==alunoAtualId);
+  const ativos=resto.filter(a=>(a.status||'ativo')==='ativo')
+    .sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+  const inativos=resto.filter(a=>(a.status||'ativo')!=='ativo')
+    .sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+
+  /* "Sem fase" também entra: treino solto que nunca foi amarrado a um ciclo
+     costuma ser justamente o modelo que ele quer reaproveitar. */
+  const fasesDoAluno=(()=>{
+    if(!aluno) return [];
+    const ts=aluno.treinos||[];
+    const out=(aluno.fases||[]).slice()
+      .sort((a,b)=>String(b.inicio||'').localeCompare(String(a.inicio||'')))
+      .map(f=>({...f, n:ts.filter(t=>t.faseId===f.id).length}));
+    const soltos=ts.filter(t=>!t.faseId).length;
+    if(soltos) out.push({id:'__sem__', nome:'Sem fase', inicio:null, fim:null, n:soltos});
+    return out.filter(f=>f.n>0);
+  })();
+
+  const treinosDaFase=(!aluno||!fase) ? [] :
+    (aluno.treinos||[]).filter(t=> fase.id==='__sem__' ? !t.faseId : t.faseId===fase.id);
+  const escolhidos = faseToda ? treinosDaFase : treinosDaFase.filter(t=>!!marcados[t.id]);
+  const nomesDestino=(nomesExistentes||[]).map(n=>norm(n));
+  const colisoes=escolhidos.filter(t=>nomesDestino.indexOf(norm(t.nome))>=0).map(t=>t.nome);
+
+  const escolherAluno=(a)=>{ setAluno(a); setFase(null); setMarcados({}); setFaseToda(true); setPasso('fase'); };
+  const escolherFase=(f)=>{ setFase(f); setMarcados({}); setFaseToda(true); setPasso('sessoes'); };
+  const alternar=(id)=>setMarcados(m=>({...m,[id]:!m[id]}));
+
+  const linhaAluno=(a,destaque)=>(
+    <button key={a.id} className={'selitem'+(destaque?' on':'')} onClick={()=>escolherAluno(a)}>
+      <div className="selcorpo">
+        <div className="selnome">{a.name}
+          {destaque && <span className="selvoce">este aluno</span>}</div>
+        <div className="selsub">
+          {(a.fases||[]).length} {(a.fases||[]).length===1?'fase':'fases'}
+          {' · '}{(a.treinos||[]).length} {(a.treinos||[]).length===1?'sessão':'sessões'}
+        </div>
+      </div>
+      <span style={{color:'var(--muted)',fontSize:20}}>›</span>
+    </button>);
+
+  return (<div className="backdrop selbd" onClick={onFechar}>
+    <div className="sheet" onClick={e=>e.stopPropagation()}>
+      <div className="seltopo">
+        {passo!=='aluno' &&
+          <button className="selvolta"
+            onClick={()=>setPasso(passo==='sessoes'?'fase':'aluno')}>‹ voltar</button>}
+        <h2>{titulo||'Copiar sessões'}</h2>
+      </div>
+
+      {passo==='aluno' && <React.Fragment>
+        <div className="h2sub">{subtitulo||'De qual aluno vem o material?'}</div>
+        <input className="selbusca" autoFocus value={busca}
+          onChange={e=>setBusca(e.target.value)} placeholder="Buscar aluno…"/>
+        <div className="sellista">
+          {!filtrados.length &&
+            <div className="selgrupo">Nenhum aluno com sessões encontrado</div>}
+          {eu.map(a=>linhaAluno(a,true))}
+          {ativos.length>0 && <div className="selgrupo">Outros alunos</div>}
+          {ativos.map(a=>linhaAluno(a,false))}
+          {inativos.length>0 && <div className="selgrupo">Inativos</div>}
+          {inativos.map(a=>linhaAluno(a,false))}
+        </div>
+      </React.Fragment>}
+
+      {passo==='fase' && aluno && <React.Fragment>
+        <div className="h2sub">Fases de {aluno.name}</div>
+        <div className="sellista">
+          {!fasesDoAluno.length &&
+            <div className="selgrupo">Este aluno não tem fases com sessões</div>}
+          {fasesDoAluno.map(f=>(
+            <button key={f.id} className="selitem" onClick={()=>escolherFase(f)}>
+              <div className="selcorpo">
+                <div className="selnome">{f.nome||'(sem nome)'}</div>
+                <div className="selsub">
+                  {f.n} {f.n===1?'sessão':'sessões'}
+                  {f.inicio && (' · '+fmtDate(f.inicio)+(f.fim?(' a '+fmtDate(f.fim)):''))}
+                </div>
+              </div>
+              <span style={{color:'var(--muted)',fontSize:20}}>›</span>
+            </button>))}
+        </div>
+      </React.Fragment>}
+
+      {passo==='sessoes' && aluno && fase && <React.Fragment>
+        <div className="h2sub">{aluno.name} · {fase.nome||'(sem nome)'}</div>
+        <label className="swrow">
+          <input type="checkbox" checked={faseToda}
+            onChange={e=>setFaseToda(e.target.checked)}/>
+          <span className="swtrack"></span>
+          <span className="swtxt">
+            <span className="swtit">📋 Copiar a fase toda</span>
+            <span className="swsub">
+              {treinosDaFase.length} {treinosDaFase.length===1?'sessão':'sessões'}. Desmarque para escolher uma a uma.</span>
+          </span>
+        </label>
+        {!faseToda && <div className="sellista">
+          {treinosDaFase.map(t=>{
+            const on=!!marcados[t.id];
+            return (<button key={t.id} className={'selitem'+(on?' on':'')}
+              onClick={()=>alternar(t.id)}>
+              <div className="selmark">{on?'✓':''}</div>
+              <div className="selcorpo">
+                <div className="selnome">{t.nome}</div>
+                <div className="selsub">{(t.exercises||[]).length}{' '}
+                  {(t.exercises||[]).length===1?'exercício':'exercícios'}</div>
+              </div>
+            </button>);
+          })}
+        </div>}
+        <label className="swrow">
+          <input type="checkbox" checked={limparObs}
+            onChange={e=>setLimparObs(e.target.checked)}/>
+          <span className="swtrack"></span>
+          <span className="swtxt">
+            <span className="swtit">🧹 Limpar as observações</span>
+            <span className="swsub">Por padrão elas vêm junto. Marque se a dica era específica do outro aluno.</span>
+          </span>
+        </label>
+        {colisoes.length>0 && <div className="selavi">
+          ⚠️ Já existe {colisoes.length===1?'uma sessão chamada':'sessões chamadas'}{' '}
+          <b>{colisoes.join(', ')}</b> no destino. A cópia entra assim mesmo — renomeie depois se quiser.
+        </div>}
+      </React.Fragment>}
+
+      <div className="sheetactions">
+        <button className="btn ghost" onClick={onFechar}>Cancelar</button>
+        {passo==='sessoes' &&
+          <button className="btn" disabled={!escolhidos.length}
+            onClick={()=>onConfirmar({treinos:escolhidos, limparObs:limparObs,
+              alunoOrigem:aluno, faseOrigem:fase})}>
+            {(rotuloAcao||'Copiar')+(escolhidos.length
+              ? (' '+escolhidos.length+(escolhidos.length===1?' sessão':' sessões')) : '')}
+          </button>}
+      </div>
+    </div></div>);
+}
 function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
   const s=db.students.find(x=>x.id===studentId);
   const [adding,setAdding]=useState(false);
@@ -5081,6 +5368,7 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
   const [retro,setRetro]=useState(false);
   const [faseSel,setFaseSel]=useState(null);      // fase aberta na lista
   const [editandoFase,setEditandoFase]=useState(null); // 'nova' | objeto
+  const [importando,setImportando]=useState(false);    // seletor de sessões aberto
   const [trAberto,setTrAberto]=useState(null);    // treino com a aba aberta (aluno)
   /* RETROSPECTIVA: 1x por fase, a partir de 7 dias do fim.
      Mínimo de 6 sessões — abaixo disso a tela sairia constrangedora justo
@@ -5154,45 +5442,36 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
       setEditandoFase(null); flash('Fase atualizada ✓'); return;
     }
     const nova={id:uid(), nome:dados.nome, objetivo:dados.objetivo||'', inicio:dados.inicio, fim:dados.fim};
-    const novosTreinos=[];
-    if(dados.duplicar && faseAtual){
-      // done_date NÃO vem: a fase nova começaria com exercícios já marcados.
-      // Observações VÊM: redigitar dica técnica em 87 alunos vira trabalho braçal.
-      treinos.filter(t=>t.faseId===faseAtual.id).forEach((t,i)=>{
-        const tid=uid();
-        // grupos vêm junto (bi-set é prescrição, não estado do dia), mas com id
-        // NOVO: reaproveitar o id antigo faria dois treinos de fases diferentes
-        // compartilharem o mesmo grupo se algum dia a adjacência mudasse.
-        const mapaGrupo={};
-        const exs=(t.exercises||[]).map((ex,j)=>{
-          const eid=uid();
-          const gAnt=grupoIdDe(ex);
-          if(gAnt && !mapaGrupo[gAnt]) mapaGrupo[gAnt]=uid();
-          const gNovo=gAnt?{id:mapaGrupo[gAnt], tipo:(ex.grupo&&ex.grupo.tipo)||'combo'}:null;
-          // audioUrl não vem: dois exercícios apontando para o mesmo arquivo faria
-          // "remover" em um quebrar o outro. E dica de ciclo anterior costuma
-          // não valer para o novo — melhor regravar de propósito.
-          const copia={...ex, id:eid, doneDate:null, logs:[], audioUrl:'', grupo:gNovo};
-          enqueueOp({tipo:'insert',tabela:'exercicios',dados:{
-            id:eid, treino_id:tid, nome:ex.name, series:ex.series,
-            cardapio_id:ex.exerciseId!=null?ex.exerciseId:null, ordem:j,
-            done_date:null, descanso:ex.descanso||null, filmar:!!ex.filmar,
-            observacao:ex.observacao||null, metodo:ex.metodo||null, cardio:ex.cardio||null,
-            grupo:gNovo}});
-          return copia;
-        });
-        const novoT={id:tid, nome:t.nome, faseId:nova.id, exercises:exs, sessoes:[], relatos:[], acessos:[]};
-        novosTreinos.push(novoT);
-        enqueueOp({tipo:'insert',tabela:'treinos',dados:{
-          id:tid, aluno_id:studentId, nome:t.nome, ordem:i, fase_id:nova.id}});
-      });
-    }
+    /* A origem pode ser qualquer fase de qualquer aluno — o FaseSheet já
+       devolve os treinos escolhidos prontos. Toda a regra de cópia vive em
+       copiarTreinos(), a mesma usada pela importação. */
+    const org=dados.origem;
+    const novosTreinos=(org && org.treinos && org.treinos.length)
+      ? copiarTreinos({treinosOrigem:org.treinos, alunoDestinoId:studentId,
+          faseDestinoId:nova.id, ordemInicial:treinos.length,
+          limparObs:!!org.limparObs})
+      : [];
     updStudent({fases:[...(s.fases||[]),nova], treinos:[...treinos,...novosTreinos]});
     enqueueOp({tipo:'insert',tabela:'fases',dados:{
       id:nova.id, aluno_id:studentId, nome:nova.nome,
       objetivo:nova.objetivo||null, inicio:nova.inicio, fim:nova.fim}});
     setEditandoFase(null); setFaseSel(nova);
-    flash(novosTreinos.length?('Fase criada com '+novosTreinos.length+' treinos ✓'):'Fase criada ✓');
+    flash(novosTreinos.length
+      ? ('Fase criada com '+novosTreinos.length+(novosTreinos.length===1?' sessão ✓':' sessões ✓'))
+      : 'Fase criada ✓');
+  };
+  /* IMPORTAR SESSÕES para a fase JÁ ABERTA. Mesmo motor da criação de fase;
+     muda só o destino — uma fase que já existe e já tem treinos dentro.
+     `ordemInicial` continua sendo o total de treinos do aluno, igual ao
+     addTreino: `ordem` é sequência de criação, não posição dentro da fase. */
+  const importarSessoes=(r)=>{
+    const destino=faseEmFoco;
+    if(!destino || !r || !r.treinos || !r.treinos.length){ setImportando(false); return; }
+    const novos=copiarTreinos({treinosOrigem:r.treinos, alunoDestinoId:studentId,
+      faseDestinoId:destino.id, ordemInicial:treinos.length, limparObs:!!r.limparObs});
+    updStudent({treinos:[...treinos,...novos]});
+    setImportando(false);
+    flash(novos.length+(novos.length===1?' sessão importada ✓':' sessões importadas ✓'));
   };
   const renomearFase=(f,valor)=>{
     updStudent({fases:(s.fases||[]).map(x=>x.id===f.id?{...x,nome:valor}:x)});
@@ -5364,6 +5643,11 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
         <button className="agbtn" onClick={()=>setEditandoFase('nova')}>+ Nova fase</button>
         <button className="agbtn" onClick={()=>nav({name:'agenda',studentId})}>
           📅 Agenda de {primeiroNome(s.name)}</button>
+        {/* só aparece com uma fase aberta: importar exige destino, e sem fase
+            selecionada a sessão cairia solta em "sem fase" sem ele perceber */}
+        {faseEmFoco && !ehAluno &&
+          <button className="agbtn" onClick={()=>setImportando(true)}>
+            📥 Importar sessões para {faseEmFoco.nome}</button>}
         {faseEmFoco && <div className="secaotit">Treinos de {faseEmFoco.nome}</div>}
       </React.Fragment>}
       {treinos.length===0 && <div className="empty"><div className="big">📋</div>
@@ -5437,8 +5721,15 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
     })()}
     {editandoFase && !ehAluno && <FaseSheet
       inicial={editandoFase==='nova'?null:editandoFase}
-      podeDuplicar={!!faseAtual && treinos.some(t=>t.faseId===faseAtual.id)}
+      db={db} studentId={studentId}
       onSalvar={salvarFase} onClose={()=>setEditandoFase(null)}/>}
+    {importando && !ehAluno && faseEmFoco && <SeletorSessoes
+      db={db} alunoAtualId={studentId}
+      nomesExistentes={treinos.filter(t=>t.faseId===faseEmFoco.id).map(t=>t.nome)}
+      titulo="Importar sessões"
+      subtitulo={'De qual aluno vem a sessão que entra em '+faseEmFoco.nome+'?'}
+      rotuloAcao="Importar"
+      onConfirmar={importarSessoes} onFechar={()=>setImportando(false)}/>}
     {adding && !ehAluno && <div className="backdrop" onClick={()=>setAdding(false)}>
       <div className="sheet" onClick={e=>e.stopPropagation()}>
         <h2>Novo treino</h2><div className="h2sub">Ex: Treino A, Treino B, Membros Inferiores…</div>
