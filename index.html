@@ -1253,6 +1253,52 @@
   .hserie .hsv{flex:1;font-size:13.5px;font-weight:600;color:var(--text)}
   .varfiltro.sgf{align-items:center;margin-bottom:10px}
   .sgflab{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-right:2px}
+  /* --- isometria: cartão no treino --- */
+  .isocard{margin:10px 0 2px;padding:12px;border-radius:13px;background:var(--surface-2);
+    border:1px solid var(--line)}
+  .isocardtxt{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+  .isocardtxt b{color:var(--text);font-weight:800}
+  .isoiniciar{width:100%;padding:13px;border-radius:12px;border:none;background:var(--cyan);
+    color:#04191a;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .isoiniciar:active{opacity:.85}
+  /* --- isometria: toggle no editor --- */
+  .isotgl{margin-top:10px}
+  .isogrid{margin-top:10px}
+  /* --- isometria: overlay em execução --- */
+  .isoover{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;
+    background:var(--bg);padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+    transition:background .4s ease}
+  .isoover.f-dentro{background:radial-gradient(circle at 50% 42%,rgba(110,232,154,.13),var(--bg) 62%)}
+  .isoover.f-passou{background:radial-gradient(circle at 50% 42%,rgba(224,185,60,.13),var(--bg) 62%)}
+  .isomeio{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+  .isoprep{font-size:96px;font-weight:800;line-height:1;color:var(--cd);letter-spacing:-.05em}
+  .isoprepsub{font-size:14px;color:var(--muted)}
+  .isonum{font-size:104px;font-weight:800;line-height:1;color:var(--cd);letter-spacing:-.06em;
+    font-variant-numeric:tabular-nums}
+  .isouni{font-size:34px;font-weight:700;margin-left:4px;opacity:.65}
+  .isoalvotxt{font-size:14.5px;color:var(--muted);text-align:center;min-height:20px}
+  .isoalvotxt b{color:var(--cd);font-weight:800}
+  .isobar{position:relative;width:100%;max-width:320px;height:9px;border-radius:999px;
+    background:var(--surface-2);overflow:visible}
+  .isofill{display:block;height:100%;border-radius:999px;background:var(--cd);
+    transition:width .2s linear}
+  .isomarca{position:absolute;top:-4px;width:2px;height:17px;background:var(--muted);
+    opacity:.75;transform:translateX(-1px)}
+  .isoescala{display:flex;justify-content:space-between;width:100%;max-width:320px;
+    font-size:11px;color:var(--muted-2)}
+  .isorodape{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:10px}
+  .isoserie{font-size:13px;color:var(--muted);font-weight:700}
+  .isoconcluir{padding:14px 22px;border-radius:13px;border:none;background:var(--cd);
+    color:#04191a;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .isoconcluir:disabled{opacity:.4}
+  .isofimwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+  .isofimico{font-size:44px}
+  .isofimnum{font-size:66px;font-weight:800;line-height:1;color:var(--cyan-2);letter-spacing:-.05em;
+    font-variant-numeric:tabular-nums}
+  .isofimtit{font-size:20px;font-weight:800;color:var(--text)}
+  .isofimsub{font-size:13px;color:var(--muted);margin-bottom:8px}
   /* --- cardio: editor --- */
   .cdlista{display:flex;flex-direction:column;gap:6px}
   .cdrow{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:11px;
@@ -2258,6 +2304,21 @@ function checkinFeito(s){
   const ref=semanaRefAtual();
   return ((s&&s.checkins)||[]).some(c=>String(c.semanaRef).slice(0,10)===ref);
 }
+/* SEMANA QUE O ALUNO VÊ.
+   `db.ciclo` é o ciclo GLOBAL da consultoria (view v_semana_atual) — dado
+   interno do treinador. Mostrá-lo ao aluno faz quem respondeu hoje ler
+   "Semana 3" e concluir que o app está errado.
+   Aqui a contagem é a JORNADA DELE: semanas desde a 1ª avaliação respondida.
+   Sem nenhuma avaliação ainda, devolve null e o rótulo simplesmente some. */
+function semanaDoAluno(s){
+  const datas=((s&&s.avaliacoes)||[])
+    .map(v=>String(v.data||'').slice(0,10)).filter(Boolean).sort();
+  if(!datas.length) return null;
+  const ini=Date.parse(datas[0]+'T00:00:00'), hoje=Date.parse(todayISO()+'T00:00:00');
+  if(isNaN(ini)||isNaN(hoje)) return null;
+  if(hoje<ini) return 1;
+  return Math.floor((hoje-ini)/86400000/7)+1;
+}
 function momentoAvulso(ciclo){
   const d=(ciclo && ciclo.dias_corridos!=null) ? ciclo.dias_corridos : 0;
   return 'D'+Math.max(0, Math.min(999, Math.round(d)));
@@ -2362,7 +2423,7 @@ function CheckinSemanal({db,nav,studentId,flash,recarregar}){
   </React.Fragment>);
   return (<React.Fragment>
     <TopBar title="Check-in da semana"
-      sub={db.ciclo?('Semana '+db.ciclo.semana+' de '+db.ciclo.semanas):''}
+      sub={semanaDoAluno(s)?('Semana '+semanaDoAluno(s)):''}
       onBack={()=>nav({name:'dor',studentId})}/>
     <div className="screen avscreen">
       {dores.length===0
@@ -2436,7 +2497,7 @@ function TelaDor({db,setDb,nav,studentId,flash}){
     setCarregando(false);
   };
   return (<React.Fragment>
-    <TopBar title="Sua dor" sub={db.ciclo?('Semana '+db.ciclo.semana+' de '+db.ciclo.semanas):s.name}
+    <TopBar title="Sua dor" sub={semanaDoAluno(s)?('Semana '+semanaDoAluno(s)):s.name}
       onBack={()=>nav({name:'student',studentId})}/>
     <div className="screen">
       {tarefa && tarefa.tipo==='avaliacao' && <div className="dortarefa">
@@ -2577,6 +2638,10 @@ function incrementoSugerido(carga){
   return 5;                    // máquinas e barras pesadas
 }
 function podeAumentar(ex, logs){
+  // ISOMETRIA fica de fora: progressão aqui é tempo de sustentação, não
+  // repetição. O topoDaFaixa leria "15-20" como repetições e sugeriria
+  // aumento de carga em cima de segundos — conselho errado.
+  if(ex && ex.isometria) return null;
   const topo=topoDaFaixa(ex.series);
   if(topo==null) return null;
   const porDia={};
@@ -3285,7 +3350,7 @@ async function fetchDbFromSupabase(){
     const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg, rPlan, rAcad, rAlAcad, rSem, rDor, rAval, rChk, rCorr] = await Promise.all([
       sb.from('alunos').select('id,nome,foto_url,academia,nascimento,fc_max').order('nome'),
       buscarTudo('treinos','id,aluno_id,nome,ordem,concluido_data,fase_id','ordem'),
-      buscarTudo('exercicios','id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio,grupo,audio_url','ordem'),
+      buscarTudo('exercicios','id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio,isometria,grupo,audio_url','ordem'),
       buscarTudo('logs','id,exercicio_id,data,carga,reps,intensidade,dor,dor_local,dor_lado,variante,serie,extra','data,serie'),
       buscarTudo('sessoes','id,aluno_id,treino_id,data,origem,duracao','data'),
       buscarTudo('relatos','id,aluno_id,treino_id,exercicio_id,exercicio_nome,data,texto,fixado,created_at','created_at'),
@@ -3329,7 +3394,7 @@ async function fetchDbFromSupabase(){
     (rEx.data||[]).forEach(e=>{
       (exPorTreino[e.treino_id]=exPorTreino[e.treino_id]||[]).push({
         id:e.id, name:e.nome, series:e.series||'',
-        exerciseId:e.cardapio_id, doneDate:e.done_date, descanso:e.descanso||'', filmar:!!e.filmar, observacao:e.observacao||'', metodo:e.metodo||null, cardio:e.cardio||null,
+        exerciseId:e.cardapio_id, doneDate:e.done_date, descanso:e.descanso||'', filmar:!!e.filmar, observacao:e.observacao||'', metodo:e.metodo||null, cardio:e.cardio||null, isometria:e.isometria||null,
         grupo:e.grupo||null,
         audioUrl:e.audio_url||'',
         logs: logsPorEx[e.id]||[]
@@ -3676,6 +3741,7 @@ function buildEstruturaSnapshot(db){
         exercises:(t.exercises||[]).map(ex=>({
           id:ex.id, name:ex.name, series:ex.series,
           filmar:!!ex.filmar, observacao:ex.observacao||'', metodo:ex.metodo||null, cardio:ex.cardio||null,
+          isometria:ex.isometria||null,
           grupo:ex.grupo||null,
           logs:(ex.logs||[]).map(l=>({id:l.id,date:l.date,carga:l.carga,reps:l.reps,intensidade:l.intensidade,dor:l.dor,variante:l.variante||'',serie:(l.serie!=null?l.serie:null)}))
           // doneDate propositalmente omitido (efêmero do dia)
@@ -4008,6 +4074,164 @@ function CardioOverlay({cardio}){
         onResponder={(d)=>cardio.responderCheckin(pendente,d)}/>}
   </div>);
 }
+/* ===== ISOMETRIA =====
+   Prescrição: uma FAIXA de segundos por série ({min,max}), guardada em
+   `exercicios.isometria` (jsonb) — mesmo padrão do `cardio`.
+
+   Por que faixa e não número exato: sustentação isométrica não tem série
+   "certa" de 20s. O aluno segura até a forma degradar. A faixa diz onde é
+   suficiente (min) e onde já basta (max), e é isso que a tela sinaliza. */
+const ISO_FAIXAS=[
+  {min:5,  max:10},
+  {min:10, max:15},
+  {min:15, max:20},
+  {min:20, max:25},
+  {min:20, max:30},
+  {min:30, max:40},
+];
+const rotIso=(f)=> f ? (f.min+'-'+f.max+'"') : '';
+/* 3 segundos de preparo antes de contar. Sem isso o aluno perde os primeiros
+   segundos guardando o celular e entrando na posição. */
+const ISO_PREP=3;
+const ISO_TOLERANCIA=15;   // segundos além do máximo antes de encerrar sozinho
+const ISO_KEY='idealis_iso_v1';
+/* Mesmo desenho do cardio: guarda o INSTANTE de início e CALCULA o resto.
+   Tela travada, app minimizado ou página recarregada não perdem a contagem. */
+function useIsoTimer(){
+  const [sessao,setSessao]=useState(null);  // {inicio,min,max,nome,exId,serie}
+  useEffect(()=>{
+    try{
+      if(!LS_OK) return;
+      const r=window.localStorage.getItem(ISO_KEY); if(!r) return;
+      const d=JSON.parse(r);
+      if(!d||!d.inicio||d.max==null) return;
+      // só retoma isometria EM ANDAMENTO; passou muito, descarta
+      if((Date.now()-d.inicio)/1000 > ISO_PREP+d.max+ISO_TOLERANCIA+60){
+        window.localStorage.removeItem(ISO_KEY); return; }
+      setSessao(d);
+    }catch(e){}
+  },[]);
+  const iniciar=(faixa,nome,exId,serie)=>{
+    if(!faixa || faixa.max==null) return;
+    const d={inicio:Date.now(), min:faixa.min, max:faixa.max,
+             nome:nome||'', exId:exId||null, serie:serie||null};
+    setSessao(d);
+    try{ if(LS_OK) window.localStorage.setItem(ISO_KEY,JSON.stringify(d)); }catch(e){}
+  };
+  const parar=()=>{
+    setSessao(null);
+    try{ if(LS_OK) window.localStorage.removeItem(ISO_KEY); }catch(e){}
+  };
+  return {ativo:!!sessao, sessao, iniciar, parar, salvarLog:null};
+}
+/* tela de fim: quanto segurou contra o que foi pedido, e esforço opcional */
+function IsoFim({estado,onSalvar,onFechar}){
+  const [esf,setEsf]=useState(null);
+  const bateu=estado.segurados>=estado.min;
+  return (<div className="isofimwrap">
+    <div className="isofimico">{bateu?'✅':'💪🏼'}</div>
+    <div className="isofimnum">{estado.segurados}s</div>
+    <div className="isofimtit">{bateu?'Isometria concluída!':'Registrado'}</div>
+    <div className="isofimsub">Alvo: {estado.min}–{estado.max}s</div>
+    <div className="cdform">
+      <label className="cdflab">Como foi? <span>(opcional)</span></label>
+      <div className="cdcarinhas">
+        {CARINHAS.map(c=>(
+          <button key={c.v} className={'cdcar'+(esf===c.v?' sel':'')}
+            onClick={()=>setEsf(esf===c.v?null:c.v)}>
+            <span className="cdcare">{c.e}</span><span className="cdcart">{c.t}</span>
+          </button>))}
+      </div>
+    </div>
+    <div className="cdfimbtns">
+      <button className="cdfsalvar" onClick={()=>onSalvar({esforco:esf})}>Salvar série</button>
+      <button className="cdfpular" onClick={onFechar}>descartar</button>
+    </div>
+  </div>);
+}
+function IsoOverlay({iso}){
+  const sessao=iso.sessao;
+  const [agora,setAgora]=useState(Date.now());
+  const [parouEm,setParouEm]=useState(null);   // aluno tocou em "Concluir"
+  const wakeRef=React.useRef(null);
+  const vibMin=React.useRef(false), vibMax=React.useRef(false);
+  useEffect(()=>{
+    // 200ms: o número de segundos precisa virar sem atraso perceptível
+    const id=setInterval(()=>setAgora(Date.now()),200);
+    const onVis=()=>{ if(document.visibilityState==='visible') setAgora(Date.now()); };
+    document.addEventListener('visibilitychange',onVis);
+    let cancelado=false;
+    (async()=>{ try{
+      if(navigator.wakeLock && navigator.wakeLock.request){
+        const w=await navigator.wakeLock.request('screen');
+        if(cancelado) w.release(); else wakeRef.current=w;
+      }
+    }catch(e){} })();
+    return ()=>{
+      cancelado=true; clearInterval(id);
+      document.removeEventListener('visibilitychange',onVis);
+      try{ if(wakeRef.current){ wakeRef.current.release(); wakeRef.current=null; } }catch(e){}
+    };
+  },[]);
+  const dec = sessao ? Math.max(0,(agora-sessao.inicio)/1000) : 0;
+  const prep = Math.ceil(ISO_PREP-dec);           // 3,2,1 antes de começar
+  const emPrep = dec < ISO_PREP;
+  const seg = Math.floor(Math.max(0, dec-ISO_PREP));
+  // encerra sozinho passada a tolerância — ninguém segura prancha eternamente
+  const estourou = !emPrep && sessao && seg >= sessao.max+ISO_TOLERANCIA;
+  const segurados = parouEm!=null ? parouEm : seg;
+  useEffect(()=>{
+    if(!sessao || emPrep || parouEm!=null) return;
+    if(!vibMin.current && seg>=sessao.min){
+      vibMin.current=true; if(navigator.vibrate) navigator.vibrate([220,90,220]); }
+    if(!vibMax.current && seg>=sessao.max){
+      vibMax.current=true; if(navigator.vibrate) navigator.vibrate([340]); }
+  },[seg,emPrep,parouEm,sessao]);
+  if(!sessao) return null;
+  const terminou = parouEm!=null || estourou;
+  const est={min:sessao.min, max:sessao.max,
+             segurados: terminou ? Math.min(segurados, sessao.max+ISO_TOLERANCIA) : segurados};
+  // faixa: antes do mínimo é neutro, dentro é verde, passou do máximo é âmbar
+  const fase = seg<sessao.min ? 'antes' : (seg<=sessao.max ? 'dentro' : 'passou');
+  const cor = emPrep ? '#7fd8e0' : (fase==='dentro' ? '#6ee89a' : (fase==='passou' ? '#e0b93c' : '#00c9cc'));
+  const pct = Math.max(0, Math.min(1, seg/Math.max(1,sessao.max)));
+  return (<div className={'isoover f-'+fase} style={{'--cd':cor}}>
+    <div className="cdtop">
+      <span className="cdnome">{sessao.nome}</span>
+      <button className="cdsair" onClick={iso.parar}>✕</button>
+    </div>
+    {terminou
+      ? <IsoFim estado={est}
+          onSalvar={(d)=>{ iso.salvarLog && iso.salvarLog(sessao, est, d); iso.parar(); }}
+          onFechar={()=>iso.parar()}/>
+      : <div className="isomeio">
+          {emPrep
+            ? <React.Fragment>
+                <div className="isoprep">{prep>0?prep:'JÁ!'}</div>
+                <div className="isoprepsub">Entre na posição</div>
+              </React.Fragment>
+            : <React.Fragment>
+                <div className="isonum">{seg}<span className="isouni">s</span></div>
+                <div className="isoalvotxt">
+                  {fase==='antes'  && <React.Fragment>Segure até <b>{sessao.min}s</b></React.Fragment>}
+                  {fase==='dentro' && <React.Fragment>Na faixa · pode soltar a partir daqui</React.Fragment>}
+                  {fase==='passou' && <React.Fragment>Passou de {sessao.max}s — pode soltar</React.Fragment>}
+                </div>
+                <div className="isobar">
+                  <span className="isofill" style={{width:(pct*100)+'%'}}></span>
+                  <span className="isomarca" style={{left:((sessao.min/Math.max(1,sessao.max))*100)+'%'}}></span>
+                </div>
+                <div className="isoescala"><span>0s</span><span>{sessao.min}s</span><span>{sessao.max}s</span></div>
+              </React.Fragment>}
+        </div>}
+    {!terminou &&
+      <div className="isorodape">
+        {sessao.serie ? <span className="isoserie">{sessao.serie}ª série</span> : <span></span>}
+        <button className="isoconcluir" disabled={emPrep} onClick={()=>setParouEm(seg)}>
+          {emPrep?'Preparando…':'Concluir série'}</button>
+      </div>}
+  </div>);
+}
 /* ===== ARCO DE ZONAS =====
    Semicírculo de 5 segmentos. A zona prescrita fica acesa; as outras, apagadas.
    Acima do arco: a faixa de bpm alvo. Encaixado na concavidade: o nome da zona. */
@@ -4120,6 +4344,7 @@ function App({auth}){
   const [toast,setToast]=useState(null);
   const timer=useRestTimer();
   const cardio=useCardioTimer();
+  const iso=useIsoTimer();
   /* log de cardio: auto-log (tempo e blocos) + campos opcionais da tela de fim.
      Guardado na própria tabela `logs`, em `extra` (jsonb). */
   cardio.salvarLog=(sessao, estado, extras)=>{
@@ -4145,6 +4370,31 @@ function App({auth}){
       intensidade:log.intensidade, dor:null, extra:log.extra
     }});
     flash('Cardio registrado ✓');
+  };
+  /* log de isometria: uma linha por série sustentada. Vai em `logs.extra`
+     (jsonb), do mesmo jeito que o cardio — nenhuma coluna nova no banco.
+     `carga` e `reps` ficam nulos de propósito: segundo não é repetição, e
+     misturar os dois envenenaria os gráficos de volume. */
+  iso.salvarLog=(sessao, estado, extras)=>{
+    if(!sessao || !sessao.exId) return;
+    const log={
+      id:uid(), date:todayISO(),
+      carga:null, reps:null, serie:(sessao.serie!=null?sessao.serie:null), variante:'',
+      intensidade:(extras && extras.esforco!=null) ? extras.esforco : null,
+      dor:null,
+      extra:{ tipo:'isometria', segundos:estado.segurados,
+              alvoMin:sessao.min, alvoMax:sessao.max,
+              completo: estado.segurados>=sessao.min }
+    };
+    setDb(d=>({...d, students:d.students.map(st=>({...st, treinos:(st.treinos||[]).map(tr=>({...tr,
+      exercises:(tr.exercises||[]).map(ex=> ex.id===sessao.exId ? {...ex, logs:[...(ex.logs||[]), log]} : ex)
+    }))}))}));
+    enqueueOp({tipo:'insert',tabela:'logs',dados:{
+      id:log.id, exercicio_id:sessao.exId, data:log.date,
+      carga:null, reps:null, serie:log.serie, variante:null,
+      intensidade:log.intensidade, dor:null, extra:log.extra
+    }});
+    flash(estado.segurados+'s registrados ✓');
   };
   // progresso de séries da sessão — persiste no localStorage:
   // o Android/iOS mata a aba em segundo plano e o estado React some junto
@@ -4312,7 +4562,7 @@ function App({auth}){
   else if(view.name==='agenda') screen=<Agenda db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
   else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} faseId={view.faseId||null} flash={flash} ehAluno={ehAluno} onSair={auth?auth.sair:null}/>;
   else if(view.name==='correcoes') screen=<Correcoes db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} flash={flash} ehAluno={ehAluno}/>;
-  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio}/>;
+  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio} iso={iso}/>;
   else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={ehAluno}/>;
   // FCmáx do aluno cuja tela está aberta (o cardio roda por cima de qualquer view)
   const fcMaxDoAlunoEmFoco = (()=>{
@@ -4361,6 +4611,7 @@ function App({auth}){
     <NuvemBadge carga={carga} fila={fila} ehAluno={ehAluno} onRetry={()=>{flushOps(true);recarregar();}}/>
     <RestTimerOverlay timer={timer} voltar={voltarDaTela}/>
     {cardio.ativo && <CardioOverlay cardio={{...cardio, fcMax:fcMaxDoAlunoEmFoco}}/>}
+    {iso.ativo && <IsoOverlay iso={iso}/>}
     {toast && <div className="toast">{toast}</div>}
   </div>);
 }
@@ -5225,6 +5476,7 @@ function copiarTreinos(opts){
         cardapio_id:ex.exerciseId!=null?ex.exerciseId:null, ordem:j,
         done_date:null, descanso:ex.descanso||null, filmar:!!ex.filmar,
         observacao:obs||null, metodo:ex.metodo||null, cardio:ex.cardio||null,
+        isometria:ex.isometria||null,
         grupo:gNovo}});
       return copia;
     });
@@ -6196,7 +6448,7 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
   const [setsManual,setSetsManual]=useState(false);
   const [repsManual,setRepsManual]=useState(false);
   // descanso: guardado como "45~60" (range) ou "60" (único)
-  const descOpts=['30~45','45~60','60~90','90~120','120~180'];
+  const descOpts=['30','30~45','45~60','50~70','60~75','60~90','90~120','120~180'];
   const [descanso,setDescanso]=useState(initial&&initial.descanso?initial.descanso:'');
   const [descManual,setDescManual]=useState(false);
   const [filmar,setFilmar]=useState(initial?!!initial.filmar:false);
@@ -6204,6 +6456,7 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
   const [audioUrl,setAudioUrl]=useState(initial?(initial.audioUrl||''):'');
   const [metodo,setMetodo]=useState(initial&&initial.metodo?initial.metodo:null);
   const [cardio,setCardio]=useState(initial&&initial.cardio?initial.cardio:null);
+  const [iso,setIso]=useState(initial&&initial.isometria?initial.isometria:null);
   const [erroEx,setErroEx]=useState('');
   const [escolhendoCard,setEscolhendoCard]=useState(false);
   const [buscaCard,setBuscaCard]=useState('');
@@ -6324,8 +6577,12 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
       if(!bl.length){ setErroEx('Preencha o tempo dos blocos do cardio (ex: 1min, 45s).'); return; }
     }
     setErroEx('');
-    const combined = (sets.trim()&&reps.trim()) ? `${sets.trim()} × ${reps.trim()}` : (sets.trim()||reps.trim()||'');
-    onSave({name:name.trim(), series:combined, exerciseId, descanso:descanso.trim(), filmar, observacao:observacao.trim(), metodo, cardio, audioUrl});
+    // cardio e método mandam mais: se algum estiver ligado, a isometria não vai
+    const isoFinal = (cardio||metodo) ? null : iso;
+    const combined = isoFinal
+      ? ((sets.trim()||'1')+' × '+rotIso(isoFinal))
+      : ((sets.trim()&&reps.trim()) ? `${sets.trim()} × ${reps.trim()}` : (sets.trim()||reps.trim()||''));
+    onSave({name:name.trim(), series:combined, exerciseId, descanso:descanso.trim(), filmar, observacao:observacao.trim(), metodo, cardio, isometria:isoFinal, audioUrl});
   };
   return (<div className="backdrop" onClick={onClose}>
     <div className="sheet" onClick={e=>e.stopPropagation()}>
@@ -6571,14 +6828,35 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
             </div>}
       </div>}
       {!cardio && !metodo && <div className="field"><label>Repetições</label>
-        {repsManual
+        {!iso && (repsManual
           ? <input value={reps} onChange={e=>setReps(e.target.value)} onBlur={()=>setRepsManual(false)} placeholder="Ex: 8 a 12" autoFocus/>
           : <div className="pickgrid s3">
               {repOpts.map(r=>(
                 <button type="button" key={r} className={'pcell'+(r===reps?' sel':'')} onClick={()=>setReps(r)}>{r}</button>
               ))}
               <button type="button" className="pcell more" onClick={()=>setRepsManual(true)}>⌨ digitar</button>
-            </div>}
+            </div>)}
+        {/* toggle logo abaixo das repetições: isometria SUBSTITUI a repetição,
+            não convive com ela. Ligado, o campo acima some para não sobrar
+            prescrição contraditória ("3 × 10" e "segurar 20s" ao mesmo tempo). */}
+        <button type="button" className={'filmtoggle isotgl'+(iso?' on':'')}
+          onClick={()=>setIso(x=>x?null:{min:ISO_FAIXAS[2].min,max:ISO_FAIXAS[2].max})}>
+          <span className="ftbox">{iso?'✓':''}</span>
+          <span className="fttxt">
+            <span className="ftlab">⏱️ Isometria</span>
+            <span className="fthint">{iso
+              ? ('Segurar '+rotIso(iso)+' em cada série')
+              : 'Troca repetição por tempo de sustentação'}</span>
+          </span>
+        </button>
+        {iso && <div className="pickgrid s3 isogrid">
+          {ISO_FAIXAS.map(f=>{
+            const k=f.min+'_'+f.max;
+            const sel=(iso.min===f.min && iso.max===f.max);
+            return (<button type="button" key={k} className={'pcell'+(sel?' sel':'')}
+              onClick={()=>setIso({min:f.min,max:f.max})}>{f.min}-{f.max}"</button>);
+          })}
+        </div>}
       </div>}
       {!cardio && !metodo && <div className="field"><label>Descanso (segundos)</label>
         {descManual
@@ -6957,7 +7235,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
       </button>}
     </div></div>);
 }
-function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,seriesFeitas,setSeriesFeitas,catalogoVer,cardio}){
+function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,seriesFeitas,setSeriesFeitas,catalogoVer,cardio,iso}){
   const s=db.students.find(x=>x.id===studentId);
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
   const [editingEx,setEditingEx]=useState(null);
@@ -6992,23 +7270,23 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
   const updExercises=(exs)=>setDb({...db,students:db.students.map(x=>x.id===studentId?{...x,treinos:x.treinos.map(tt=>tt.id===treinoId?{...tt,exercises:exs}:tt)}:x)});
   const saveEx=(data)=>{
     if(editingEx==='new'){
-      const novo={id:uid(),name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,observacao:data.observacao||'',metodo:data.metodo||null,cardio:data.cardio||null, grupo:null, audioUrl:data.audioUrl||'',logs:[]};
+      const novo={id:uid(),name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,observacao:data.observacao||'',metodo:data.metodo||null,cardio:data.cardio||null,isometria:data.isometria||null, grupo:null, audioUrl:data.audioUrl||'',logs:[]};
       updExercises([...(t.exercises||[]),novo]);
       enqueueOp({tipo:'insert',tabela:'exercicios',dados:{
         id:novo.id, treino_id:treinoId, nome:novo.name, series:novo.series||null,
         cardapio_id:novo.exerciseId!=null?novo.exerciseId:null, ordem:(t.exercises||[]).length,
         descanso:novo.descanso||null, filmar:!!novo.filmar, observacao:novo.observacao||null,
-        metodo:novo.metodo||null, cardio:novo.cardio||null, audio_url:novo.audioUrl||null
+        metodo:novo.metodo||null, cardio:novo.cardio||null, isometria:novo.isometria||null, audio_url:novo.audioUrl||null
       }});
       const herda=lastLogOfExercise(s,data.name,data.exerciseId);
       flash(herda?('Adicionado — última carga '+herda.carga+' disponível ✓'):'Exercício adicionado ✓');
     }else{
-      updExercises(t.exercises.map(e=>e.id===editingEx.id?{...e,name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,observacao:data.observacao||'',metodo:data.metodo||null,cardio:data.cardio||null,audioUrl:data.audioUrl||''}:e));
+      updExercises(t.exercises.map(e=>e.id===editingEx.id?{...e,name:data.name,series:data.series,exerciseId:data.exerciseId,descanso:data.descanso,filmar:!!data.filmar,observacao:data.observacao||'',metodo:data.metodo||null,cardio:data.cardio||null,isometria:data.isometria||null,audioUrl:data.audioUrl||''}:e));
       enqueueOp({tipo:'update',tabela:'exercicios',id:editingEx.id,dados:{
         nome:data.name, series:data.series||null,
         cardapio_id:data.exerciseId!=null?data.exerciseId:null,
         descanso:data.descanso||null, filmar:!!data.filmar, observacao:data.observacao||null,
-        metodo:data.metodo||null, cardio:data.cardio||null, audio_url:data.audioUrl||null
+        metodo:data.metodo||null, cardio:data.cardio||null, isometria:data.isometria||null, audio_url:data.audioUrl||null
       }});
       flash('Atualizado ✓');
     }
@@ -7441,8 +7719,9 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
               <div className="exname">{ex.name}</div>
               <div className="exmeta">
                 {(()=>{ const tot=totalSeries(ex); const fe=seriesFeitas[ex.id]||0;
-                  const cl='exseries'+((ex.metodo||ex.cardio)?' met':'')+((tot&&fe>=tot)?' concl':'');
+                  const cl='exseries'+((ex.metodo||ex.cardio||ex.isometria)?' met':'')+((tot&&fe>=tot)?' concl':'');
                   if(ex.cardio) return <span className={cl}>🏃 Cardio · {fmtMin(totalCardioSeg(ex.cardio))}</span>;
+                  if(ex.isometria) return <span className={cl}>⏱️ Isometria · {rotIso(ex.isometria)}{tot?(' · '+tot+'×'):''}</span>;
                   if(ex.metodo) return <span className={cl}>🔺 {ex.metodo.nome}</span>;
                   return ex.series ? <span className={cl}>{ex.series}</span> : null; })()}
                 {ex.filmar && <span className="exfilm">🎥 Recomendado Filmar</span>}
@@ -7486,6 +7765,15 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
               </div>
               <button className="cdiniciar" onClick={()=>cardio.iniciar(bl, ex.name, ex.id)}>▶ Iniciar cardio · {fmtMin(totalCardioSeg(ex.cardio))}</button>
             </div>); })()}
+          {ex.isometria && <div className="isocard">
+            <div className="isocardtxt">
+              Segure entre <b>{ex.isometria.min}s</b> e <b>{ex.isometria.max}s</b>
+              {totalSeries(ex) ? <React.Fragment> · {totalSeries(ex)} séries</React.Fragment> : null}
+            </div>
+            <button className="isoiniciar"
+              onClick={()=>iso.iniciar(ex.isometria, ex.name, ex.id, (seriesFeitas[ex.id]||0)+1)}>
+              ▶ Iniciar isometria · {rotIso(ex.isometria)}</button>
+          </div>}
           {ex.metodo && <div className="metplanowrap">
             <div className="metplano">
               {ex.metodo.series.map((sr,i)=>{
