@@ -2235,7 +2235,7 @@ function carregarAvaliacao(){
   if(_avalCarregando) return _avalCarregando;
   _avalCarregando=new Promise((ok,falha)=>{
     const el=document.createElement('script');
-    el.src=AVALIACAO_SRC+'?v=3';
+    el.src=AVALIACAO_SRC+'?v=4';
     el.onload=()=>{ if(window.AvaliacaoDor) ok(window.AvaliacaoDor);
                     else falha(new Error('avaliacao.js carregou sem expor AvaliacaoDor')); };
     el.onerror=()=>{ _avalCarregando=null; falha(new Error('falha ao baixar avaliacao.js')); };

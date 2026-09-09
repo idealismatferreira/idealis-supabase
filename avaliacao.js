@@ -196,7 +196,10 @@ function MapaCorporal(p){
             fontSize:11, fontWeight:800, fill:"#0b0f10",
             style:{pointerEvents:"none"}}, notas[r.id]) : null,
           segue ? e("circle",{cx:r.cx, cy:r.cy, r:3.2, fill:"var(--cyan)",
-            style:{pointerEvents:"none"}}) : null
+            style:{pointerEvents:"none"}}) : null,
+          /* mesma sinalização do 3D: ponto lima em cima da região tocada agora */
+          (ativa && !marcada) ? e("circle",{cx:r.cx, cy:r.cy, r:3.6,
+            fill:"var(--lime)", style:{pointerEvents:"none"}}) : null
         );
       })
     )
@@ -254,7 +257,7 @@ function carregarManequim3D(){
     }, 15000);
     var el = document.createElement("script");
     el.type = "module";
-    el.src = "manequim3d.js?v=2";
+    el.src = "manequim3d.js?v=3";
     el.onload = function(){
       clearTimeout(relogio);
       if(window.ManequimDor && window.ManequimDor.pronto) encerrar(null, window.ManequimDor);

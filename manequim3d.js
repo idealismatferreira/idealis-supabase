@@ -107,7 +107,8 @@ function corDor(v){
   if(v<=8) return 0xe0803c;
   return 0xd1495b;
 }
-const COR_ATIVA = 0x00c9cc;   // --cyan do Idealis
+const COR_ATIVA = 0x00c9cc;   // --cyan  : dor que o aluno já acompanha
+const COR_SELECAO = 0xddff00; // --lime  : região tocada agora
 
 /* ---------------------------------------------------------------------
    2. PARSER GLB MÍNIMO
@@ -213,6 +214,18 @@ function criarCena(canvas){
 }
 
 /* pino: esfera + anel na base, para enxergar mesmo de perfil */
+/* ÂNGULO QUE TRAZ UM PONTO PARA A FRENTE DA CÂMERA
+
+   A câmera fica em +Z olhando para a origem. Girando o corpo em θ, um
+   ponto local (x,z) vai para z' = -x·senθ + z·cosθ. Maximizar z' (ou
+   seja, trazer o ponto para a frente) dá θ = atan2(-x, z).
+
+   O sinal negativo no x é o detalhe que faltava: sem ele, "Perfil D"
+   mostrava o lado esquerdo e a região selecionada girava para o lado
+   oposto ao que devia. Como o lado DIREITO do aluno é -X, o perfil
+   direito é +π/2, não -π/2. */
+function anguloPara(p){ return Math.atan2(-p[0], p[2]); }
+
 function criarPino(cor, ativa){
   const g = new THREE.Group();
   const mat = new THREE.MeshBasicMaterial({ color: cor });
@@ -224,6 +237,27 @@ function criarPino(cor, ativa){
       side: THREE.DoubleSide, depthWrite:false })
   );
   g.add(anel);
+  g.userData.anel = anel;
+  return g;
+}
+
+/* Marca a região tocada AGORA. Anel maior e lima, por cima do que já
+   estiver ali: se a região já tem nota, a bola colorida continua
+   aparecendo por dentro do anel e as duas informações convivem. */
+function criarSelecao(comBola){
+  const g = new THREE.Group();
+  const anel = new THREE.Mesh(
+    new THREE.RingGeometry(0.088, 0.116, 26),
+    new THREE.MeshBasicMaterial({ color: COR_SELECAO, transparent:true, opacity:0.9,
+      side: THREE.DoubleSide, depthWrite:false, depthTest:false })
+  );
+  g.add(anel);
+  if(comBola){
+    const bola = new THREE.Mesh(new THREE.SphereGeometry(0.05, 14, 12),
+      new THREE.MeshBasicMaterial({ color: COR_SELECAO, depthTest:false }));
+    g.add(bola);
+  }
+  g.renderOrder = 10;   // nunca some dentro do corpo
   g.userData.anel = anel;
   return g;
 }
@@ -416,15 +450,21 @@ function Manequim3D(props){
       g.position.fromArray(HOTSPOTS[k].p);
       st.pinos.add(g);
     });
+    const sel = props.ativa;
+    if(sel && HOTSPOTS[sel]){
+      const g = criarSelecao(!vistos[sel]);
+      g.position.fromArray(HOTSPOTS[sel].p);
+      st.pinos.add(g);
+    }
     st.pedirQuadro();
-  }, [props.notas, props.acompanhadas]);
+  }, [props.notas, props.acompanhadas, props.ativa]);
 
   /* --- ao selecionar uma região, gira o corpo para ela e mostra o nome --- */
   useEffect(function(){
     const st = refEstado.current;
     if(!st || !props.ativa || !HOTSPOTS[props.ativa]) { setRotulo(null); return; }
     const h = HOTSPOTS[props.ativa];
-    st.alvo.giroY = Math.atan2(h.p[0], h.p[2]);
+    st.alvo.giroY = anguloPara(h.p);
     st.alvo.giroX = 0;
     st.pedirQuadro();
     setRotulo(props.nomeDe ? props.nomeDe(props.ativa) : props.ativa);
@@ -446,8 +486,8 @@ function Manequim3D(props){
     e('div', { className:'m3presets' },
       e('button', { type:'button', onClick:function(){ girar(0); } }, 'Frente'),
       e('button', { type:'button', onClick:function(){ girar(Math.PI); } }, 'Costas'),
-      e('button', { type:'button', onClick:function(){ girar(-Math.PI/2); } }, 'Perfil D'),
-      e('button', { type:'button', onClick:function(){ girar(Math.PI/2); } }, 'Perfil E')
+      e('button', { type:'button', onClick:function(){ girar(Math.PI/2); } }, 'Perfil D'),
+      e('button', { type:'button', onClick:function(){ girar(-Math.PI/2); } }, 'Perfil E')
     ),
     e('div', { className:'m3palco', ref:refCaixa },
       e('canvas', { ref:refCanvas, className:'m3canvas' }),
