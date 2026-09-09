@@ -19,9 +19,15 @@
    animação e sem Draco. O parser abaixo tem 30 linhas e economiza os
    ~15KB do loader oficial.
 
-   Depende de: window.React, ./vendor/three.module.min.js, ./manequim.glb
+   Depende de: window.React, ./three.module.min.js, ./manequim.glb
+
+   O three fica na RAIZ do repositório, junto com este arquivo — o
+   repositório do Idealis é plano (sw.js, manifest.json, ícones, tudo
+   na raiz) e uma subpasta só para isso seria a única exceção.
+   `three.module.min.js` importa `./three.core.min.js` sozinho, então
+   os dois precisam continuar lado a lado.
    ===================================================================== */
-import * as THREE from './vendor/three.module.min.js';
+import * as THREE from './three.module.min.js';
 
 const React = window.React;
 const e = React.createElement;

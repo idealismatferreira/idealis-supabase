@@ -230,18 +230,40 @@ function setPref3D(v){
 }
 
 var _mod3d = null;
+/* Carregador do módulo 3D.
+
+   ARMADILHA DOS ES MODULES: um erro de REDE no grafo de import (o
+   three não existe, veio 404) dispara `error` no <script>, mas um erro
+   de EXECUÇÃO dentro do módulo não dispara nada — ele vai para o
+   window.onerror e este Promise ficaria pendurado para sempre, e o
+   mapa ficaria em 2D sem ninguém saber por quê. O timeout abaixo
+   existe para transformar esse silêncio em diagnóstico. */
 function carregarManequim3D(){
   if(window.ManequimDor && window.ManequimDor.pronto) return Promise.resolve(window.ManequimDor);
   if(_mod3d) return _mod3d;
   _mod3d = new Promise(function(ok, falha){
+    var fechado = false;
+    function encerrar(erro, mod){
+      if(fechado) return;
+      fechado = true;
+      if(erro){ _mod3d = null; console.warn("[mapa3d] " + erro.message); falha(erro); }
+      else ok(mod);
+    }
+    var relogio = setTimeout(function(){
+      encerrar(new Error("manequim3d.js não respondeu em 15s — confira se manequim3d.js e three.*.min.js estão publicados na raiz"));
+    }, 15000);
     var el = document.createElement("script");
     el.type = "module";
-    el.src = "manequim3d.js?v=1";
+    el.src = "manequim3d.js?v=2";
     el.onload = function(){
-      if(window.ManequimDor && window.ManequimDor.pronto) ok(window.ManequimDor);
-      else falha(new Error("manequim3d.js carregou sem expor ManequimDor"));
+      clearTimeout(relogio);
+      if(window.ManequimDor && window.ManequimDor.pronto) encerrar(null, window.ManequimDor);
+      else encerrar(new Error("manequim3d.js carregou sem expor ManequimDor"));
     };
-    el.onerror = function(){ _mod3d = null; falha(new Error("falha ao baixar manequim3d.js")); };
+    el.onerror = function(){
+      clearTimeout(relogio);
+      encerrar(new Error("não consegui baixar manequim3d.js ou algum import dele (three.module.min.js)"));
+    };
     document.body.appendChild(el);
   });
   return _mod3d;
@@ -256,8 +278,12 @@ function MapaCorpo(p){
     if(!quer3d || quebrou || mod) return;
     var vivo = true;
     carregarManequim3D()
-      .then(function(m){ if(vivo){ if(m.suportado()) setMod(m); else setQuebrou(true); } })
-      .catch(function(err){ console.warn("[mapa3d]", err); if(vivo) setQuebrou(true); });
+      .then(function(m){
+        if(!vivo) return;
+        if(m.suportado()) setMod(m);
+        else { console.warn("[mapa3d] este aparelho não tem WebGL — seguindo no desenho 2D"); setQuebrou(true); }
+      })
+      .catch(function(){ if(vivo) setQuebrou(true); });
     return function(){ vivo = false; };
   },[quer3d, quebrou]);
 
