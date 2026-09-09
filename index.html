@@ -351,6 +351,34 @@
   .mapasvg{width:100%;max-width:270px;height:auto;display:block;
     -webkit-tap-highlight-color:transparent}
   .mapasvg path{transition:fill .18s ease,stroke .18s ease}
+  /* alternador 2D/3D e legenda do que já é acompanhado */
+  .mapaswitch{margin-top:2px;background:none;border:none;color:var(--muted);
+    font-family:inherit;font-size:12.5px;text-decoration:underline;cursor:pointer;padding:6px}
+  .mapalegenda{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted-2)}
+  .mlponto{width:9px;height:9px;border-radius:999px;background:var(--cyan);flex:none;
+    box-shadow:0 0 0 3px rgba(0,201,204,.18)}
+  /* ===== MANEQUIM 3D (manequim3d.js) ===== */
+  .m3wrap{display:flex;flex-direction:column;align-items:center;gap:11px;width:100%}
+  .m3presets{display:flex;gap:6px;width:100%;max-width:300px}
+  .m3presets button{flex:1;padding:9px 4px;border-radius:11px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--muted);font-family:inherit;font-size:12px;
+    font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .m3palco{position:relative;width:100%;max-width:340px;border-radius:16px;
+    background:radial-gradient(120% 90% at 50% 12%,rgba(255,255,255,.05),transparent 62%),
+      var(--surface);border:1px solid var(--line);overflow:hidden}
+  .m3canvas{display:block;width:100%;height:auto;touch-action:none;
+    -webkit-tap-highlight-color:transparent}
+  .m3load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:13px;color:var(--muted)}
+  .m3rotulo{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;
+    padding:7px 13px;border-radius:999px;background:rgba(0,201,204,.16);
+    border:1px solid var(--cyan);color:var(--cyan-2);font-size:12.5px;font-weight:800;
+    pointer-events:none;white-space:nowrap}
+  .m3zoom{position:absolute;right:9px;top:9px;display:flex;flex-direction:column;gap:6px}
+  .m3zoom button{width:33px;height:33px;border-radius:10px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--text);font-family:inherit;font-size:17px;
+    font-weight:800;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .m3dica{font-size:11.5px;color:var(--muted-2);text-align:center}
   /* seletor de nota da região */
   .avnota{margin-top:16px;padding:15px;border-radius:14px;background:var(--surface);
     border:1px solid var(--cyan)}
@@ -2207,7 +2235,7 @@ function carregarAvaliacao(){
   if(_avalCarregando) return _avalCarregando;
   _avalCarregando=new Promise((ok,falha)=>{
     const el=document.createElement('script');
-    el.src=AVALIACAO_SRC+'?v=1';
+    el.src=AVALIACAO_SRC+'?v=2';
     el.onload=()=>{ if(window.AvaliacaoDor) ok(window.AvaliacaoDor);
                     else falha(new Error('avaliacao.js carregou sem expor AvaliacaoDor')); };
     el.onerror=()=>{ _avalCarregando=null; falha(new Error('falha ao baixar avaliacao.js')); };
@@ -2491,8 +2519,14 @@ const NOME_REGIAO_DOR={
   poplitea_d:'Atrás do joelho D', poplitea_e:'Atrás do joelho E',
   perna_d:'Perna direita', perna_e:'Perna esquerda',
   panturr_d:'Panturrilha D', panturr_e:'Panturrilha E',
-  torn_d:'Tornozelo / pé D', torn_e:'Tornozelo / pé E',
-  calc_d:'Calcanhar D', calc_e:'Calcanhar E'
+  torn_d:'Tornozelo direito', torn_e:'Tornozelo esquerdo',
+  pe_d:'Pé direito', pe_e:'Pé esquerdo',
+  calc_d:'Calcanhar D', calc_e:'Calcanhar E',
+  /* regiões acrescentadas junto com o manequim 3D. Sem elas o aluno
+     veria o slug cru ('escapula_d') no semáforo e na retrospectiva. */
+  escapula_d:'Escápula direita', escapula_e:'Escápula esquerda',
+  antebraco_d:'Antebraço direito', antebraco_e:'Antebraço esquerdo',
+  virilha_d:'Virilha / adutor D', virilha_e:'Virilha / adutor E'
 };
 /* ===== MOTOR DE PROGRESSO =====
    Alimenta o botão 📊 (durante a fase) e a retrospectiva (no fim).
@@ -4260,6 +4294,11 @@ function App({auth}){
   else if(view.name==='avaliacao') screen=(window.AvaliacaoDor
     ? React.createElement(window.AvaliacaoDor.Componente,{
         studentId:view.studentId, momento:view.momento||momentoAvulso(db.ciclo), flash:flash,
+        /* o mapa destaca o que o aluno JÁ acompanha, para ele tocar na
+           MESMA região de novo em vez de criar uma dor "nova" ao lado.
+           É isso que mantém a série de checkins_semanais inteira, já que
+           dores tem UNIQUE (aluno_id, regiao). */
+        doresAtivas:((db.students.find(x=>x.id===view.studentId)||{}).dores||[]),
         // sair pelo topo volta para a tela Dor; CONCLUIR volta para o início.
         // Em ambos recarrega: o RPC gravou no banco, mas o `db` em memória
         // ainda achava que a avaliação estava pendente.

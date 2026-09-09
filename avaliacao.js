@@ -48,10 +48,14 @@ var REG_FRENTE = [
     d:"M36,159 L23,162 C22,170 21,176 21,182 L34,180 C34,173 35,166 36,159 Z" },
   { id:"cotovelo_e", nome:"Cotovelo esquerdo", cx:132, cy:171,
     d:"M124,159 L137,162 C138,170 139,176 139,182 L126,180 C126,173 125,166 124,159 Z" },
-  { id:"mao_d", nome:"Punho / mão dir.", cx:25, cy:208,
-    d:"M33,184 L20,186 C18,198 16,212 16,222 C16,229 19,232 24,231 C29,230 31,226 32,218 C33,206 33,194 33,184 Z" },
-  { id:"mao_e", nome:"Punho / mão esq.", cx:135, cy:208,
-    d:"M127,184 L140,186 C142,198 144,212 144,222 C144,229 141,232 136,231 C131,230 129,226 128,218 C127,206 127,194 127,184 Z" },
+  { id:"antebraco_d", nome:"Antebraço direito", cx:26, cy:196,
+    d:"M34,184 L21,185 C20,193 19,200 18,207 L32,205 C32,198 33,191 34,184 Z" },
+  { id:"antebraco_e", nome:"Antebraço esquerdo", cx:134, cy:196,
+    d:"M126,184 L139,185 C140,193 141,200 142,207 L128,205 C128,198 127,191 126,184 Z" },
+  { id:"mao_d", nome:"Punho / mão dir.", cx:24, cy:221,
+    d:"M32,209 L18,210 C17,217 16,223 16,226 C16,231 19,233 24,232 C29,231 31,227 31,219 C31,215 32,212 32,209 Z" },
+  { id:"mao_e", nome:"Punho / mão esq.", cx:136, cy:221,
+    d:"M128,209 L142,210 C143,217 144,223 144,226 C144,231 141,233 136,232 C131,231 129,227 129,219 C129,215 128,212 128,209 Z" },
   { id:"quadril", nome:"Quadril", cx:80, cy:175,
     d:"M62,162 C70,159 90,159 98,162 C101,170 102,180 101,188 C90,191 70,191 59,188 C58,180 59,170 62,162 Z" },
   { id:"coxa_d", nome:"Coxa direita", cx:67, cy:222,
@@ -66,10 +70,20 @@ var REG_FRENTE = [
     d:"M57,276 L76,276 C76,294 75,316 74,332 L59,332 C58,316 57,294 57,276 Z" },
   { id:"perna_e", nome:"Perna esquerda", cx:93, cy:304,
     d:"M103,276 L84,276 C84,294 85,316 86,332 L101,332 C102,316 103,294 103,276 Z" },
-  { id:"torn_d", nome:"Tornozelo / pé D", cx:65, cy:344,
-    d:"M59,334 L74,334 C74,340 74,344 73,347 C72,352 68,354 62,354 C56,354 54,352 55,347 C56,342 58,338 59,334 Z" },
-  { id:"torn_e", nome:"Tornozelo / pé E", cx:95, cy:344,
-    d:"M101,334 L86,334 C86,340 86,344 87,347 C88,352 92,354 98,354 C104,354 106,352 105,347 C104,342 102,338 101,334 Z" }
+  { id:"torn_d", nome:"Tornozelo direito", cx:65, cy:340,
+    d:"M59,334 L74,334 C74,340 74,344 73,346 L56,346 C56,342 58,338 59,334 Z" },
+  { id:"torn_e", nome:"Tornozelo esquerdo", cx:95, cy:340,
+    d:"M101,334 L86,334 C86,340 86,344 87,346 L104,346 C104,342 102,338 101,334 Z" },
+  { id:"pe_d", nome:"Pé direito", cx:64, cy:352,
+    d:"M56,348 L73,348 C72,352 68,354 62,354 C56,354 54,352 55,350 C55,349 55,348 56,348 Z" },
+  { id:"pe_e", nome:"Pé esquerdo", cx:96, cy:352,
+    d:"M104,348 L87,348 C88,352 92,354 98,354 C104,354 106,352 105,350 C105,349 105,348 104,348 Z" },
+  /* virilha DEPOIS da coxa: em SVG o último desenhado ganha o toque na
+     área de sobreposição, e é ele que queremos no canto interno. */
+  { id:"virilha_d", nome:"Virilha / adutor D", cx:71, cy:197,
+    d:"M64,188 C70,187 76,188 79,190 C79,197 78,203 77,207 C71,208 66,207 63,205 C62,199 62,192 64,188 Z" },
+  { id:"virilha_e", nome:"Virilha / adutor E", cx:89, cy:197,
+    d:"M96,188 C90,187 84,188 81,190 C81,197 82,203 83,207 C89,208 94,207 97,205 C98,199 98,192 96,188 Z" }
 ];
 
 var REG_COSTAS = [
@@ -80,7 +94,11 @@ var REG_COSTAS = [
   { id:"trapezio_e", nome:"Trapézio esquerdo", cx:104, cy:84,
     d:"M104,70 C114,73 122,80 126,90 C129,97 130,105 129,112 L114,108 L82,97 L82,68 C90,67 98,68 104,70 Z" },
   { id:"toracica", nome:"Meio das costas", cx:80, cy:116,
-    d:"M47,100 L78,99 L82,99 L113,100 C112,112 110,124 108,132 C96,135 64,135 52,132 C50,124 48,112 47,100 Z" },
+    d:"M66,99 L94,99 C94,111 93,123 92,132 C86,135 74,135 68,132 C67,123 66,111 66,99 Z" },
+  { id:"escapula_d", nome:"Escápula direita", cx:57, cy:116,
+    d:"M47,100 L64,99 C64,111 65,123 66,132 C60,134 55,133 52,132 C50,123 48,111 47,100 Z" },
+  { id:"escapula_e", nome:"Escápula esquerda", cx:103, cy:116,
+    d:"M113,100 L96,99 C96,111 95,123 94,132 C100,134 105,133 108,132 C110,123 112,111 113,100 Z" },
   { id:"lombar", nome:"Lombar", cx:80, cy:148,
     d:"M53,134 C64,137 96,137 107,134 C106,144 104,154 102,160 C90,163 70,163 58,160 C56,154 54,144 53,134 Z" },
   { id:"braco_pd", nome:"Braço direito", cx:34, cy:134,
@@ -137,6 +155,12 @@ function MapaCorporal(p){
   var vista = p.vista || "frente";
   var regioes = vista==="frente" ? REG_FRENTE : REG_COSTAS;
   var notas = p.notas || {};
+  /* regiões que o aluno JÁ acompanha (dores.ativa = true).
+     Destaque por CONTORNO, nunca por preenchimento: o fill já é a
+     escala 0-10, e pintar aqui faria a região parecer "nota alta"
+     antes de ela tocar em nada. */
+  var acomp = {};
+  (p.acompanhadas||[]).forEach(function(k){ acomp[k]=true; });
 
   function fill(r){
     var n = notas[r.id];
@@ -158,19 +182,111 @@ function MapaCorporal(p){
       regioes.map(function(r){
         var marcada = notas[r.id]!=null && notas[r.id]>0;
         var ativa = p.ativa===r.id;
+        var segue = !!acomp[r.id] && !marcada;
         return e("g",{key:r.id},
           e("path",{d:r.d, fill:fill(r),
-            stroke: ativa ? "var(--cyan)" : "var(--line)",
-            strokeWidth: ativa ? 2 : 1.2, strokeLinejoin:"round",
+            stroke: ativa ? "var(--cyan)" : (segue ? "var(--cyan)" : "var(--line)"),
+            strokeWidth: ativa ? 2 : (segue ? 1.8 : 1.2),
+            strokeDasharray: (segue && !ativa) ? "4 3" : null,
+            strokeLinejoin:"round",
             style:{cursor:"pointer"},
             onClick:function(){ p.onPick(r.id, vista); }},
-            e("title",null,r.nome)),
+            e("title",null, r.nome + (segue ? " — você já acompanha" : ""))),
           marcada ? e("text",{x:r.cx, y:r.cy+4, textAnchor:"middle",
             fontSize:11, fontWeight:800, fill:"#0b0f10",
-            style:{pointerEvents:"none"}}, notas[r.id]) : null
+            style:{pointerEvents:"none"}}, notas[r.id]) : null,
+          segue ? e("circle",{cx:r.cx, cy:r.cy, r:3.2, fill:"var(--cyan)",
+            style:{pointerEvents:"none"}}) : null
         );
       })
     )
+  );
+}
+
+/* ---------------------------------------------------------------------
+   2b. MAPA (2D ou 3D)
+
+   O 3D é uma CAMADA DE ENTRADA por cima do mesmo vocabulário de
+   regiões. Se o aparelho não tiver WebGL, se o módulo não baixar ou se
+   o contexto se perder, cai no SVG sem avisar nada de errado — o
+   questionário nunca pode travar por causa disso.
+
+   Aliases: no 2D o braço visto de frente (braco_d) e de costas
+   (braco_pd) são dois slugs para o MESMO braço, herança de ter duas
+   silhuetas. No 3D existe um braço só. Estes pares resolvem para a
+   versão de frente, MAS se o aluno já acompanha a versão legada, o
+   toque devolve o slug legado — assim reutiliza a linha que já existe
+   em `dores` e o histórico de check-ins não se parte em dois.
+   --------------------------------------------------------------------- */
+var ALIAS_3D = { braco_pd:"braco_d", braco_pe:"braco_e",
+                 mao_pd:"mao_d",     mao_pe:"mao_e" };
+
+var CHAVE_3D = "idealis_mapa3d";
+function pref3D(){
+  try{ return window.localStorage.getItem(CHAVE_3D) !== "0"; }catch(err){ return true; }
+}
+function setPref3D(v){
+  try{ window.localStorage.setItem(CHAVE_3D, v ? "1" : "0"); }catch(err){}
+}
+
+var _mod3d = null;
+function carregarManequim3D(){
+  if(window.ManequimDor && window.ManequimDor.pronto) return Promise.resolve(window.ManequimDor);
+  if(_mod3d) return _mod3d;
+  _mod3d = new Promise(function(ok, falha){
+    var el = document.createElement("script");
+    el.type = "module";
+    el.src = "manequim3d.js?v=1";
+    el.onload = function(){
+      if(window.ManequimDor && window.ManequimDor.pronto) ok(window.ManequimDor);
+      else falha(new Error("manequim3d.js carregou sem expor ManequimDor"));
+    };
+    el.onerror = function(){ _mod3d = null; falha(new Error("falha ao baixar manequim3d.js")); };
+    document.body.appendChild(el);
+  });
+  return _mod3d;
+}
+
+function MapaCorpo(p){
+  var s3 = useState(pref3D()); var quer3d=s3[0], setQuer3d=s3[1];
+  var sm = useState(null);     var mod=sm[0], setMod=sm[1];
+  var sq = useState(false);    var quebrou=sq[0], setQuebrou=sq[1];
+
+  useEffect(function(){
+    if(!quer3d || quebrou || mod) return;
+    var vivo = true;
+    carregarManequim3D()
+      .then(function(m){ if(vivo){ if(m.suportado()) setMod(m); else setQuebrou(true); } })
+      .catch(function(err){ console.warn("[mapa3d]", err); if(vivo) setQuebrou(true); });
+    return function(){ vivo = false; };
+  },[quer3d, quebrou]);
+
+  /* no 3D o braço é um só: resolve o alias antes de devolver ao pai */
+  function pick3d(id, vista){
+    var legado = null;
+    (p.acompanhadas||[]).forEach(function(k){ if(ALIAS_3D[k]===id) legado=k; });
+    p.onPick(legado || id, legado ? (REG_COSTAS.some(function(r){ return r.id===legado; }) ? "costas" : "frente") : vista);
+  }
+
+  var usando3d = quer3d && !quebrou && mod;
+  var podeAlternar = !quebrou;
+
+  return e("div",{className:"mapawrap"},
+    usando3d
+      ? e(mod.Manequim3D,{ notas:p.notas, ativa:p.ativa,
+          acompanhadas:(p.acompanhadas||[]).map(function(k){ return ALIAS_3D[k]||k; }),
+          nomeDe:function(k){ return NOME[k]||k; },
+          onPick:pick3d, onErro:function(){ setQuebrou(true); } })
+      : e(MapaCorporal,{ vista:p.vista, onVista:p.onVista, notas:p.notas,
+          ativa:p.ativa, acompanhadas:p.acompanhadas, onPick:p.onPick }),
+    podeAlternar ? e("button",{type:"button", className:"mapaswitch",
+        onClick:function(){ var n=!quer3d; setQuer3d(n); setPref3D(n); }},
+        usando3d ? "Prefiro o desenho simples" : "Ver em 3D") : null,
+    (p.acompanhadas||[]).length>0
+      ? e("div",{className:"mapalegenda"},
+          e("span",{className:"mlponto"}),
+          "em destaque, o que você já acompanha")
+      : null
   );
 }
 
@@ -250,6 +366,12 @@ function Avaliacao(props){
   // concluir tem destino próprio: a jornada acabou, volta ao início do app
   var onConcluir = props.onConcluir || props.onSair;
   var flash = props.flash;
+  /* dores que o aluno JÁ acompanha, vindas do index.html. Aceita
+     ["lombar"] ou [{regiao:"lombar"}]. Ausente = sem destaque, e o
+     questionário funciona igual. */
+  var acompanhadas = (props.doresAtivas||[]).map(function(d){
+    return (typeof d === "string") ? d : (d && d.regiao);
+  }).filter(Boolean);
 
   var rasc = lerRascunho(studentId, momento) || {};
   var st = useState(rasc.etapa || 0); var etapa=st[0], setEtapa=st[1];
@@ -376,8 +498,11 @@ function Avaliacao(props){
 
   if(etapa===ETAPA_MAPA){
     conteudo = e(Passo,{titulo:"Onde está doendo?",
-      sub:"Toque nas regiões que incomodam e dê uma nota de 0 a 10. Se não dói em lugar nenhum, é só avançar."},
-      e(MapaCorporal,{vista:vista, onVista:setVista, notas:notas, ativa:ativa, onPick:pick}),
+      sub: acompanhadas.length>0
+        ? "As regiões em destaque são as que você já acompanha — se ainda incomodam, toque nelas de novo. Marque também o que for novo."
+        : "Toque nas regiões que incomodam e dê uma nota de 0 a 10. Se não dói em lugar nenhum, é só avançar."},
+      e(MapaCorpo,{vista:vista, onVista:setVista, notas:notas, ativa:ativa,
+        acompanhadas:acompanhadas, onPick:pick}),
       ativa ? e("div",{className:"avnota"},
         e("div",{className:"avnotatit"},NOME[ativa]),
         e(Escala,{rotulo:"Quanto incomoda", valor:notas[ativa]!=null?notas[ativa]:null,
@@ -522,6 +647,7 @@ function Avaliacao(props){
 window.AvaliacaoDor = {
   Componente: Avaliacao,
   MapaCorporal: MapaCorporal,
+  MapaCorpo: MapaCorpo,
   REGIOES: TODAS,
   NOME: NOME,
   MECANISMO: MECANISMO,
