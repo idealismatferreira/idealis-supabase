@@ -718,6 +718,16 @@
   .exactions .mini{flex:0 0 44px;color:var(--muted)}
   .exhead{display:flex;align-items:flex-start;gap:10px}
   .exhead .exinfo{flex:1;min-width:0}
+  /* recolher/expandir (em teste): toque no nome. Recolhido = nome + anel,
+     e o anel continua marcando série e disparando o descanso */
+  .exrow .exname.extgl{display:flex;align-items:flex-start;gap:7px;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  .exrow .exname.extgl:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:6px}
+  .exchev{flex:0 0 auto;display:inline-block;margin-top:2px;font-size:13px;line-height:1.3;color:var(--muted);
+    transition:transform .2s ease}
+  .exrow.recolhido .exchev{transform:rotate(-90deg)}
+  .exrow.recolhido{padding-top:11px;padding-bottom:11px}
+  .exrow.recolhido .exhead{align-items:center}
   .donecheck{flex-shrink:0;width:52px;min-height:52px;border-radius:12px;background:transparent;border:2px solid var(--lime);color:var(--on-accent);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:.12s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:5px 2px}
   .donecheck:active{transform:scale(.9)}
   .donecheck.on{background:var(--lime);border-color:var(--lime)}
@@ -1027,7 +1037,14 @@
     border:1.5px solid var(--lime-chip-line);-webkit-tap-highlight-color:transparent}
   button.mppausa:active{background:var(--lime-chip-on)}
   .mpext{margin-top:5px;font-size:11.5px;font-weight:600;color:var(--soft-orange)}
-  .mpdesc{flex:0 0 auto;font-size:11px;font-weight:600;color:var(--muted);padding-top:3px}
+  /* descanso da série: o 🕐 marca o ÚNICO lugar do descanso quando há prescrição
+     série a série. Fora de grupo vira botão (tocar inicia o cronômetro) — é a
+     função que o chip "Descansar" do cabeçalho fazia. */
+  .mpdesc{flex:0 0 auto;font-size:11.5px;font-weight:600;color:var(--muted);padding-top:3px;white-space:nowrap}
+  button.mpdesc{font-family:inherit;cursor:pointer;padding:3px 9px;margin-top:-1px;border-radius:999px;
+    background:var(--ctrl-bg);border:1px solid var(--ctrl-line);-webkit-tap-highlight-color:transparent}
+  button.mpdesc:active{transform:scale(.95)}
+  .mpserie.atual button.mpdesc{color:var(--text);border-color:var(--cyan)}
   .crono{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:10px;
     background:var(--surface-2);border:1px solid var(--line);font-size:13px;font-weight:700;
     font-variant-numeric:tabular-nums;color:var(--cyan-2);letter-spacing:.02em}
@@ -1317,13 +1334,6 @@
   .cdrx{font-weight:700;color:var(--text)}
   /* --- cardio: card do aluno --- */
   .cdcard{margin:10px 0 2px;padding:11px;border-radius:13px;background:var(--surface-2);border:1px solid var(--line)}
-  .cdtiraprev{display:flex;gap:2px;height:8px;border-radius:99px;overflow:hidden;margin-bottom:10px}
-  .cdtiraprev span{display:block;min-width:2px}
-  .cdblocos{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:11px}
-  .cdbchip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--text);
-    background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px 9px}
-  .cdbdot{width:7px;height:7px;border-radius:50%}
-  .cdbrep{font-size:11.5px;font-weight:800;color:var(--lime);align-self:center}
   .cdiniciar{width:100%;padding:13px;border-radius:12px;border:none;background:var(--cyan);
     color:var(--on-cyan);font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer}
   .cdiniciar:active{filter:brightness(.92)}
@@ -1390,37 +1400,139 @@
     border:1px solid rgba(229,123,123,.4);border-radius:999px;padding:1px 8px;margin-left:6px;
     white-space:nowrap;vertical-align:middle}
   /* ===== ARCO DE ZONAS (acima do timer; o timer NÃO muda de tamanho) ===== */
-  .czwrap{display:flex;flex-direction:column;align-items:center;width:100%;margin-bottom:6px}
-  .czbpm{font-size:14px;color:var(--muted);letter-spacing:.01em;margin-bottom:4px}
-  .czbpm b{font-size:20px;font-weight:800;color:var(--text)}
+  .czwrap{display:flex;flex-direction:column;align-items:center;width:100%;margin-bottom:0}
+  /* frequência alvo em destaque: 💓 + faixa na cor da zona (a cor vem inline) */
+  .czbpm{display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;
+    color:var(--muted);letter-spacing:.01em;margin-bottom:4px}
+  .czbpm b{font-size:28px;font-weight:800;letter-spacing:-.02em;color:var(--text);font-variant-numeric:tabular-nums}
+  .czco{font-size:22px;line-height:1}
   .czbpm .czsem{font-size:11.5px;opacity:.65}
-  .czarco{position:relative;width:min(262px,72vw);aspect-ratio:260/142}
+  .czarco{position:relative;width:min(196px,54vw);aspect-ratio:260/142}
   .czarco svg{display:block}
   /* dentro da concavidade, sem encostar nos números que agora ficam por fora */
   .czlabel{position:absolute;left:12%;right:12%;bottom:0;text-align:center;
     font-weight:800;letter-spacing:-.02em;line-height:1.1;white-space:nowrap}
-  @media (max-height:700px){
-    .czarco{width:min(214px,60vw)}
-    .czbpm{font-size:12.5px;margin-bottom:1px}
-    .czbpm b{font-size:17px}
-  }
   .cdover{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;
-    padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
+    padding:18px 18px calc(18px + env(safe-area-inset-bottom));overflow:hidden;
+    animation:cdentra .34s cubic-bezier(.2,.9,.3,1)}
+  @keyframes cdentra{from{opacity:0;transform:translateY(22px) scale(.985)}to{opacity:1;transform:none}}
   .cdtop{display:flex;align-items:center;gap:10px;flex:0 0 auto}
   .cdnome{flex:1;font-size:13.5px;font-weight:600;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cdsair{width:34px;height:34px;border-radius:11px;border:1px solid var(--line);background:var(--surface-2);
     color:var(--muted);font-family:inherit;font-size:14px;cursor:pointer}
-  /* conjunto na região superior: sobrava um vazio grande acima do arco */
-  .cdmeio{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    padding-bottom:16vh;gap:6px;text-align:center}
-  .cdrot{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--cd);line-height:1.1}
-  .cdnum{font-size:88px;font-weight:700;line-height:1;letter-spacing:-.04em;
-    font-variant-numeric:tabular-nums;color:var(--cd)}
+  /* ===== CARDIO v2 — em execução =====
+     Topo: rótulo + relógio + "Bloco X de Y". Base: BPM alvo + arco da zona,
+     logo acima dos controles (com um respiro). O meio fica vazio de propósito:
+     é tela lida de longe, pendurada na esteira. */
+  .cdover .cdtop{position:relative;z-index:1}
+  .cdmeio{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+    text-align:center;min-height:0;padding-top:22px;position:relative;z-index:1}
+  .cdtopo,.cdbase{display:flex;flex-direction:column;align-items:center;width:100%}
+  .cdbase{margin-bottom:24px}
+  .cdrot{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:36px;min-height:36px;
+    color:var(--text);padding:0 8px}
+  .cdnum{font-size:94px;font-weight:700;line-height:1;letter-spacing:-.04em;margin-top:4px;
+    font-variant-numeric:tabular-nums;color:#fff}
   .cdfim{font-size:76px;line-height:1;color:var(--cd);font-weight:800}
-  .cdbar{width:min(320px,86%);height:7px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:8px}
-  .cdbar span{display:block;height:100%;background:var(--cd);transition:width .25s linear}
-  .cdsub{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.4}
+  .cdover.pausado .cdnum{animation:cdpisca 1.6s ease-in-out infinite}
+  @keyframes cdpisca{50%{opacity:.3}}
+  .cdsub{font-size:13px;color:var(--muted);margin-top:12px;line-height:1.4}
   .cdsub b{color:var(--text)}
+  .cdover .cdfimwrap{z-index:1}
+  /* abertura e contagem */
+  .cdprev{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;position:relative;z-index:1;min-height:0}
+  .cdpvnome{font-size:26px;font-weight:800;letter-spacing:-.02em;padding:0 10px;color:var(--text)}
+  .cdpvsub{font-size:14px;color:var(--muted);margin-top:6px}
+  .cdpvbtn{margin-top:28px;display:inline-flex;align-items:center;gap:10px;padding:16px 34px;border-radius:16px;
+    border:none;background:var(--cyan);color:var(--on-cyan);font-family:inherit;font-size:16px;font-weight:800;
+    cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .cdpvbtn svg{width:18px;height:18px;display:block}
+  .cdpvbtn:active{transform:scale(.97)}
+  .cdcont{font-size:150px;font-weight:800;line-height:1;letter-spacing:-.05em;color:#fff;
+    font-variant-numeric:tabular-nums;animation:cdpop .85s cubic-bezier(.2,.9,.3,1) both}
+  @keyframes cdpop{0%{opacity:0;transform:scale(1.7)}25%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:.15;transform:scale(.92)}}
+  /* a tela "respira" a cor da zona */
+  .cdamb{position:absolute;left:-35%;right:-35%;top:-8%;height:78%;pointer-events:none;z-index:0;
+    background:radial-gradient(closest-side,var(--cd),transparent);opacity:.14;
+    animation:cdresp 6s ease-in-out infinite}
+  @keyframes cdresp{0%,100%{opacity:.08;transform:scale(.94)}50%{opacity:.2;transform:scale(1.06)}}
+  .cdover.pausado .cdamb{animation-play-state:paused}
+  .cdover.f-fim .cdamb{opacity:.06;animation:none}
+  /* troca de bloco: tela bem escurecida, só o nome da zona aparece */
+  .cdveu{position:absolute;inset:0;z-index:6;background:#030405;opacity:0;pointer-events:none;
+    animation:cdveu 1.7s ease both}
+  @keyframes cdveu{0%{opacity:0}14%{opacity:.92}78%{opacity:.92}100%{opacity:0}}
+  .cdslam{position:absolute;left:0;right:0;top:50%;margin-top:-40px;z-index:7;text-align:center;
+    font-weight:800;letter-spacing:-.03em;line-height:80px;opacity:0;pointer-events:none;
+    animation:cdslam 1.7s cubic-bezier(.2,.9,.3,1) both}
+  @keyframes cdslam{0%{opacity:0;transform:scale(1.45)}20%{opacity:1;transform:scale(1)}76%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.97)}}
+  /* controles */
+  .cdctrls{position:relative;z-index:1;flex:0 0 auto;display:flex;gap:12px;align-items:center;
+    justify-content:center;margin:0 0 16px}
+  .cdcbtn{width:58px;height:58px;border-radius:17px;border:1px solid var(--line);background:rgba(255,255,255,.03);
+    color:var(--muted);display:grid;place-items:center;cursor:pointer;font-family:inherit;padding:0;
+    -webkit-tap-highlight-color:transparent;transition:transform .12s,background .2s,color .2s,border-color .2s}
+  .cdcbtn svg{width:22px;height:22px;display:block}
+  .cdcbtn:active{transform:scale(.94)}
+  /* discreto enquanto roda; BRANCO quando pausado — o "play" chama atenção
+     exatamente quando é preciso retomar */
+  .cdcbtn.main{width:164px;background:var(--surface-2);border-color:#3b4548;color:#fff}
+  .cdcbtn.main svg{width:26px;height:26px}
+  .cdover.pausado .cdcbtn.main{background:#fff;border-color:#fff;color:#0b0f10}
+  .cdminbtn{font-size:19px;line-height:1}
+  /* perfil (execução e card do treino) */
+  .cdperfil{position:relative;z-index:1;height:64px;flex:0 0 auto;margin-bottom:10px}
+  .cdperfil.m-thumb{height:52px;margin:2px 0 12px}
+  .cdpl{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+  .cdperfil.m-run .cdpfill{transition:clip-path .3s linear}
+  .cdperfil.m-prev .cdpdim,.cdplime{animation:cdpdesenha 1.5s cubic-bezier(.2,.8,.3,1) both}
+  @keyframes cdpdesenha{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+  .cdpdv{position:absolute;top:0;bottom:0;border-left:1px dashed rgba(255,255,255,.22);pointer-events:none}
+  .cdpdv.feito{border-left-color:rgba(9,11,12,.5)}
+  .cdpph{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;pointer-events:none;
+    background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,.75));transition:left .3s linear}
+  .cdpph i{position:absolute;left:50%;width:11px;height:11px;margin-left:-5.5px;border-radius:50%;
+    background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.16);transition:top .3s linear}
+  .cdover .cdrodape{position:relative;z-index:1}
+  /* minimizado: pílula flutuante (sempre escura, como a tela do cardio) */
+  .cdpill{position:fixed;z-index:61;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));
+    transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:9px 9px 9px 16px;
+    border-radius:999px;background:#1b2123;border:1px solid #2c3436;color:#eef7f8;font-family:inherit;
+    box-shadow:0 12px 34px rgba(0,0,0,.6);cursor:pointer;-webkit-tap-highlight-color:transparent;
+    animation:cdpillin .35s cubic-bezier(.2,.9,.3,1) both}
+  @keyframes cdpillin{from{opacity:0;transform:translate(-50%,24px)}to{opacity:1;transform:translate(-50%,0)}}
+  .cdpdot{width:10px;height:10px;border-radius:50%;background:var(--cd);animation:cdpdotp 1.6s ease-in-out infinite}
+  @keyframes cdpdotp{50%{transform:scale(.6);opacity:.55}}
+  .cdpill.pausado .cdpdot{animation:none;opacity:.4}
+  .cdpz{font-size:13px;font-weight:700;color:var(--cd);white-space:nowrap}
+  .cdpnum{font-size:21px;font-weight:700;letter-spacing:-.02em;color:#fff;font-variant-numeric:tabular-nums}
+  .cdppau{display:inline-flex;color:#9fb3b8}
+  .cdppau svg{width:14px;height:14px;display:block}
+  .cdpck{font-size:15px;line-height:1}
+  .cdpexp{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.06);display:grid;place-items:center;color:#9fb3b8}
+  .cdpexp svg{width:16px;height:16px;display:block}
+  @media (max-height:700px){
+    .czarco{width:min(168px,46vw)}
+    .czbpm{font-size:13px;margin-bottom:2px}
+    .czbpm b{font-size:23px}
+    .czco{font-size:19px}
+    .cdnum{font-size:78px}
+    .cdrot{font-size:25px;line-height:31px;min-height:31px}
+    .cdmeio{padding-top:10px}
+    .cdbase{margin-bottom:18px}
+    .cdover .cdperfil{height:52px}
+    .cdcbtn{width:52px;height:52px}
+    .cdcont{font-size:120px}
+    .czarco .czlabel{transform:scale(.86);transform-origin:50% 100%}
+  }
+  @keyframes cdsuave{0%,100%{opacity:0}12%,80%{opacity:1}}
+  @media (prefers-reduced-motion:reduce){
+    .cdamb{animation:none;opacity:.12}
+    .cdslam{animation-name:cdsuave}
+    .cdcont,.cdpdot,.cdover.pausado .cdnum,.cdover{animation:none}
+    .cdperfil.m-prev .cdpdim,.cdplime{animation:none}
+  }
   /* ---- tela de fim do cardio: pulso + raio da marca ---- */
   .cdfimwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
     position:relative;text-align:center;padding:4px 0;overflow-y:auto}
@@ -1471,17 +1583,13 @@
   .bpmun{font-size:12px;color:var(--muted);font-weight:600}
   .bpmedit{margin-left:6px;background:none;border:none;color:var(--muted);font-family:inherit;
     font-size:11.5px;text-decoration:underline;cursor:pointer}
-  /* com o check-in aberto, o contador SOBE mas NÃO encolhe:
-     a ênfase continua no relógio (a medição é opcional). Só o texto de apoio cede espaço. */
-  /* com o check-in aberto o arco sai, mas a FAIXA ALVO fica: é exatamente o que
-     ela precisa saber no momento em que vai medir o próprio pulso */
-  .cdover.ckon .cdmeio{justify-content:center;padding-bottom:42vh;gap:4px;min-height:0}
+  /* check-in aberto: a folha cobre a base. A FAIXA ALVO sobe para logo abaixo
+     do relógio (é o que ela precisa na hora de medir o pulso) e o arco sai.
+     O relógio NÃO encolhe: a medição é opcional. */
+  .cdover.ckon .cdmeio{justify-content:flex-start}
+  .cdover.ckon .cdbase{margin:14px 0 0}
   .cdover.ckon .czarco{display:none}
-  .cdover.ckon .czwrap{margin-bottom:0}
-  .cdover.ckon .cdnum{font-size:88px}            /* mantido igual ao estado normal */
-  .cdover.ckon .cdrot{font-size:22px}
-  .cdover.ckon .cdbar{margin-top:6px}
-  .cdover.ckon .cdsub{font-size:12px;margin-top:4px}
+  .cdover.ckon .cdctrls,.cdover.ckon .cdperfil,.cdover.ckon .cdrodape{visibility:hidden}
   /* folha de check-in durante o cardio */
   .ckwrap{position:absolute;left:0;right:0;bottom:0;z-index:5;padding:12px;
     animation:cksobe .28s cubic-bezier(.2,.9,.3,1)}
@@ -1513,10 +1621,6 @@
   .cdfsalvar:active{filter:brightness(.9)}
   .cdfpular{background:none;border:none;color:var(--muted);font-family:inherit;font-size:12.5px;
     text-decoration:underline;cursor:pointer;padding:8px}
-  .cdtira{display:flex;gap:2px;height:10px;border-radius:99px;overflow:hidden;flex:0 0 auto;margin-bottom:9px}
-  .cdtira span{display:block;min-width:2px;opacity:.28;transition:opacity .2s}
-  .cdtira span.feito{opacity:.6}
-  .cdtira span.agora{opacity:1}
   .cdrodape{flex:0 0 auto;text-align:center;font-size:12.5px;color:var(--muted)}
   .serietabs{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 10px}
   .stab{position:relative;display:inline-flex;align-items:center;gap:5px;padding:9px 15px;border-radius:999px;
@@ -3179,6 +3283,28 @@ function corrNoTreinoLigado(alunoId){
 function setCorrNoTreino(alunoId,on){
   try{ if(LS_OK) window.localStorage.setItem(chaveCorrTreino(alunoId), on?'1':'0'); }catch(e){}
 }
+/* exercícios recolhidos na tela do treino (Lote 2 · em teste).
+   Escolha do aparelho, por treino, e SÓ DO DIA: amanhã o treino abre todo
+   expandido de novo. localStorage de propósito — é preferência de exibição,
+   não dado de treino, e não pede coluna nova. */
+const RECOLHIDOS_KEY='idealis_recolhidos_v1';
+function lerRecolhidos(treinoId){
+  try{
+    if(!LS_OK) return {};
+    const d=JSON.parse(window.localStorage.getItem(RECOLHIDOS_KEY)||'null');
+    if(!d || d.date!==todayISO() || !d.m) return {};
+    return d.m[String(treinoId)]||{};
+  }catch(e){ return {}; }
+}
+function salvarRecolhidos(treinoId,mapa){
+  try{
+    if(!LS_OK) return;
+    let d=JSON.parse(window.localStorage.getItem(RECOLHIDOS_KEY)||'null');
+    if(!d || d.date!==todayISO() || !d.m) d={date:todayISO(), m:{}};
+    if(Object.keys(mapa).length) d.m[String(treinoId)]=mapa; else delete d.m[String(treinoId)];
+    window.localStorage.setItem(RECOLHIDOS_KEY, JSON.stringify(d));
+  }catch(e){}
+}
 
 /* ===== CAMADA 3: ESCRITA NO SUPABASE (fila offline) =====
    Cada operação vira um item da fila. A tela já foi atualizada
@@ -3878,12 +4004,90 @@ function RestTimerTrigger({timer}){
 }
 /* ---------- motor do cardio: sequencial, baseado em Date.now() ----------
    Guarda só o instante de início; o bloco atual é CALCULADO.
-   Tela travada, app minimizado ou página recarregada não perdem o lugar. */
+   Tela travada, app minimizado ou página recarregada não perdem o lugar.
+
+   v2 — abertura, pausa, voltar e pular. Nada disso vira setInterval: tudo
+   continua sendo conta em cima do relógio.
+     posição = (agora − início − tempo pausado) + ajuste
+   `ajuste` acumula os saltos: pular soma o que faltava do bloco, voltar
+   subtrai. `inicio` nasce no FUTURO (+3s) ao tocar em "Começar": a posição
+   fica negativa e é isso que a tela mostra como 3-2-1. */
 const CARDIO_KEY='idealis_cardio_v1';
+const CARDIO_PREP_MS=3000;
+function pausaCardioMs(s,agora){
+  return (s.pausaMs||0)+(s.pausadoEm?Math.max(0,agora-s.pausadoEm):0);
+}
+function posCardio(s,agora){
+  if(!s||!s.inicio) return 0;
+  return (agora-s.inicio-pausaCardioMs(s,agora))/1000+(s.ajuste||0);
+}
+function blocoCardioEm(blocos,p){
+  let acc=0;
+  for(let i=0;i<(blocos||[]).length;i++){
+    const fim=acc+blocos[i].seg;
+    if(p<fim) return {idx:i, ini:acc, fim};
+    acc=fim;
+  }
+  return {idx:-1, ini:acc, fim:acc};
+}
+/* transições puras (testáveis fora do React). Devolvem a MESMA referência
+   quando não há o que mudar — o hook usa isso para não persistir à toa. */
+function cardioAlternarPausa(sx,agora){
+  if(!sx||!sx.inicio) return sx;
+  if(sx.pausadoEm) return {...sx, pausaMs:(sx.pausaMs||0)+Math.max(0,agora-sx.pausadoEm), pausadoEm:null};
+  if(posCardio(sx,agora)<0) return sx;               // na contagem 3-2-1 não pausa
+  return {...sx, pausadoEm:agora};
+}
+function cardioPular(sx,agora){
+  if(!sx||!sx.inicio) return sx;
+  const p=posCardio(sx,agora);
+  if(p<0) return sx;
+  const b=blocoCardioEm(sx.blocos,p);
+  if(b.idx<0) return sx;
+  const pul=sx.pulados||[];
+  let d={...sx, ajuste:(sx.ajuste||0)+(b.fim-p), pulados:pul.indexOf(b.idx)<0?[...pul,b.idx]:pul};
+  // pulou o ÚLTIMO bloco estando pausado: fecha a pausa, senão o tempo parado
+  // continuaria crescendo na tela de fim e iria inflado para o registro
+  if(d.pausadoEm && b.idx===sx.blocos.length-1)
+    d={...d, pausaMs:(d.pausaMs||0)+Math.max(0,agora-d.pausadoEm), pausadoEm:null};
+  return d;
+}
+function cardioVoltar(sx,agora){
+  if(!sx||!sx.inicio) return sx;
+  const p=posCardio(sx,agora);
+  if(p<0) return sx;
+  const b=blocoCardioEm(sx.blocos,p);
+  if(b.idx<0) return sx;
+  /* padrão de player: nos 3 primeiros segundos volta ao bloco anterior;
+     depois disso reinicia o atual */
+  let alvoIdx=b.idx, alvo=b.ini;
+  if(p-b.ini<3 && b.idx>0){ alvoIdx=b.idx-1; alvo=b.ini-sx.blocos[b.idx-1].seg; }
+  // o que vai ser refeito deixa de contar como pulado
+  return {...sx, ajuste:(sx.ajuste||0)-(p-alvo), pulados:(sx.pulados||[]).filter(k=>k<alvoIdx)};
+}
+/* números do registro. `segundos` = tempo REALMENTE feito: sem pausas e sem
+   os trechos pulados (voltar = refazer, então conta). `completo` só é true
+   se terminou sem pular bloco nenhum. */
+function resumoLogCardio(sessao,estado,agora){
+  const pul=(sessao&&sessao.pulados)||[];
+  const total=estado.total;
+  const pos=Math.min(total, Math.max(0, estado.pos!=null ? estado.pos : (total-estado.restanteTotal)));
+  const feitos = estado.terminou
+    ? Math.max(0, estado.blocos.length-pul.length)
+    : Math.max(0, estado.idx-pul.filter(k=>k<estado.idx).length);
+  return {
+    segundos: Math.max(0, Math.round(pos-((sessao&&sessao.ajuste)||0))),
+    blocos: feitos,
+    completo: !!estado.terminou && pul.length===0,
+    pulados: pul.length,
+    pausaSeg: sessao ? Math.round(pausaCardioMs(sessao,agora)/1000) : 0,
+  };
+}
 function useCardioTimer(){
-  // App-level: SÓ inicia/para/retoma a sessão. Nenhum tick aqui —
+  // App-level: SÓ guarda a sessão e as ações. Nenhum tick aqui —
   // um setInterval neste nível re-renderizava o app INTEIRO 4×/s e derrubava a aba.
-  const [sessao,setSessao]=useState(null); // {inicio, blocos, nome}
+  const [sessao,setSessao]=useState(null); // {inicio, blocos, nome, exId, pausaMs, pausadoEm, ajuste, pulados}
+  const [minimizado,setMinimizado]=useState(false);
   useEffect(()=>{ // retoma se a página recarregou no meio
     try{
       if(!LS_OK) return;
@@ -3891,32 +4095,49 @@ function useCardioTimer(){
       const d=JSON.parse(r);
       if(!d||!d.inicio||!d.blocos||!d.blocos.length) return;
       const tot=d.blocos.reduce((a,b)=>a+b.seg,0);
-      // só retoma cardio EM ANDAMENTO; se já acabou, descarta (não ressuscita a tela de fim)
-      if((Date.now()-d.inicio)/1000 > tot+120){ window.localStorage.removeItem(CARDIO_KEY); return; }
+      const agora=Date.now();
+      // pausado e esquecido: depois de 6h não ressuscita
+      if(d.pausadoEm && agora-d.pausadoEm>6*3600*1000){ window.localStorage.removeItem(CARDIO_KEY); return; }
+      // só retoma cardio EM ANDAMENTO; a posição já desconta pausas e saltos
+      if(posCardio(d,agora) > tot+120){ window.localStorage.removeItem(CARDIO_KEY); return; }
       setSessao(d);
     }catch(e){}
   },[]);
   const persistir=(d)=>{ try{ if(LS_OK) window.localStorage.setItem(CARDIO_KEY,JSON.stringify(d)); }catch(e){} };
+  const atualizar=(fn)=>setSessao(sx=>{
+    if(!sx) return sx;
+    const d=fn(sx);
+    if(d!==sx) persistir(d);
+    return d;
+  });
+  /* abre a TELA DE ABERTURA; o motor só liga no "Começar".
+     Com um cardio já rodando (minimizado), não substitui: só reabre. */
   const iniciar=(blocos,nome,exId)=>{
     if(!blocos||!blocos.length) return;
-    const d={inicio:Date.now(), blocos, nome:nome||'', exId:exId||null,
-      pontos:pontosCheckin(blocos), checkins:[]};
-    setSessao(d); persistir(d);
+    if(sessao && sessao.inicio){ setMinimizado(false); return; }
+    setMinimizado(false);
+    setSessao({inicio:null, blocos, nome:nome||'', exId:exId||null,
+      pontos:pontosCheckin(blocos), checkins:[], pausaMs:0, pausadoEm:null, ajuste:0, pulados:[]});
+    // a abertura NÃO é persistida: recarregar nela não deve ressuscitar nada
+    try{ if(LS_OK) window.localStorage.removeItem(CARDIO_KEY); }catch(e){}
   };
+  const comecar=()=>atualizar(sx=> sx.inicio ? sx : {...sx, inicio:Date.now()+CARDIO_PREP_MS});
+  const pausar=()=>atualizar(sx=>cardioAlternarPausa(sx,Date.now()));
+  const pular=()=>atualizar(sx=>cardioPular(sx,Date.now()));
+  const voltar=()=>atualizar(sx=>cardioVoltar(sx,Date.now()));
   /* registra (ou dispensa) um check-in — sobrevive a reload */
   const responderCheckin=(seg,dados)=>{
-    setSessao(sx=>{
-      if(!sx) return sx;
+    atualizar(sx=>{
       const ja=(sx.checkins||[]).some(c=>c.seg===seg);
-      const d={...sx, checkins:[...(sx.checkins||[]), ...(ja?[]:[{seg, ...(dados||{})}])]};
-      persistir(d); return d;
+      return {...sx, checkins:[...(sx.checkins||[]), ...(ja?[]:[{seg, ...(dados||{})}])]};
     });
   };
   const parar=()=>{
-    setSessao(null);
+    setSessao(null); setMinimizado(false);
     try{ if(LS_OK) window.localStorage.removeItem(CARDIO_KEY); }catch(e){}
   };
-  return {ativo:!!sessao, sessao, iniciar, parar, responderCheckin, salvarLog:null};
+  return {ativo:!!sessao, sessao, iniciar, comecar, parar, responderCheckin,
+          pausar, pular, voltar, minimizado, minimizar:setMinimizado, salvarLog:null};
 }
 /* pontos de check-in: 2 amostras no meio do cardio (a 3ª é a tela de fim).
    Mira 5s depois dos blocos mais intensos — a FC ainda está no pico. */
@@ -3990,13 +4211,94 @@ function CardioFim({estado,onSalvar,onFechar}){
     </div>
   </div>);
 }
+/* ===== PERFIL DO CARDIO (gráfico de linha preenchido) =====
+   Cada bloco é um platô na altura do nível. Entre blocos a linha faz uma
+   rampa CENTRADA na divisa — ali a altura é exatamente a média dos dois.
+   Modos: 'thumb' (card do treino, todo colorido) · 'prev' (abertura: o
+   contorno se desenha) · 'count' (3-2-1) · 'run' (apagado, vai preenchendo)
+   · 'fim' (tudo preenchido e coberto de limão). */
+const CD_ALTURA={aquecimento:.30, leve:.46, moderado:.62, forte:.80, maximo:1};
+function perfilCardioGeo(blocos){
+  const bl=(blocos||[]).filter(b=>b && b.seg>0);
+  const total=bl.reduce((a,b)=>a+b.seg,0);
+  if(!bl.length || total<=0) return null;
+  const alt=(b)=> CD_ALTURA[b.nivel]!=null ? CD_ALTURA[b.nivel] : .62;
+  const rampa=(a,b)=>Math.min(20, a.seg*.3, b.seg*.3);
+  const V=[[0,alt(bl[0])]], stops=[], fins=[];
+  let acc=0;
+  bl.forEach((b,i)=>{
+    const ini=acc, fim=acc+b.seg; acc=fim; fins.push(fim);
+    const rin=i>0?rampa(bl[i-1],b):0, rout=i<bl.length-1?rampa(b,bl[i+1]):0;
+    const cor=nivelInfo(b.nivel).cor;
+    stops.push([(ini+rin)/total,cor],[(fim-rout)/total,cor]);
+    if(i<bl.length-1) V.push([fim-rout,alt(b)],[fim+rout,alt(bl[i+1])]);
+  });
+  V.push([total,alt(bl[bl.length-1])]);
+  const pts=V.map(v=>(v[0]/total*1000).toFixed(1)+','+(100-v[1]*92).toFixed(1)).join(' L');
+  return {total, V, stops, fins:fins.slice(0,-1), linha:'M'+pts, area:'M0,100 L'+pts+' L1000,100 Z'};
+}
+function alturaPerfilEm(V,t){
+  for(let k=1;k<V.length;k++){
+    if(t<=V[k][0]){
+      const [t0,h0]=V[k-1], [t1,h1]=V[k];
+      return h0+(h1-h0)*(t1>t0?(t-t0)/(t1-t0):1);
+    }
+  }
+  return V[V.length-1][1];
+}
+function PerfilCardio({blocos,pos,modo}){
+  // id do gradiente único por instância: vários cards de cardio na mesma tela
+  const gid=React.useRef(null);
+  if(!gid.current) gid.current='cdg'+Math.random().toString(36).slice(2,9);
+  const g=perfilCardioGeo(blocos);
+  if(!g) return null;
+  const p=Math.max(0,Math.min(g.total,pos||0));
+  const cheio = (modo==='thumb'||modo==='fim') ? 1 : (modo==='run' ? p/g.total : 0);
+  const id=gid.current;
+  const topo=(100-alturaPerfilEm(g.V,p)*92);
+  return (<div className={'cdperfil m-'+modo} aria-hidden="true">
+    {modo!=='thumb' && <svg className="cdpl cdpdim" viewBox="0 0 1000 100" preserveAspectRatio="none">
+      <path d={g.area} fill="rgba(255,255,255,.06)"/>
+      <path d={g.linha} fill="none" stroke="rgba(255,255,255,.24)" strokeWidth="1.5" vectorEffect="non-scaling-stroke"/>
+    </svg>}
+    <svg className="cdpl cdpfill" viewBox="0 0 1000 100" preserveAspectRatio="none"
+      style={{clipPath:'inset(0 '+(100-cheio*100).toFixed(2)+'% 0 0)'}}>
+      <defs>
+        <linearGradient id={id} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1000" y2="0">
+          {g.stops.map((s,i)=><stop key={i} offset={s[0].toFixed(4)} stopColor={s[1]}/>)}
+        </linearGradient>
+      </defs>
+      <path d={g.area} fill={'url(#'+id+')'} opacity=".82"/>
+      <path d={g.linha} fill="none" stroke={'url(#'+id+')'} strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
+    </svg>
+    {modo==='fim' && <svg className="cdpl cdplime" viewBox="0 0 1000 100" preserveAspectRatio="none">
+      <path d={g.area} style={{fill:'var(--lime)'}} opacity=".92"/>
+    </svg>}
+    {/* tracejado no fim de cada bloco; escurece quando o trecho já foi pintado */}
+    {g.fins.map((f,i)=>(
+      <span key={i} className={'cdpdv'+((modo==='thumb'||modo==='fim'||(modo==='run'&&p>=f))?' feito':'')}
+        style={{left:(f/g.total*100).toFixed(3)+'%'}}></span>))}
+    {modo==='run' && <div className="cdpph" style={{left:(p/g.total*100).toFixed(3)+'%'}}>
+      <i style={{top:'calc('+topo.toFixed(2)+'% - 5.5px)'}}></i>
+    </div>}
+  </div>);
+}
+/* ícones dos controles: SVG próprio (emoji muda de desenho em cada aparelho) */
+const CD_ICO={
+  play:<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>,
+  pausa:<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg>,
+  ant:<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="2.6" height="14" rx="1"/><path d="M19 6.1v11.8a.9.9 0 0 1-1.4.75l-8-5.9a.9.9 0 0 1 0-1.5l8-5.9A.9.9 0 0 1 19 6.1z"/></svg>,
+  prox:<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="16.4" y="5" width="2.6" height="14" rx="1"/><path d="M5 6.1v11.8a.9.9 0 0 0 1.4.75l8-5.9a.9.9 0 0 0 0-1.5l-8-5.9A.9.9 0 0 0 5 6.1z"/></svg>,
+  sobe:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>,
+};
 function CardioOverlay({cardio}){
   const sessao=cardio.sessao;
-  // o tick mora AQUI: só o overlay re-renderiza a cada 500ms
+  // o tick mora AQUI: só o overlay re-renderiza. 250ms deixa o 3-2-1 e o
+  // preenchimento do perfil fluidos sem custo para o resto do app.
   const [agora,setAgora]=useState(Date.now());
   const wakeRef=React.useRef(null);
   useEffect(()=>{
-    const id=setInterval(()=>setAgora(Date.now()),500);
+    const id=setInterval(()=>setAgora(Date.now()),250);
     const onVis=()=>{ if(document.visibilityState==='visible') setAgora(Date.now()); };
     document.addEventListener('visibilitychange',onVis);
     let cancelado=false;
@@ -4012,64 +4314,113 @@ function CardioOverlay({cardio}){
       try{ if(wakeRef.current){ wakeRef.current.release(); wakeRef.current=null; } }catch(e){}
     };
   },[]);
+  const blocos=(sessao&&sessao.blocos)||[];
+  const total=blocos.reduce((a,b)=>a+b.seg,0);
+  const semInicio=!sessao||!sessao.inicio;
+  const pos=semInicio?0:posCardio(sessao,agora);
+  const fase=semInicio?'prev':(pos<0?'count':(pos>=total?'fim':'run'));
+  const bAt=blocoCardioEm(blocos,Math.max(0,pos));
+  const idx=fase==='fim'?-1:bAt.idx;
+  /* transição entre blocos: tela escurecida + nome da zona. Só dispara quando
+     o bloco MUDA com a tela aberta — nunca ao retomar (reload) nem ao voltar
+     do minimizado com uma transição velha. Hooks antes de qualquer return. */
+  const ultIdx=React.useRef(undefined);
+  const [slam,setSlam]=useState(null);
+  useEffect(()=>{
+    if(fase!=='run'){ if(ultIdx.current===undefined) ultIdx.current=null; return; }
+    if(ultIdx.current===undefined){ ultIdx.current=idx; return; }
+    if(idx!==ultIdx.current){
+      ultIdx.current=idx;
+      if(cardio.minimizado || !blocos[idx]) return;
+      const n=nivelInfo(blocos[idx].nivel);
+      setSlam(s=>({k:(s?s.k:0)+1, label:n.label, cor:n.cor, t:Date.now()}));
+    }
+  },[fase,idx]);
   if(!sessao) return null;
-  const dec=Math.max(0,(agora-sessao.inicio)/1000);
-  const total=sessao.blocos.reduce((a,b)=>a+b.seg,0);
-  let acc=0, idx=-1, restante=0;
-  for(let i=0;i<sessao.blocos.length;i++){
-    const fimB=acc+sessao.blocos[i].seg;
-    if(dec<fimB){ idx=i; restante=fimB-dec; break; }
-    acc=fimB;
-  }
+  const atual=idx>=0?blocos[idx]:null;
+  const proximo=idx>=0?(blocos[idx+1]||null):null;
   const e={
-    nome:sessao.nome, blocos:sessao.blocos, total,
-    idx, terminou:idx<0,
-    atual: idx>=0?sessao.blocos[idx]:null,
-    proximo: idx>=0?sessao.blocos[idx+1]||null:null,
-    restanteBloco: Math.ceil(restante),
-    restanteTotal: Math.max(0,Math.ceil(total-dec)),
-    progressoBloco: idx>=0?1-(restante/sessao.blocos[idx].seg):1,
+    nome:sessao.nome, blocos, total, idx, pos, terminou:fase==='fim', atual, proximo,
+    restanteBloco: idx>=0?Math.max(0,Math.ceil(bAt.fim-pos)):0,
+    restanteTotal: Math.max(0,Math.ceil(total-Math.max(0,pos))),
+    pausado: !!sessao.pausadoEm,
   };
-  // check-in pendente: passou do ponto, ainda não respondeu, e a janela de 45s não fechou
-  // calcula os pontos a partir dos blocos: sessão retomada do localStorage
-  // (versão antiga) não tem `pontos` salvos e ficaria sem nenhum check-in
-  const pontos=(sessao.pontos&&sessao.pontos.length)?sessao.pontos:pontosCheckin(sessao.blocos);
+  // check-in pendente: passou do ponto, ainda não respondeu, e a janela não fechou.
+  // Pontos calculados na hora se a sessão veio de uma versão antiga sem `pontos`.
+  const pontos=(sessao.pontos&&sessao.pontos.length)?sessao.pontos:pontosCheckin(blocos);
   const respondidos=(sessao.checkins||[]).map(c=>c.seg);
-  // janela generosa: se a tela ficou apagada no momento exato, ainda aparece ao voltar
-  const pendente=pontos.find(p=> dec>=p && dec<p+90 && respondidos.indexOf(p)<0);
-  const cor = e.terminou ? '#6ee89a' : nivelInfo(e.atual.nivel).cor;
-  return (<div className={'cdover'+(pendente!=null&&!e.terminou?' ckon':'')} style={{'--cd':cor}}>
+  const pendente = fase==='run' ? pontos.find(p=> pos>=p && pos<p+90 && respondidos.indexOf(p)<0) : undefined;
+  const nRef=nivelInfo((atual||blocos[0]||{}).nivel);
+  const cor = fase==='fim' ? '#6ee89a' : nRef.cor;
+  const crono=fmtCrono(e.restanteBloco*1000);
+  /* MINIMIZADO: pílula com zona + relógio. O resto do app fica usável.
+     Check-in chegando só acende o 💓 (não sequestra a tela); o FIM reabre
+     sozinho, porque sem a tela de fim o registro não é salvo. */
+  if(cardio.minimizado && fase==='run') return (
+    <button className={'cdpill'+(e.pausado?' pausado':'')} style={{'--cd':cor}}
+      onClick={()=>cardio.minimizar(false)} aria-label="Abrir o cardio">
+      <span className="cdpdot"></span>
+      <span className="cdpz">{nRef.label}</span>
+      <span className="cdpnum">{crono}</span>
+      {e.pausado && <span className="cdppau">{CD_ICO.pausa}</span>}
+      {pendente!=null && <span className="cdpck" aria-label="Check-in disponível">💓</span>}
+      <span className="cdpexp">{CD_ICO.sobe}</span>
+    </button>);
+  const rot = atual && atual.rotulo && atual.rotulo!==zonaInfo(nRef.zona).label && atual.rotulo!==nRef.label
+    ? atual.rotulo : '';
+  const slamVivo = slam && (agora-slam.t)<1800;
+  return (<div className={'cdover f-'+fase+(pendente!=null?' ckon':'')+(e.pausado?' pausado':'')} style={{'--cd':cor}}>
+    <div className="cdamb" aria-hidden="true"></div>
+    {slamVivo && <React.Fragment key={slam.k}>
+      <div className="cdveu" aria-hidden="true"></div>
+      <div className="cdslam" style={{color:slam.cor, fontSize:(slam.label.length>=10?44:(slam.label.length>=8?52:62))+'px'}}>
+        {slam.label}</div>
+    </React.Fragment>}
     <div className="cdtop">
+      <button className="cdsair cdminbtn" style={fase==='run'?null:{visibility:'hidden'}}
+        onClick={()=>cardio.minimizar(true)} aria-label="Minimizar cardio">‹</button>
       <span className="cdnome">{e.nome}</span>
-      <button className="cdsair" onClick={cardio.parar}>✕</button>
+      <button className="cdsair" onClick={cardio.parar} aria-label="Fechar cardio">✕</button>
     </div>
-    {e.terminou
-      ? <CardioFim estado={e}
-          onSalvar={(d)=>{ cardio.salvarLog && cardio.salvarLog(sessao, e, d); cardio.parar(); }}
-          onFechar={()=>{ cardio.salvarLog && cardio.salvarLog(sessao, e, null); cardio.parar(); }}/>
-      : <div className="cdmeio">
-          <ArcoZonas zona={nivelInfo(e.atual.nivel).zona} fcMax={cardio.fcMax}/>
-          {/* o rótulo do bloco cai no label do nível quando você não escreve um.
-              Nesse caso ele repetiria a palavra que já está no arco — some.
-              Rótulos próprios ("Sentado rápido") continuam aparecendo. */}
-          {e.atual.rotulo && e.atual.rotulo!==zonaInfo(nivelInfo(e.atual.nivel).zona).label
-            && e.atual.rotulo!==nivelInfo(e.atual.nivel).label
-            && <div className="cdrot">{e.atual.rotulo}</div>}
-          <div className="cdnum">{fmtCrono(e.restanteBloco*1000)}</div>
-          <div className="cdbar"><span style={{width:(e.progressoBloco*100)+'%'}}></span></div>
-          <div className="cdsub">
-            Bloco {e.idx+1} de {e.blocos.length}
-            {e.proximo && <React.Fragment> · a seguir: <b>{e.proximo.rotulo}</b> ({fmtMin(e.proximo.seg)})</React.Fragment>}
-          </div>
-        </div>}
-    <div className="cdtira">
-      {e.blocos.map((b,i)=>(
-        <span key={i} className={'cdt'+(i<e.idx||e.terminou?' feito':(i===e.idx?' agora':''))}
-          style={{flex:b.seg, background:nivelInfo(b.nivel).cor}}></span>
-      ))}
-    </div>
-    <div className="cdrodape">Falta {fmtMin(e.restanteTotal)} de {fmtMin(e.total)}</div>
-    {pendente!=null && !e.terminou &&
+    {fase==='prev' && <div className="cdprev">
+      <div className="cdpvnome">{e.nome}</div>
+      <div className="cdpvsub">{fmtMin(total)} · {blocos.length} {blocos.length===1?'bloco':'blocos'}</div>
+      <button className="cdpvbtn" onClick={cardio.comecar}>{CD_ICO.play}Começar</button>
+    </div>}
+    {fase==='count' && <div className="cdprev">
+      <div key={Math.ceil(-pos)} className="cdcont">{Math.max(1,Math.ceil(-pos))}</div>
+      <div className="cdpvsub">Prepare-se</div>
+    </div>}
+    {fase==='fim' && <CardioFim estado={e}
+      onSalvar={(d)=>{ cardio.salvarLog && cardio.salvarLog(sessao, e, d); cardio.parar(); }}
+      onFechar={()=>{ cardio.salvarLog && cardio.salvarLog(sessao, e, null); cardio.parar(); }}/>}
+    {fase==='run' && <div className="cdmeio">
+      <div className="cdtopo">
+        {/* o rótulo cai no label do nível quando você não escreve um; aí ele
+            repetiria a palavra do arco e fica vazio (mas guarda o espaço, para
+            o relógio não pular de altura entre blocos) */}
+        <div className="cdrot">{rot}</div>
+        <div className="cdnum">{crono}</div>
+        <div className="cdsub">
+          Bloco {idx+1} de {blocos.length}
+          {proximo && <React.Fragment> · a seguir: <b>{proximo.rotulo}</b> ({fmtMin(proximo.seg)})</React.Fragment>}
+        </div>
+      </div>
+      <div className="cdbase">
+        <ArcoZonas zona={nRef.zona} fcMax={cardio.fcMax}/>
+      </div>
+    </div>}
+    {fase==='run' && <div className="cdctrls">
+      <button className="cdcbtn" onClick={cardio.voltar} aria-label="Voltar bloco">{CD_ICO.ant}</button>
+      <button className="cdcbtn main" onClick={cardio.pausar} aria-label={e.pausado?'Continuar':'Pausar'}>
+        {e.pausado?CD_ICO.play:CD_ICO.pausa}</button>
+      <button className="cdcbtn" onClick={cardio.pular} aria-label="Pular bloco">{CD_ICO.prox}</button>
+    </div>}
+    <PerfilCardio blocos={blocos} pos={pos} modo={fase}/>
+    {fase!=='fim' && <div className="cdrodape">
+      {fase==='run' ? ('Falta '+fmtMin(e.restanteTotal)+' de '+fmtMin(total)) : ('Total '+fmtMin(total))}
+    </div>}
+    {pendente!=null &&
       <CheckinSheet key={pendente} seg={pendente}
         onResponder={(d)=>cardio.responderCheckin(pendente,d)}/>}
   </div>);
@@ -4246,12 +4597,13 @@ function ArcoZonas({zona,fcMax}){
     return 'M '+x0+' '+y0+' A '+R+' '+R+' 0 0 1 '+x1+' '+y1;
   };
   const passo=180/5, gap=3.4;
-  // "Aquecimento" tem 11 caracteres e não cabe no mesmo corpo que "Leve"
-  const tam = Z.label.length>=10 ? 20 : (Z.label.length>=8 ? 23 : 26);
+  // "Aquecimento" tem 11 caracteres e não cabe no mesmo corpo que "Leve".
+  // Corpos menores: o arco encolheu (262 → 196px) na tela v2.
+  const tam = Z.label.length>=10 ? 17 : (Z.label.length>=8 ? 20 : 23);
   return (<div className="czwrap">
     <div className="czbpm">
       {faixa
-        ? <React.Fragment><b>{faixa.de}–{faixa.ate}</b> bpm</React.Fragment>
+        ? <React.Fragment><span className="czco" aria-hidden="true">💓</span><b style={{color:Z.cor}}>{faixa.de}–{faixa.ate}</b> bpm</React.Fragment>
         : <span className="czsem">bpm alvo indisponível</span>}
     </div>
     <div className="czarco">
@@ -4349,15 +4701,16 @@ function App({auth}){
      Guardado na própria tabela `logs`, em `extra` (jsonb). */
   cardio.salvarLog=(sessao, estado, extras)=>{
     if(!sessao || !sessao.exId) return;
-    const feitos = estado.terminou ? estado.blocos.length : Math.max(0, estado.idx);
-    const segFeitos = estado.terminou ? estado.total : Math.max(0, estado.total-estado.restanteTotal);
+    // v2: pausa/voltar/pular — a conta mora em resumoLogCardio (testada à parte)
+    const rs=resumoLogCardio(sessao, estado, Date.now());
     const log={
       id:uid(), date:todayISO(),
       carga:null, reps:null, serie:null, variante:'',
       intensidade: (extras && extras.esforco!=null) ? extras.esforco : null,
       dor:null,
-      extra:{ tipo:'cardio', segundos:segFeitos, blocos:feitos, totalBlocos:estado.blocos.length,
-              completo:!!estado.terminou, bpm:(extras&&extras.bpm)||null,
+      extra:{ tipo:'cardio', segundos:rs.segundos, blocos:rs.blocos, totalBlocos:estado.blocos.length,
+              completo:rs.completo, pulados:rs.pulados, pausaSeg:rs.pausaSeg,
+              bpm:(extras&&extras.bpm)||null,
               // amostras do meio do treino (BPM/esforço por momento)
               checkins:(sessao.checkins||[]).filter(c=>!c.pulado).map(c=>({seg:c.seg, bpm:c.bpm||null, esforco:(c.esforco!=null?c.esforco:null)})) }
     };
@@ -6759,7 +7112,7 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
               {(sr.carga||sr.cadencia||(sr.blocos||[]).length>0||(sr.extensao||[]).length>0) && expSerie!==i &&
                 <div className="siresumo">
                   {sr.carga && <span className="sitag">⚖ {sr.carga}</span>}
-                  {sr.cadencia && <span className="sitag">⏱ {sr.cadencia}</span>}
+                  {sr.cadencia && <span className="sitag">↕ {sr.cadencia}</span>}
                   {(sr.blocos||[]).length>0 && <span className="sitag">▦ {sr.blocos.length} blocos</span>}
                   {(sr.extensao||[]).map((x,k)=><span className="sitag ext" key={k}>↓ {EXT_LABEL[x.tipo]||x.tipo}</span>)}
                 </div>}
@@ -7256,6 +7609,17 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
   const [dataRetro,setDataRetro]=useState(todayISO());
   // cronômetro da sessão — o tick vive no CronoBadge, não aqui
   const [inicio,setInicio]=useState(()=>lerInicio(treinoId));
+  /* recolhidos guardam o treino a que pertencem: se a view for reaproveitada
+     para outro treino, o mapa velho não vaza (sem efeito, sem gravar errado) */
+  const [recolh,setRecolh]=useState(()=>({id:treinoId, m:lerRecolhidos(treinoId)}));
+  const recolhidos = recolh.id===treinoId ? recolh.m : lerRecolhidos(treinoId);
+  const alternarRecolhido=(exId)=>setRecolh(r=>{
+    const base = r.id===treinoId ? r.m : lerRecolhidos(treinoId);
+    const m={...base};
+    if(m[exId]) delete m[exId]; else m[exId]=1;
+    salvarRecolhidos(treinoId,m);
+    return {id:treinoId, m};
+  });
   useEffect(()=>{ setInicio(lerInicio(treinoId)); },[treinoId]);
   // tela preta era isto: `return null` sem nada renderizado. Se o treino
   // sumiu (fase apagada, sync ainda em curso), mostre e ofereça a saída.
@@ -7708,7 +8072,8 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
         const concluido = totSeries ? ((seriesFeitas[ex.id]||0)>=totSeries) : done;
         const naRodada = bl ? feitoNaRodada(bl,ex) : false;
         const fimDoBloco = bl ? (rodadaFeita(bl)>=rodadasDoBloco(bl)) : false;
-        return (<div key={ex.id} className={'exrow'+(concluido?' done':'')}>
+        const recolhido = !!recolhidos[ex.id];
+        return (<div key={ex.id} className={'exrow'+(concluido?' done':'')+(recolhido?' recolhido':'')}>
           <div className="exhead">
             {!ehAluno && !bl && <div className="reorder">
               <button disabled={bIdx===0} onClick={()=>moveEx(bIdx,-1)} aria-label="Subir">▲</button>
@@ -7716,8 +8081,12 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
             </div>}
             {bl && <div className="gpordem">{'ABCDEFGH'.charAt(pos)||String(pos+1)}</div>}
             <div className="exinfo">
-              <div className="exname">{ex.name}</div>
-              <div className="exmeta">
+              <div className="exname extgl" role="button" tabIndex={0} aria-expanded={!recolhido}
+                onClick={()=>alternarRecolhido(ex.id)}
+                onKeyDown={ev=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); alternarRecolhido(ex.id); } }}>
+                <span>{ex.name}</span><span className="exchev" aria-hidden="true">▾</span>
+              </div>
+              {!recolhido && <div className="exmeta">
                 {(()=>{ const tot=totalSeries(ex); const fe=seriesFeitas[ex.id]||0;
                   const cl='exseries'+((ex.metodo||ex.cardio||ex.isometria)?' met':'')+((tot&&fe>=tot)?' concl':'');
                   if(ex.cardio) return <span className={cl}>🏃 Cardio · {fmtMin(totalCardioSeg(ex.cardio))}</span>;
@@ -7728,11 +8097,13 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
                 {/* dentro de um grupo o descanso é do BLOCO, não do exercício:
                     deixar o botão aqui convidaria exatamente o erro que o método
                     tenta evitar — parar entre A e B. */}
-                {!ex.cardio && !bl && (()=>{ const d=descansoDaSerie(ex, seriesFeitas[ex.id]||0); const f=parseDescanso(d);
+                {/* com prescrição série a série o descanso mora NA LINHA da série
+                    (🕐 tocável). O chip só existe para quem não tem linhas. */}
+                {!ex.cardio && !bl && !(ex.metodo && (ex.metodo.series||[]).length) && (()=>{ const d=descansoDaSerie(ex, seriesFeitas[ex.id]||0); const f=parseDescanso(d);
                   return f ? <button className="exrest" onClick={()=>timer.start(f, ex.name)}>
                     🕐 Descansar <span className="exresth">{String(d).replace('~','–')}</span>
                   </button> : null; })()}
-              </div>
+              </div>}
             </div>
             {bl
               ? <button className={'gpchip'+(naRodada?' on':'')+(fimDoBloco?' fim':'')}
@@ -7749,20 +8120,12 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
                     <span className="dclabel">Feito</span>
                   </button>)}
           </div>
+          {!recolhido && <React.Fragment>
           {ex.exerciseId!=null && videoPorId[String(ex.exerciseId)] && <VideoExercicio url={videoPorId[String(ex.exerciseId)]}/>}
           {ex.cardio && (()=>{ const bl=expandirCardio(ex.cardio); return (
             <div className="cdcard">
-              <div className="cdtiraprev">
-                {bl.map((b,i)=><span key={i} style={{flex:b.seg, background:nivelInfo(b.nivel).cor}}></span>)}
-              </div>
-              <div className="cdblocos">
-                {ex.cardio.blocos.map((b,i)=>(
-                  <span className="cdbchip" key={i}>
-                    <span className="cdbdot" style={{background:nivelInfo(b.nivel).cor}}></span>
-                    {b.tempo} {b.rotulo||nivelInfo(b.nivel).label}
-                  </span>))}
-                {(ex.cardio.repetir||1)>1 && <span className="cdbrep">× {ex.cardio.repetir}</span>}
-              </div>
+              {/* v2: o mesmo perfil da execução, todo colorido, no lugar da tira e dos chips */}
+              <PerfilCardio blocos={bl} modo="thumb"/>
               <button className="cdiniciar" onClick={()=>cardio.iniciar(bl, ex.name, ex.id)}>▶ Iniciar cardio · {fmtMin(totalCardioSeg(ex.cardio))}</button>
             </div>); })()}
           {ex.isometria && <div className="isocard">
@@ -7790,7 +8153,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
                       return <div className="mplinha">
                         {!temBlocos && <span className="mpreps">{sr.reps||'—'}</span>}
                         {sr.carga && <span className="mptag">⚖ {sr.carga}</span>}
-                        {sr.cadencia && <span className="mptag">⏱ {sr.cadencia}</span>}
+                        {sr.cadencia && <span className="mptag">↕ {sr.cadencia}</span>}
                       </div>; })()}
                     {(sr.blocos||[]).length>0 && <div className="mpblocos">
                       {sr.blocos.map((b,k)=>(<React.Fragment key={k}>
@@ -7807,7 +8170,12 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
                         {x.reducao?' · reduz '+x.reducao:''}{x.reps?' · '+x.reps:''}</div>
                     ))}
                   </div>
-                  {sr.descanso && <span className="mpdesc">{sr.descanso}</span>}
+                  {/* em GRUPO o descanso é do bloco (🕐 no cabeçalho do grupo): repetir aqui
+                      convidaria a parar entre A e B */}
+                  {sr.descanso && !bl && (parseDescanso(sr.descanso)
+                    ? <button className="mpdesc" onClick={()=>timer.start(parseDescanso(sr.descanso), ex.name)}
+                        aria-label={'Iniciar descanso de '+sr.descanso}>🕐 {String(sr.descanso).replace('~','–')}</button>
+                    : <span className="mpdesc">🕐 {sr.descanso}</span>)}
                 </div>);
               })}
             </div>
@@ -7939,6 +8307,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
             {!ehAluno && <button className="mini" onClick={()=>setEditingEx(ex)}>✎</button>}
             {!ehAluno && <button className="mini" onClick={()=>delEx(ex.id)}>🗑</button>}
           </div>
+          </React.Fragment>}
         </div>);
       };
       const btnAgrupar=(bIdx)=>(!ehAluno && bIdx<nBlocos-1)
