@@ -318,15 +318,15 @@
   .fasefoot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;
     font-size:12px;color:var(--muted)}
   .fasechev{font-size:19px;color:var(--ctrl);line-height:1}
-  .fasetopo{margin:0 0 18px;padding:18px 17px;border-radius:15px;
-    background:rgba(0,201,204,.08);border:1px solid var(--cyan);
-    border-left:4px solid var(--cyan);box-shadow:0 4px 16px rgba(0,201,204,.1)}
-  /* título da fase com o mesmo peso do botão de finalizar: é o que identifica
-     onde o aluno está, e antes competia com os cards abaixo */
-  .fasetit{font-size:22px;font-weight:800;letter-spacing:-.03em;line-height:1.15;
-    color:var(--cyan-2)}
-  .fasetopo .faseper{font-size:12px;color:var(--muted);margin-top:6px}
-  .fasetopo .faseper b{color:var(--cyan-2);font-weight:800}
+  /* cabeçalho da fase (Lote 3): card neutro, rótulo em ciano, barra de progresso */
+  .fasetopo{margin:0 0 6px;padding:18px 18px 16px;border-radius:18px;
+    background:var(--surface);border:1px solid var(--line)}
+  .faserot{font-size:11.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--cyan-2);margin-bottom:6px}
+  .fasetit{font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:var(--text)}
+  .fasebar{height:4px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:14px}
+  .fasebar span{display:block;height:100%;border-radius:99px;background:var(--cyan)}
+  .fasetopo .faseper{font-size:13px;color:var(--muted);margin-top:9px}
   .secaotit.trhead{margin-top:26px}
   /* ===== AVALIAÇÃO DA DOR (avaliacao.js) ===== */
   .avtopo{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;
@@ -683,6 +683,8 @@
   .gpchip .gclab{font-size:9.5px;font-weight:700;letter-spacing:.02em;line-height:1}
   .gpchip.on{background:var(--soft-orange);border-color:var(--soft-orange);color:var(--on-accent)}
   .gpchip.fim{background:var(--lime);border-color:var(--lime);color:var(--on-accent)}
+  .gpchip:disabled{cursor:default;opacity:1}
+  .gpchip:disabled:active{transform:none}
   .gpbtns{display:flex;gap:6px;margin-top:8px}
   .gpbtns button{flex:1;height:34px;border-radius:10px;font-family:inherit;font-size:12px;
     font-weight:700;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);
@@ -727,6 +729,8 @@
     transition:transform .2s ease}
   .exrow.recolhido .exchev{transform:rotate(-90deg)}
   .exrow.recolhido{padding-top:11px;padding-bottom:11px}
+  /* ao abrir o próximo, a rolagem para abaixo da topbar fixa */
+  .exrow,.gpwrap{scroll-margin-top:84px}
   .exrow.recolhido .exhead{align-items:center}
   .donecheck{flex-shrink:0;width:52px;min-height:52px;border-radius:12px;background:transparent;border:2px solid var(--lime);color:var(--on-accent);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:.12s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:5px 2px}
   .donecheck:active{transform:scale(.9)}
@@ -1134,6 +1138,28 @@
      Não confundir com .exobs (💬 observação permanente do exercício) nem com
      .exrel (✍️ anotação do aluno). Cor própria — laranja — para os três
      canais nunca se misturarem na leitura. */
+  /* ===== LISTA DA FASE (Lote 3) ===== */
+  .trsecao{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:24px 2px 12px;
+    font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .trsecao .trsecn{font-size:13px;font-weight:600;letter-spacing:0;text-transform:none}
+  .treino.proximo{border-color:var(--cyan);box-shadow:inset 0 0 0 1px var(--cyan)}
+  .tprox{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;vertical-align:2px;
+    font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--on-cyan);background:var(--cyan)}
+  .cdlista{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    overflow:hidden;margin-bottom:12px}
+  .cdlinha + .cdlinha{border-top:1px solid var(--line)}
+  .cdlrow{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .cdlmini{flex:0 0 64px;display:grid;place-items:center}
+  .cdlsem{font-size:18px}
+  .cdlmeta{flex:1;min-width:0}
+  .cdlnome{font-weight:600;font-size:15.5px;line-height:1.3}
+  .cdlfeito{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .cdlfeito.hoje{color:var(--lime)}
+  .cdlista .trabas{border:none;border-top:1px solid var(--line);border-radius:0}
+  .cdperfil.m-mini{width:64px;height:28px;margin:0}
+  .cdperfil.m-mini .cdpdv{display:none}
   .trwrap{margin-bottom:12px}
   .trwrap .treino{margin-bottom:0}
   .trwrap.aberto .treino{border-bottom-left-radius:0;border-bottom-right-radius:0}
@@ -3283,27 +3309,52 @@ function corrNoTreinoLigado(alunoId){
 function setCorrNoTreino(alunoId,on){
   try{ if(LS_OK) window.localStorage.setItem(chaveCorrTreino(alunoId), on?'1':'0'); }catch(e){}
 }
-/* exercícios recolhidos na tela do treino (Lote 2 · em teste).
-   Escolha do aparelho, por treino, e SÓ DO DIA: amanhã o treino abre todo
-   expandido de novo. localStorage de propósito — é preferência de exibição,
-   não dado de treino, e não pede coluna nova. */
-const RECOLHIDOS_KEY='idealis_recolhidos_v1';
-function lerRecolhidos(treinoId){
+/* exercícios ABERTOS na tela do treino (Lote 2b). O treino começa todo
+   FECHADO; o que for aberto fica lembrado por treino, neste aparelho, só no
+   dia — amanhã abre tudo fechado de novo. localStorage de propósito: é
+   preferência de exibição, não dado de treino. */
+const ABERTOS_KEY='idealis_abertos_v1';
+function lerAbertos(treinoId){
   try{
     if(!LS_OK) return {};
-    const d=JSON.parse(window.localStorage.getItem(RECOLHIDOS_KEY)||'null');
+    const d=JSON.parse(window.localStorage.getItem(ABERTOS_KEY)||'null');
     if(!d || d.date!==todayISO() || !d.m) return {};
     return d.m[String(treinoId)]||{};
   }catch(e){ return {}; }
 }
-function salvarRecolhidos(treinoId,mapa){
+function salvarAbertos(treinoId,mapa){
   try{
     if(!LS_OK) return;
-    let d=JSON.parse(window.localStorage.getItem(RECOLHIDOS_KEY)||'null');
+    let d=JSON.parse(window.localStorage.getItem(ABERTOS_KEY)||'null');
     if(!d || d.date!==todayISO() || !d.m) d={date:todayISO(), m:{}};
     if(Object.keys(mapa).length) d.m[String(treinoId)]=mapa; else delete d.m[String(treinoId)];
-    window.localStorage.setItem(RECOLHIDOS_KEY, JSON.stringify(d));
+    window.localStorage.setItem(ABERTOS_KEY, JSON.stringify(d));
   }catch(e){}
+}
+/* UNIDADE = exercício solto ou grupo inteiro (bi-set/circuito). No grupo os
+   exercícios alternam, então abrem e fecham JUNTOS. Concluída = todas as
+   séries/rodadas feitas; sem séries, o ✓ "Feito" do dia. */
+function unidadeConcluida(bl,sf,hoje){
+  if(bl.grupo){
+    const rod=rodadasDoBloco(bl);
+    return rod>0 && rodadaFeitaDoBloco(bl,sf)>=rod;
+  }
+  const ex=bl.itens[0].ex, tot=totalSeries(ex);
+  return tot ? (sf[ex.id]||0)>=tot : ex.doneDate===hoje;
+}
+function unidadesDoTreino(t,sf,hoje){
+  return blocosDoTreino((t&&t.exercises)||[]).map(bl=>({
+    chave: bl.grupo ? ('g:'+bl.grupo) : ('e:'+bl.itens[0].ex.id),
+    ids: bl.itens.map(it=>it.ex.id),
+    concl: unidadeConcluida(bl,sf||{},hoje),
+  }));
+}
+/* próxima pendente DEPOIS da concluída; sem nenhuma depois, a 1ª pendente de
+   cima; sem nenhuma, null (o que sobra é o "Finalizar Treino") */
+function proximaUnidadePendente(unidades,idx){
+  for(let k=idx+1;k<unidades.length;k++) if(!unidades[k].concl) return unidades[k];
+  for(let k=0;k<idx;k++) if(!unidades[k].concl) return unidades[k];
+  return null;
 }
 
 /* ===== CAMADA 3: ESCRITA NO SUPABASE (fila offline) =====
@@ -3455,6 +3506,26 @@ function saveCacheMeta(iso){ if(!LS_OK)return; try{window.localStorage.setItem(C
    dado. Como a ordenação é crescente por data, o que ficava de fora era
    justamente o mais recente: o aluno registrava hoje e via a semana
    passada. Aconteceu de verdade com 1.119 logs. */
+/* treinos.eh_cardio (Lote 3). Enquanto o SQL não rodar, a leitura cai para a
+   lista antiga SEM derrubar o carregamento, e o toggle some da tela: nenhuma
+   escrita com a coluna entra na fila (um op recusado travaria a fila). O "ok"
+   fica guardado para o toggle aparecer mesmo abrindo offline. */
+const EH_CARDIO_KEY='idealis_eh_cardio_ok';
+let EH_CARDIO_OK=(()=>{ try{ return LS_OK && window.localStorage.getItem(EH_CARDIO_KEY)==='1'; }catch(e){ return false; } })();
+async function buscarTreinos(){
+  const r=await buscarTudo('treinos','id,aluno_id,nome,ordem,concluido_data,fase_id,eh_cardio','ordem');
+  if(r.error && /eh_cardio/i.test(String(r.error.message||''))){
+    console.warn('[eh_cardio] coluna ausente — rode o SQL do Lote 3');
+    EH_CARDIO_OK=false;
+    try{ if(LS_OK) window.localStorage.removeItem(EH_CARDIO_KEY); }catch(e){}
+    return buscarTudo('treinos','id,aluno_id,nome,ordem,concluido_data,fase_id','ordem');
+  }
+  if(!r.error){
+    EH_CARDIO_OK=true;
+    try{ if(LS_OK) window.localStorage.setItem(EH_CARDIO_KEY,'1'); }catch(e){}
+  }
+  return r;
+}
 async function buscarTudo(tabela, colunas, ordem){
   const PAG=1000;
   let todos=[], de=0;
@@ -3475,7 +3546,7 @@ async function fetchDbFromSupabase(){
     // o RLS já filtra: treinador vê tudo, aluno vê só o dele
     const [rAlunos, rTreinos, rEx, rLogs, rSess, rRel, rAce, rFas, rMod, rSeg, rPlan, rAcad, rAlAcad, rSem, rDor, rAval, rChk, rCorr] = await Promise.all([
       sb.from('alunos').select('id,nome,foto_url,academia,nascimento,fc_max').order('nome'),
-      buscarTudo('treinos','id,aluno_id,nome,ordem,concluido_data,fase_id','ordem'),
+      buscarTreinos(),
       buscarTudo('exercicios','id,treino_id,nome,series,cardapio_id,ordem,done_date,descanso,filmar,observacao,metodo,cardio,isometria,grupo,audio_url','ordem'),
       buscarTudo('logs','id,exercicio_id,data,carga,reps,intensidade,dor,dor_local,dor_lado,variante,serie,extra','data,serie'),
       buscarTudo('sessoes','id,aluno_id,treino_id,data,origem,duracao','data'),
@@ -3545,7 +3616,7 @@ async function fetchDbFromSupabase(){
     const treinosPorAluno={};
     (rTreinos.data||[]).forEach(t=>{
       (treinosPorAluno[t.aluno_id]=treinosPorAluno[t.aluno_id]||[]).push({
-        id:t.id, nome:t.nome, concluidoData:t.concluido_data, faseId:t.fase_id||null,
+        id:t.id, nome:t.nome, concluidoData:t.concluido_data, faseId:t.fase_id||null, ehCardio:!!t.eh_cardio,
         sessoes: sessPorTreino[t.id]||[], exercises: exPorTreino[t.id]||[],
         relatos: relPorTreino[t.id]||[], acessos: acePorTreino[t.id]||[]
       });
@@ -3679,6 +3750,27 @@ function blocosDoTreino(exs){
    simplesmente descansa naquela rodada — não inventamos série pra ele. */
 function rodadasDoBloco(bl){
   return Math.max(1, ...bl.itens.map(it=>totalSeries(it.ex)||1));
+}
+/* rodada concluída do grupo. Membro que JÁ FEZ todas as séries dele conta como
+   presente nas rodadas seguintes — "quem tem menos descansa naquela rodada".
+   Antes era o mínimo cru entre os membros, e um bi-set 3+2 travava em 2/3. */
+function rodadaFeitaDoBloco(bl,sf){
+  const rod=rodadasDoBloco(bl);
+  return Math.min(...bl.itens.map(it=>{
+    const tot=totalSeries(it.ex)||rod;
+    const fe=(sf&&sf[it.ex.id])||0;
+    return fe>=tot ? rod : fe;
+  }));
+}
+/* último membro que participa da rodada n (1 = primeira): é dele o descanso.
+   Na rodada em que o último do grupo já terminou, vale o anterior a ele. */
+function ultimoDaRodada(bl,n){
+  const rod=rodadasDoBloco(bl);
+  for(let k=bl.itens.length-1;k>=0;k--){
+    const ex=bl.itens[k].ex;
+    if((totalSeries(ex)||rod)>=n) return ex;
+  }
+  return bl.itens[bl.itens.length-1].ex;
 }
 function tempoEstimado(exercicios){
   let seg=0, nEx=0;
@@ -4253,11 +4345,11 @@ function PerfilCardio({blocos,pos,modo}){
   const g=perfilCardioGeo(blocos);
   if(!g) return null;
   const p=Math.max(0,Math.min(g.total,pos||0));
-  const cheio = (modo==='thumb'||modo==='fim') ? 1 : (modo==='run' ? p/g.total : 0);
+  const cheio = (modo==='thumb'||modo==='mini'||modo==='fim') ? 1 : (modo==='run' ? p/g.total : 0);
   const id=gid.current;
   const topo=(100-alturaPerfilEm(g.V,p)*92);
   return (<div className={'cdperfil m-'+modo} aria-hidden="true">
-    {modo!=='thumb' && <svg className="cdpl cdpdim" viewBox="0 0 1000 100" preserveAspectRatio="none">
+    {modo!=='thumb' && modo!=='mini' && <svg className="cdpl cdpdim" viewBox="0 0 1000 100" preserveAspectRatio="none">
       <path d={g.area} fill="rgba(255,255,255,.06)"/>
       <path d={g.linha} fill="none" stroke="rgba(255,255,255,.24)" strokeWidth="1.5" vectorEffect="non-scaling-stroke"/>
     </svg>}
@@ -4913,7 +5005,7 @@ function App({auth}){
   else if(view.name==='plano') screen=<PlanoFases db={db} nav={nav} studentId={view.studentId}/>;
   else if(view.name==='progresso') screen=<Progresso db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
   else if(view.name==='agenda') screen=<Agenda db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
-  else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} faseId={view.faseId||null} flash={flash} ehAluno={ehAluno} onSair={auth?auth.sair:null}/>;
+  else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} faseId={view.faseId||null} flash={flash} ehAluno={ehAluno} onSair={auth?auth.sair:null} cardio={cardio}/>;
   else if(view.name==='correcoes') screen=<Correcoes db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} flash={flash} ehAluno={ehAluno}/>;
   else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio} iso={iso}/>;
   else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={ehAluno}/>;
@@ -5383,7 +5475,7 @@ function AcademiasSheet({academias,atuais,onSalvar,onClose}){
       </div>
     </div></div>);
 }
-function RowMenu({label,currentName,onRename,onDelete,onClose,academia,onAcademia,onAcademias,qtdAcademias,perfil,onPerfil}){
+function RowMenu({label,currentName,onRename,onDelete,onClose,academia,onAcademia,onAcademias,qtdAcademias,perfil,onPerfil,cardioOn,onCardio}){
   const [mode,setMode]=useState('menu'); // menu | rename | confirm | academia | perfil
   const [nome,setNome]=useState(currentName||'');
   const [acad,setAcad]=useState(academia||'');
@@ -5396,6 +5488,14 @@ function RowMenu({label,currentName,onRename,onDelete,onClose,academia,onAcademi
       {mode==='menu' && <React.Fragment>
         <h2>{currentName}</h2><div className="h2sub">O que deseja fazer?</div>
         <button className="opt" onClick={()=>setMode('rename')}>✎ Editar nome</button>
+        {onCardio && <label className="swrow" style={{margin:'2px 0 10px'}}>
+          <input type="checkbox" checked={!!cardioOn} onChange={e=>onCardio(e.target.checked)}/>
+          <span className="swtrack"></span>
+          <span className="swtxt">
+            <span className="swtit">🏃 Sessão de cardio</span>
+            <span className="swsub">Para o aluno, aparece no grupo Cardio da fase.</span>
+          </span>
+        </label>}
         {onAcademias && <button className="opt" onClick={()=>setMode('academias')}>
           🏋️ Academias{qtdAcademias?' · '+qtdAcademias:(academia?' · '+academia:'')}</button>}
         {onAcademia && <button className="opt" onClick={()=>setMode('academia')}>✎ Academia (texto livre)</button>}
@@ -5833,11 +5933,13 @@ function copiarTreinos(opts){
         grupo:gNovo}});
       return copia;
     });
-    novos.push({id:tid, nome:t.nome, faseId:faseDestinoId, exercises:exs,
+    novos.push({id:tid, nome:t.nome, faseId:faseDestinoId, exercises:exs, ehCardio:!!t.ehCardio,
                 sessoes:[], relatos:[], acessos:[], concluidoData:null});
+    // a cópia leva o toggle de cardio (só escreve a coluna se ela existe)
     enqueueOp({tipo:'insert',tabela:'treinos',dados:{
       id:tid, aluno_id:alunoDestinoId, nome:t.nome,
-      ordem:ordemInicial+i, fase_id:faseDestinoId}});
+      ordem:ordemInicial+i, fase_id:faseDestinoId,
+      ...((EH_CARDIO_OK && t.ehCardio) ? {eh_cardio:true} : {})}});
   });
   return novos;
 }
@@ -6002,7 +6104,7 @@ function SeletorSessoes({db, alunoAtualId, nomesExistentes, titulo, subtitulo, r
       </div>
     </div></div>);
 }
-function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
+function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair,cardio}){
   const s=db.students.find(x=>x.id===studentId);
   const [adding,setAdding]=useState(false);
   const [nome,setNome]=useState('');
@@ -6014,6 +6116,7 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
   const [editandoFase,setEditandoFase]=useState(null); // 'nova' | objeto
   const [importando,setImportando]=useState(false);    // seletor de sessões aberto
   const [trAberto,setTrAberto]=useState(null);    // treino com a aba aberta (aluno)
+  const [novoCardio,setNovoCardio]=useState(false); // toggle na folha "Novo treino"
   /* RETROSPECTIVA: 1x por fase, a partir de 7 dias do fim.
      Mínimo de 6 sessões — abaixo disso a tela sairia constrangedora justo
      para quem mais precisaria de estímulo. */
@@ -6147,11 +6250,18 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
   const sugestaoNome='Treino '+String.fromCharCode(65+treinos.length);
   const addTreino=()=>{
     const fid=faseEmFoco?faseEmFoco.id:null;
-    const novo={id:uid(),nome:(nome.trim()||sugestaoNome),exercises:[],faseId:fid};
+    const cardioOn=EH_CARDIO_OK && novoCardio;
+    const novo={id:uid(),nome:(nome.trim()||sugestaoNome),exercises:[],faseId:fid,ehCardio:cardioOn};
     updStudent({treinos:[...treinos,novo]});
     enqueueOp({tipo:'insert',tabela:'treinos',dados:{
-      id:novo.id,aluno_id:studentId,nome:novo.nome,ordem:treinos.length,fase_id:fid}});
-    setNome('');setAdding(false);
+      id:novo.id,aluno_id:studentId,nome:novo.nome,ordem:treinos.length,fase_id:fid,
+      ...(cardioOn?{eh_cardio:true}:{})}});
+    setNome('');setNovoCardio(false);setAdding(false);
+  };
+  const marcarCardio=(id,on)=>{
+    updStudent({treinos:treinos.map(t=>t.id===id?{...t,ehCardio:on}:t)});
+    enqueueOp({tipo:'update',tabela:'treinos',id,dados:{eh_cardio:on}});
+    flash(on?'Sessão marcada como cardio 🏃':'Sessão voltou para musculação');
   };
   return (<React.Fragment>
     <TopBar title={ehAluno?(faseId?'Treinos':'Idealis'):s.name}
@@ -6219,20 +6329,27 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
           </button>}
       </React.Fragment>}
       {/* dentro de uma fase: cabeçalho dela e, abaixo, os treinos */}
-      {ehAluno && faseId && <div className="fasetopo">
-        <div className="fasetit">{faseAberta?faseAberta.nome:'Outros treinos'}</div>
-        {faseAberta && faseAberta.objetivo && <div className="faseobj">{faseAberta.objetivo}</div>}
-        {/* contagem em vez de intervalo: "faltam 8 dias" é acionável, "01/03 →
-            30/03" obriga o aluno a fazer a conta. As datas editáveis do
-            treinador, no card de fase abaixo, seguem intactas. */}
-        {faseAberta && (()=>{ const d=diasRestantes(faseAberta); if(d==null) return null;
-          const sit=faseSituacao(faseAberta);
-          return <div className="faseper"><b>{
-            sit==='futura'  ? 'Começa em '+fmtDate(faseAberta.inicio)
-          : sit==='vencida' ? 'Encerrada em '+fmtDate(faseAberta.fim)
+      {ehAluno && faseId && (()=>{
+        const f=faseAberta;
+        const sit=f?faseSituacao(f):null;
+        const rot=!f?null:(sit==='futura'?'Próxima fase':(sit==='vencida'?'Fase encerrada':'Fase atual'));
+        const prog=(f && sit==='ativa')?progressoFase(f):null;
+        const d=f?diasRestantes(f):null;
+        return (<div className="fasetopo">
+          {rot && <div className="faserot">{rot}</div>}
+          <div className="fasetit">{f?f.nome:'Outros treinos'}</div>
+          {f && f.objetivo && <div className="faseobj">{f.objetivo}</div>}
+          {prog!=null && <div className="fasebar"><span style={{width:(prog*100).toFixed(1)+'%'}}></span></div>}
+          {/* contagem em vez de intervalo: "faltam 8 dias" é acionável, "01/03 →
+              30/03" obriga o aluno a fazer a conta. As datas editáveis do
+              treinador seguem intactas na tela dele. */}
+          {f && d!=null && <div className="faseper">{
+            sit==='futura'  ? 'Começa em '+fmtDate(f.inicio)
+          : sit==='vencida' ? 'Encerrada em '+fmtDate(f.fim)
           : (d<=0?'Último dia':(d===1?'Falta 1 dia':'Faltam '+d+' dias'))
-          }</b></div>; })()}
-      </div>}
+          }</div>}
+        </div>);
+      })()}
       {!ehAluno && <React.Fragment>
         <div className="fasetabs">
           <button className={abaFase==='anteriores'?'on':''}
@@ -6296,65 +6413,127 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
       </React.Fragment>}
       {treinos.length===0 && <div className="empty"><div className="big">📋</div>
         <p>{ehAluno?'Nenhum treino montado ainda. Fale com seu treinador.':'Nenhum treino ainda. Crie o '}{!ehAluno && <b>Treino A</b>}{!ehAluno && ' e adicione os exercícios — ele fica fixo pelas próximas semanas.'}</p></div>}
-      {treinosVisiveis.map(t=>{
-        const letra=(t.nome.match(/\b([A-Z])\b/)||[])[1] || t.nome.slice(0,1).toUpperCase();
-        const corrs=corrDoTreino(s,t);
-        const novas=corrNaoVistas(corrs);
-        const abrirTreino=()=>nav({name:'treino',studentId,treinoId:t.id,deFase:(faseId||null)});
-        const abrirCorr=()=>nav({name:'correcoes',studentId,treinoId:t.id,deFase:(faseId||null)});
-        const aberto = ehAluno && trAberto===t.id;
-        /* ALUNO: tocar no card ABRE A ABA, não o treino. O portão explícito
-           ("Acessar treino" / "Ver correções") é o que garante que a correção
-           nunca fica escondida, mesmo com o 🔧 desligado lá dentro.
-           TREINADOR: continua indo direto — ele monta treino o dia inteiro. */
-        const card=(<div key={t.id} className="treino"
-          onClick={()=>{ if(ehAluno) setTrAberto(aberto?null:t.id); else abrirTreino(); }}>
-          <div className="tag">{letra}</div>
-          <div className="meta"><div className="name">{t.nome}</div>
-            <div className="desc">
-              {(t.exercises||[]).length} {(t.exercises||[]).length===1?'exercício':'exercícios'}
-              {(()=>{
-                // o aluno só vê sessões que ELE confirmou; as inferidas são sinal pro treinador
-                const ses=(t.sessoes||[]).filter(x=>ehAluno ? x.origem!=='inferido' : true);
-                if(!ses.length) return null;
-                const ult=ses[ses.length-1].data; const q=haQuantoTempo(ult);
-                const hoje=ult===todayISO();
-                return <span className={'tfeito'+(hoje?' hoje':'')}>· {hoje?'feito hoje ✓':'feito '+q}</span>; })()}
-              {/* o contador é do TREINADOR. Na linha do aluno ele seria ruído:
-                  a correção já chegou por WhatsApp, e quem revela o canal é a
-                  aba que abre ao tocar no card — não um número no cabeçalho. */}
-              {!ehAluno && corrs.length>0 &&
-                <button className="corrtag" title="Ver e gerenciar as correções"
-                  onClick={e=>{e.stopPropagation();abrirCorr();}}>
-                  · 💬 {corrs.length===1?'1 correção':corrs.length+' correções'}
-                  {novas>0 && <span className="corrdot"></span>}</button>}
-            </div></div>
-          {!ehAluno && <button className="menudot" onClick={e=>{e.stopPropagation();setMenu(t);}}>⋯</button>}
-          <div className="chev" style={{color:'var(--muted)',fontSize:20}}>{aberto?'⌄':'›'}</div>
-        </div>);
-        if(!ehAluno) return card;
-        return (<div key={t.id} className={'trwrap'+(aberto?' aberto':'')}>
-          {card}
-          {aberto && <div className="trabas">
-            <button className="trab principal" onClick={abrirTreino}>
-              <span className="tabtxt">▶ Acessar treino</span></button>
+      {(()=>{
+        /* LOTE 3 · lista da fase.
+           ALUNO dentro de uma fase: dois grupos — Musculação (cards) e Cardio
+           (linhas com o mini perfil). Cardio é o toggle `eh_cardio` que o
+           treinador marca na sessão; NUNCA é inferido pelos exercícios (uma
+           sessão de cardio pode ter alongamento antes).
+           TREINADOR: lista como sempre foi. */
+        const hoje=todayISO();
+        const segmentar = ehAluno && !!faseId;
+        const musc = segmentar ? treinosVisiveis.filter(t=>!t.ehCardio) : treinosVisiveis;
+        const cards = segmentar ? treinosVisiveis.filter(t=>t.ehCardio) : [];
+        const proxId = segmentar ? proximoTreinoId(musc) : null;
+        // o aluno só vê sessões que ELE confirmou; as inferidas são sinal pro treinador
+        const ultimaSessao=(t)=>(t.sessoes||[])
+          .filter(x=>ehAluno ? x.origem!=='inferido' : true)
+          .reduce((m,x)=>(!m||x.data>m)?x.data:m, null);
+        const ctx=(t)=>{
+          const corrs=corrDoTreino(s,t);
+          return {
+            corrs, novas:corrNaoVistas(corrs),
+            abrirTreino:()=>nav({name:'treino',studentId,treinoId:t.id,deFase:(faseId||null)}),
+            abrirCorr:()=>nav({name:'correcoes',studentId,treinoId:t.id,deFase:(faseId||null)}),
+            aberto: ehAluno && trAberto===t.id,
+          };
+        };
+        const aba=(t,c)=>{
+          /* sessão só com o cardio: o botão principal já inicia. Entra no treino
+             e abre a abertura do cardio por cima — ao terminar, o aluno está
+             dentro do treino, com o "Finalizar Treino" (e o semáforo) ali. */
+          const exs=t.exercises||[];
+          const soCardio = !!(t.ehCardio && exs.length===1 && exs[0].cardio);
+          const iniciar=()=>{
+            c.abrirTreino();
+            if(cardio && cardio.iniciar) cardio.iniciar(expandirCardio(exs[0].cardio), exs[0].name, exs[0].id);
+          };
+          return (<div className="trabas">
+            <button className="trab principal" onClick={soCardio?iniciar:c.abrirTreino}>
+              <span className="tabtxt">{soCardio
+                ? '▶ Iniciar cardio · '+fmtMin(totalCardioSeg(exs[0].cardio))
+                : '▶ Acessar treino'}</span></button>
             {/* sem correção o botão continua VISÍVEL, só desabilitado: é assim
                 que o aluno descobre que este canal existe e passa a mandar vídeo */}
-            {corrs.length>0
-              ? <button className="trab" onClick={abrirCorr}>
+            {c.corrs.length>0
+              ? <button className="trab" onClick={c.abrirCorr}>
                   <span className="tabtxt">💬 Ver correções do treino
                     <span className="tabsub">Ajustes de execução que o Matheus mandou pra você.</span>
                   </span>
-                  {novas>0 && <span className="tabn">{novas}</span>}
+                  {c.novas>0 && <span className="tabn">{c.novas}</span>}
                 </button>
               : <div className="trab off">
                   <span className="tabtxt">💬 Nenhuma correção ainda
                     <span className="tabsub">Mande um vídeo pro Matheus e ele responde por aqui.</span>
                   </span>
                 </div>}
+          </div>);
+        };
+        const cardTreino=(t)=>{
+          const letra=(t.nome.match(/\b([A-Z])\b/)||[])[1] || t.nome.slice(0,1).toUpperCase();
+          const c=ctx(t);
+          const ult=ultimaSessao(t); const q=feitoHaTexto(ult);
+          const prox=t.id===proxId;
+          /* ALUNO: tocar no card ABRE A ABA, não o treino. O portão explícito
+             ("Acessar treino" / "Ver correções") é o que garante que a correção
+             nunca fica escondida, mesmo com o 🔧 desligado lá dentro.
+             TREINADOR: continua indo direto — ele monta treino o dia inteiro. */
+          const card=(<div key={t.id} className={'treino'+(prox?' proximo':'')}
+            onClick={()=>{ if(ehAluno) setTrAberto(c.aberto?null:t.id); else c.abrirTreino(); }}>
+            <div className="tag">{letra}</div>
+            <div className="meta"><div className="name">{t.nome}{prox && <span className="tprox">Próximo</span>}</div>
+              <div className="desc">
+                {(t.exercises||[]).length} {(t.exercises||[]).length===1?'exercício':'exercícios'}
+                {q && <span className={'tfeito'+(ult===hoje?' hoje':'')}>· {q}</span>}
+                {/* o contador é do TREINADOR. Na linha do aluno ele seria ruído:
+                    a correção já chegou por WhatsApp, e quem revela o canal é a
+                    aba que abre ao tocar no card — não um número no cabeçalho. */}
+                {!ehAluno && c.corrs.length>0 &&
+                  <button className="corrtag" title="Ver e gerenciar as correções"
+                    onClick={e=>{e.stopPropagation();c.abrirCorr();}}>
+                    · 💬 {c.corrs.length===1?'1 correção':c.corrs.length+' correções'}
+                    {c.novas>0 && <span className="corrdot"></span>}</button>}
+              </div></div>
+            {!ehAluno && <button className="menudot" onClick={e=>{e.stopPropagation();setMenu(t);}}>⋯</button>}
+            <div className="chev" style={{color:'var(--muted)',fontSize:20}}>{c.aberto?'⌄':'›'}</div>
+          </div>);
+          if(!ehAluno) return card;
+          return (<div key={t.id} className={'trwrap'+(c.aberto?' aberto':'')}>
+            {card}
+            {c.aberto && aba(t,c)}
+          </div>);
+        };
+        const linhaCardio=(t)=>{
+          const c=ctx(t);
+          const exC=(t.exercises||[]).find(e=>e.cardio);
+          const ult=ultimaSessao(t); const q=feitoHaTexto(ult);
+          return (<div key={t.id} className={'cdlinha'+(c.aberto?' aberto':'')}>
+            <div className="cdlrow" onClick={()=>setTrAberto(c.aberto?null:t.id)}>
+              <div className="cdlmini">
+                {exC ? <PerfilCardio blocos={expandirCardio(exC.cardio)} modo="mini"/>
+                     : <span className="cdlsem" aria-hidden="true">🏃</span>}
+              </div>
+              <div className="cdlmeta">
+                <div className="cdlnome">{t.nome}</div>
+                {q && <div className={'cdlfeito'+(ult===hoje?' hoje':'')}>{q}</div>}
+              </div>
+              <div className="chev" style={{color:'var(--muted)',fontSize:20}}>{c.aberto?'⌄':'›'}</div>
+            </div>
+            {c.aberto && aba(t,c)}
+          </div>);
+        };
+        if(!segmentar) return treinosVisiveis.map(cardTreino);
+        return (<React.Fragment>
+          {musc.length>0 && <div className="trsecao">
+            <span>Musculação</span><span className="trsecn">{musc.length} {musc.length===1?'treino':'treinos'}</span>
           </div>}
-        </div>);
-      })}
+          {musc.map(cardTreino)}
+          {cards.length>0 && <div className="trsecao">
+            <span>Cardio</span><span className="trsecn">{cards.length} {cards.length===1?'sessão':'sessões'}</span>
+          </div>}
+          {cards.length>0 && <div className="cdlista">{cards.map(linhaCardio)}</div>}
+        </React.Fragment>);
+      })()}
     </div>
     {!ehAluno && <button className="fab" onClick={()=>setAdding(true)}>＋ Treino</button>}
     {retro && ehAluno && (()=>{
@@ -6379,12 +6558,22 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair}){
         <h2>Novo treino</h2><div className="h2sub">Ex: Treino A, Treino B, Membros Inferiores…</div>
         <div className="field"><label>Nome do treino</label>
           <input autoFocus value={nome} onChange={e=>setNome(e.target.value)} placeholder={sugestaoNome}/></div>
+        {EH_CARDIO_OK && <label className="swrow">
+          <input type="checkbox" checked={novoCardio} onChange={e=>setNovoCardio(e.target.checked)}/>
+          <span className="swtrack"></span>
+          <span className="swtxt">
+            <span className="swtit">🏃 Sessão de cardio</span>
+            <span className="swsub">Para o aluno, aparece no grupo Cardio da fase.</span>
+          </span>
+        </label>}
         <div className="sheetactions">
           <button className="btn ghost" onClick={()=>setAdding(false)}>Cancelar</button>
           <button className="btn" onClick={addTreino}>Criar</button></div>
       </div></div>}
     {menu && !ehAluno && <RowMenu label="treino" currentName={menu.nome}
       onRename={(novo)=>renameTreino(menu.id,novo)} onDelete={()=>deleteTreino(menu.id)}
+      cardioOn={!!(treinos.find(x=>x.id===menu.id)||menu).ehCardio}
+      onCardio={EH_CARDIO_OK ? (on)=>marcarCardio(menu.id,on) : null}
       onClose={()=>setMenu(null)}/>}
   </React.Fragment>);
 }
@@ -6575,6 +6764,39 @@ function expandirCardio(c){
 }
 function totalCardioSeg(c){ return expandirCardio(c).reduce((a,b)=>a+b.seg,0); }
 /* "hoje", "ontem", "há 3 dias", "há 2 semanas"… a partir de uma data ISO */
+/* "feito há X dias" do card (Lote 3): um formato só. Hoje = "feito hoje ✓";
+   1 a 30 dias = "feito há N dia(s)"; acima de 30, nada. */
+function feitoHaTexto(iso){
+  if(!iso) return null;
+  const dias=Math.round((Date.parse(todayISO()+'T00:00:00')-Date.parse(String(iso)+'T00:00:00'))/86400000);
+  if(isNaN(dias) || dias<0) return null;
+  if(dias===0) return 'feito hoje ✓';
+  if(dias>30) return null;
+  return 'feito há '+dias+(dias===1?' dia':' dias');
+}
+/* próximo treino: entre os de musculação, o feito há mais tempo (só sessões
+   confirmadas pelo aluno). Nunca feito vem primeiro; empate fica com a ordem.
+   Com menos de 2 treinos, ou tudo feito hoje, não destaca nada. */
+function proximoTreinoId(lista){
+  if(!lista || lista.length<2) return null;
+  let melhor=null, dMelhor=null;
+  lista.forEach(t=>{
+    const ult=(t.sessoes||[]).filter(x=>x.origem!=='inferido')
+      .reduce((m,x)=>(!m||x.data>m)?x.data:m, null);
+    if(melhor===null){ melhor=t; dMelhor=ult; return; }
+    if(dMelhor===null) return;
+    if(ult===null || ult<dMelhor){ melhor=t; dMelhor=ult; }
+  });
+  if(dMelhor===todayISO()) return null;
+  return melhor.id;
+}
+/* progresso da fase (0–1), contando o dia de hoje sobre o total inclusivo */
+function progressoFase(f){
+  if(!f || !f.inicio || !f.fim) return null;
+  const a=Date.parse(f.inicio+'T00:00:00'), b=Date.parse(f.fim+'T00:00:00'), h=Date.parse(todayISO()+'T00:00:00');
+  if(isNaN(a)||isNaN(b)||isNaN(h)||b<a) return null;
+  return Math.max(0, Math.min(1, ((h-a)/86400000+1)/((b-a)/86400000+1)));
+}
 function haQuantoTempo(iso){
   if(!iso) return null;
   const hoje=new Date(todayISO()+'T00:00:00');
@@ -7196,7 +7418,7 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
           onClick={()=>setIso(x=>x?null:{min:ISO_FAIXAS[2].min,max:ISO_FAIXAS[2].max})}>
           <span className="ftbox">{iso?'✓':''}</span>
           <span className="fttxt">
-            <span className="ftlab">⏱️ Isometria</span>
+            <span className="ftlab">🔥 Isometria</span>
             <span className="fthint">{iso
               ? ('Segurar '+rotIso(iso)+' em cada série')
               : 'Troca repetição por tempo de sustentação'}</span>
@@ -7609,17 +7831,71 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
   const [dataRetro,setDataRetro]=useState(todayISO());
   // cronômetro da sessão — o tick vive no CronoBadge, não aqui
   const [inicio,setInicio]=useState(()=>lerInicio(treinoId));
-  /* recolhidos guardam o treino a que pertencem: se a view for reaproveitada
+  /* abertos guardam o treino a que pertencem: se a view for reaproveitada
      para outro treino, o mapa velho não vaza (sem efeito, sem gravar errado) */
-  const [recolh,setRecolh]=useState(()=>({id:treinoId, m:lerRecolhidos(treinoId)}));
-  const recolhidos = recolh.id===treinoId ? recolh.m : lerRecolhidos(treinoId);
-  const alternarRecolhido=(exId)=>setRecolh(r=>{
-    const base = r.id===treinoId ? r.m : lerRecolhidos(treinoId);
-    const m={...base};
-    if(m[exId]) delete m[exId]; else m[exId]=1;
-    salvarRecolhidos(treinoId,m);
+  const [abertosSt,setAbertosSt]=useState(()=>({id:treinoId, m:lerAbertos(treinoId)}));
+  const abertos = abertosSt.id===treinoId ? abertosSt.m : lerAbertos(treinoId);
+  const mexerAbertos=(fn)=>setAbertosSt(r=>{
+    const base = r.id===treinoId ? r.m : lerAbertos(treinoId);
+    const m=fn({...base});
+    salvarAbertos(treinoId,m);
     return {id:treinoId, m};
   });
+  const alternarRecolhido=(exId)=>mexerAbertos(m=>{ if(m[exId]) delete m[exId]; else m[exId]=1; return m; });
+  /* RECOLHER SOZINHO + ABRIR O PRÓXIMO (Lote 2b)
+     - só na TRANSIÇÃO para concluída: reabrir um exercício já feito não fecha de novo
+     - 1,5s de espera para o ✓ aparecer
+     - folha de registro aberta: espera ela fechar (o "Registrar Carga" mora no card)
+     - abre a próxima pendente SÓ se a concluída estava aberta; concluir pelo anel
+       com tudo fechado é o modo rápido e a tela não mexe sozinha */
+  const vivoRef=React.useRef({});
+  vivoRef.current={t, seriesFeitas, registering, abertos};
+  const conclRef=React.useRef(null);
+  const timersRef=React.useRef({});
+  const esperaRef=React.useRef([]);
+  const executarRecolher=(chave,abrirProx)=>{
+    const v=vivoRef.current;
+    if(v.registering){
+      if(!esperaRef.current.some(x=>x.chave===chave)) esperaRef.current.push({chave,abrirProx});
+      return;
+    }
+    const un=unidadesDoTreino(v.t, v.seriesFeitas, todayISO());
+    const i=un.findIndex(u=>u.chave===chave);
+    if(i<0 || !un[i].concl) return;               // desfez no meio tempo
+    const alvo = abrirProx ? proximaUnidadePendente(un,i) : null;
+    mexerAbertos(m=>{
+      un[i].ids.forEach(id=>{ delete m[id]; });
+      if(alvo) alvo.ids.forEach(id=>{ m[id]=1; });
+      return m;
+    });
+    if(alvo) setTimeout(()=>{
+      const el=document.getElementById('un-'+alvo.chave);
+      if(el && el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'start'});
+    }, 90);
+  };
+  useEffect(()=>{
+    if(!t) return;
+    const un=unidadesDoTreino(t, seriesFeitas, todayISO());
+    const antes=conclRef.current;
+    const agora={}; un.forEach(u=>{ agora[u.chave]=u.concl; });
+    conclRef.current=agora;
+    if(!antes) return;                              // 1ª passada: só fotografa
+    un.forEach(u=>{
+      if(!u.concl || antes[u.chave]!==false) return;
+      const estavaAberta=u.ids.some(id=>vivoRef.current.abertos[id]);
+      clearTimeout(timersRef.current[u.chave]);
+      timersRef.current[u.chave]=setTimeout(()=>executarRecolher(u.chave, estavaAberta), 1500);
+    });
+  },[seriesFeitas, t]);
+  useEffect(()=>{
+    if(registering || !esperaRef.current.length) return;
+    const id=setTimeout(()=>{
+      const fila=esperaRef.current; esperaRef.current=[];
+      fila.forEach(x=>executarRecolher(x.chave, x.abrirProx));
+    }, 350);
+    return ()=>clearTimeout(id);
+  },[registering]);
+  useEffect(()=>()=>{ Object.values(timersRef.current).forEach(clearTimeout); },[]);
   useEffect(()=>{ setInicio(lerInicio(treinoId)); },[treinoId]);
   // tela preta era isto: `return null` sem nada renderizado. Se o treino
   // sumiu (fase apagada, sync ainda em curso), mostre e ofereça a saída.
@@ -8002,19 +8278,20 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
      A rodada do bloco é o MENOR nº de séries feitas entre os membros: só fecha
      quando todo mundo passou. É isso que garante que o descanso dispare uma
      única vez, no fim, e não entre A e B. */
-  const rodadaFeita=(bl)=>Math.min(...bl.itens.map(it=>seriesFeitas[it.ex.id]||0));
+  const rodadaFeita=(bl)=>rodadaFeitaDoBloco(bl,seriesFeitas);
   const feitoNaRodada=(bl,ex)=>(seriesFeitas[ex.id]||0)>rodadaFeita(bl);
   const avancarNoGrupo=(bl,ex)=>{
     const antes=rodadaFeita(bl);
     if((seriesFeitas[ex.id]||0)>antes) return; // já passou nesta rodada
     const tot=totalSeries(ex)||rodadasDoBloco(bl);
+    if((seriesFeitas[ex.id]||0)>=tot) return;  // terminou as séries dele: descansa nesta rodada
     const novo=Math.min(tot,(seriesFeitas[ex.id]||0)+1);
     const simulado={...seriesFeitas,[ex.id]:novo};
     setSeriesFeitas(m=>({...m,[ex.id]:novo}));
     if(inicio==null) setInicio(marcarInicio(treinoId));
-    const depois=Math.min(...bl.itens.map(it=>simulado[it.ex.id]||0));
+    const depois=rodadaFeitaDoBloco(bl,simulado);
     if(depois>antes){
-      const ultimo=bl.itens[bl.itens.length-1].ex;
+      const ultimo=ultimoDaRodada(bl,depois);
       const f=parseDescanso(descansoDaSerie(ultimo, depois-1)||ultimo.descanso);
       if(f && timer) timer.start(f, rotuloGrupo(bl.itens.length)+' · rodada '+depois);
       else flash('Rodada '+depois+' completa ✓');
@@ -8031,7 +8308,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
     });
     setSeriesFeitas(m=>({...m,...patch}));
     if(inicio==null) setInicio(marcarInicio(treinoId));
-    const ultimo=bl.itens[bl.itens.length-1].ex;
+    const ultimo=ultimoDaRodada(bl,antes+1);
     const f=parseDescanso(descansoDaSerie(ultimo, antes)||ultimo.descanso);
     if(f && timer) timer.start(f, rotuloGrupo(bl.itens.length)+' · rodada '+(antes+1));
   };
@@ -8072,8 +8349,12 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
         const concluido = totSeries ? ((seriesFeitas[ex.id]||0)>=totSeries) : done;
         const naRodada = bl ? feitoNaRodada(bl,ex) : false;
         const fimDoBloco = bl ? (rodadaFeita(bl)>=rodadasDoBloco(bl)) : false;
-        const recolhido = !!recolhidos[ex.id];
-        return (<div key={ex.id} className={'exrow'+(concluido?' done':'')+(recolhido?' recolhido':'')}>
+        // membro que já fez TODAS as séries dele e não está na rodada em curso:
+        // descansa (grupo desigual) ou o bloco acabou — chip vira "✓ feito", sem ação
+        const descansandoNoGrupo = bl ? (!naRodada && (seriesFeitas[ex.id]||0)>=(totalSeries(ex)||rodadasDoBloco(bl))) : false;
+        const recolhido = !abertos[ex.id];
+        return (<div key={ex.id} id={bl?undefined:('un-e:'+ex.id)}
+          className={'exrow'+(concluido?' done':'')+(recolhido?' recolhido':'')}>
           <div className="exhead">
             {!ehAluno && !bl && <div className="reorder">
               <button disabled={bIdx===0} onClick={()=>moveEx(bIdx,-1)} aria-label="Subir">▲</button>
@@ -8090,7 +8371,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
                 {(()=>{ const tot=totalSeries(ex); const fe=seriesFeitas[ex.id]||0;
                   const cl='exseries'+((ex.metodo||ex.cardio||ex.isometria)?' met':'')+((tot&&fe>=tot)?' concl':'');
                   if(ex.cardio) return <span className={cl}>🏃 Cardio · {fmtMin(totalCardioSeg(ex.cardio))}</span>;
-                  if(ex.isometria) return <span className={cl}>⏱️ Isometria · {rotIso(ex.isometria)}{tot?(' · '+tot+'×'):''}</span>;
+                  if(ex.isometria) return <span className={cl}>🔥 Isometria · {rotIso(ex.isometria)}{tot?(' · '+tot+'×'):''}</span>;
                   if(ex.metodo) return <span className={cl}>🔺 {ex.metodo.nome}</span>;
                   return ex.series ? <span className={cl}>{ex.series}</span> : null; })()}
                 {ex.filmar && <span className="exfilm">🎥 Recomendado Filmar</span>}
@@ -8106,11 +8387,12 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
               </div>}
             </div>
             {bl
-              ? <button className={'gpchip'+(naRodada?' on':'')+(fimDoBloco?' fim':'')}
-                  onClick={()=>naRodada?desfazerNoGrupo(bl,ex):avancarNoGrupo(bl,ex)}
-                  aria-label={naRodada?'Desfazer esta série':'Marcar esta série como feita'}>
-                  <span className="gcico">{naRodada?'✓':((seriesFeitas[ex.id]||0)+1)+'ª'}</span>
-                  <span className="gclab">{naRodada?'feita':'marcar'}</span>
+              ? <button className={'gpchip'+(naRodada?' on':'')+((fimDoBloco||descansandoNoGrupo)?' fim':'')}
+                  disabled={descansandoNoGrupo}
+                  onClick={()=>{ if(descansandoNoGrupo) return; if(naRodada) desfazerNoGrupo(bl,ex); else avancarNoGrupo(bl,ex); }}
+                  aria-label={descansandoNoGrupo?'Séries deste exercício concluídas':(naRodada?'Desfazer esta série':'Marcar esta série como feita')}>
+                  <span className="gcico">{(naRodada||descansandoNoGrupo)?'✓':((seriesFeitas[ex.id]||0)+1)+'ª'}</span>
+                  <span className="gclab">{naRodada?'feita':(descansandoNoGrupo?'feito':'marcar')}</span>
                 </button>
               : (!ex.cardio && totalSeries(ex)
                 ? <SerieRing total={totalSeries(ex)} feitas={seriesFeitas[ex.id]||0}
@@ -8323,11 +8605,11 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
         const n=bl.itens.length;
         const rodadas=rodadasDoBloco(bl);
         const feitas=rodadaFeita(bl);
-        const ultimo=bl.itens[n-1].ex;
+        const ultimo=ultimoDaRodada(bl, Math.min(feitas, rodadas-1)+1);
         const dDesc=descansoDaSerie(ultimo, Math.min(feitas, rodadas-1))||ultimo.descanso;
         const fDesc=parseDescanso(dDesc);
         return (<React.Fragment key={bl.grupo}>
-          <div className="gpwrap">
+          <div className="gpwrap" id={'un-g:'+bl.grupo}>
             <div className="gphead">
               {!ehAluno && <div className="reorder">
                 <button disabled={bIdx===0} onClick={()=>moveEx(bIdx,-1)} aria-label="Subir">▲</button>
