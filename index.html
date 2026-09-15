@@ -1182,6 +1182,14 @@
   .trab .tabn{flex:0 0 auto;min-width:21px;height:21px;padding:0 6px;border-radius:999px;
     background:var(--danger);color:#fff;font-size:11px;font-weight:800;
     display:grid;place-items:center}
+  /* card do aluno aberto: encosta nas abas, mesmo tratamento do .trwrap.aberto */
+  .card.rowcard.abertoacomp{border-bottom-left-radius:0;border-bottom-right-radius:0;
+    margin-bottom:0;border-bottom-color:transparent}
+  .abertoacomp + .trabas{margin:0 0 12px}
+  .acompbar{width:100%;margin:2px 0 14px;padding:12px;border-radius:13px;
+    border:1px solid var(--cyan);background:rgba(0,201,204,.1);color:var(--cyan-2);
+    font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
   .crcard{margin:0 0 10px;padding:13px 14px;border-radius:13px;background:var(--surface);
     border:1px solid rgba(255,196,138,.34);border-left:3px solid var(--soft-orange)}
   .crcard.nova{background:rgba(255,196,138,.08)}
@@ -1907,9 +1915,11 @@ function FaseSheet({inicial,db,studentId,onSalvar,onClose}){
           placeholder="Ex: estabilidade de core e reduzir dor lombar"/></div>
       <div className="fasedatas">
         <div className="field"><label>Início</label>
-          <input type="date" value={ini} onChange={e=>setIni(e.target.value)}/></div>
+          <input type="date" value={ini} onFocus={abrirCalendario} onClick={abrirCalendario}
+            onChange={e=>setIni(e.target.value)}/></div>
         <div className="field"><label>Fim</label>
-          <input type="date" min={ini} value={fim} onChange={e=>setFim(e.target.value)}/></div>
+          <input type="date" min={ini} value={fim} onFocus={abrirCalendario} onClick={abrirCalendario}
+            onChange={e=>setFim(e.target.value)}/></div>
       </div>
       {ini && fim && fim>=ini &&
         <div className="h2sub" style={{marginTop:-6}}>
@@ -3220,6 +3230,15 @@ const todayISO = ()=>{
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 };
 function fmtDate(iso){const p=iso.split('-');return p[2]+'/'+p[1]+'/'+p[0].slice(2);}
+/* No desktop, <input type="date"> foca nos campinhos de digitacao e so abre o
+   calendario pelo iconezinho. showPicker() abre o calendario direto no toque.
+   Onde nao existe (Firefox, Safari antigo) o comportamento nativo segue igual,
+   por isso o try/catch silencioso: showPicker() lanca se o browser nao
+   considerar o evento um gesto do usuario. */
+const abrirCalendario = (e)=>{
+  try{ const el=e && e.target; if(el && typeof el.showPicker==='function') el.showPicker(); }
+  catch(err){ /* fallback = comportamento nativo do browser */ }
+};
 const norm = (t)=>(t||'').trim().toLowerCase();
 const normAcc = (t)=>(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
 const CATALOGO_EXEMPLO = ['Supino Reto','Supino Inclinado','Remada Baixa Anatômica','Puxada Frontal','Agachamento Livre','Leg Press','Cadeira Extensora','Mesa Flexora','Desenvolvimento Militar','Elevação Lateral','Rosca Direta','Tríceps Corda','Stiff','Panturrilha em Pé','Abdominal Infra','Prancha Isométrica'];
@@ -4784,6 +4803,14 @@ function App({auth}){
   const [carga,setCarga]=useState({estado:'inicial', quando:loadCacheMeta()});
   const ehAluno = !!(auth && auth.perfil && auth.perfil.papel==='aluno');
   const meuAlunoId = ehAluno ? auth.perfil.aluno_id : null;
+  /* MODO ACOMPANHAMENTO: o treinador ve o app exatamente como o aluno ve.
+     Como TODA a interface ja e decidida pelo prop `ehAluno`, basta ligar a
+     VISAO. A IDENTIDADE segue sendo a do treinador: `ehAluno` puro continua
+     mandando na barra de papel, no caminho de volta para a lista, na
+     retrospectiva e na limpeza de audios. Escrita fica liberada de proposito
+     -- e assim que a sessao presencial e registrada. */
+  const [verComoAluno,setVerComoAluno]=useState(false);
+  const visaoAluno = ehAluno || verComoAluno;
   const [view,setView]=useState(ehAluno?{name:'student',studentId:meuAlunoId}:{name:'students'});
   const [toast,setToast]=useState(null);
   const timer=useRestTimer();
@@ -4962,7 +4989,9 @@ function App({auth}){
     saveDB(db); // mantém o cache local atualizado (uso offline)
   },[db]);
   const flash=(m)=>{setToast(m);setTimeout(()=>setToast(null),1600);};
-  const nav=(v)=>setView(v);
+  /* sair do aluno = sair do acompanhamento. Todo caminho de volta (o < da
+     topbar, "Voltar ao inicio", a barra de descanso) passa por aqui. */
+  const nav=(v)=>{ if(v && v.name==='students') setVerComoAluno(false); setView(v); };
 
   useEffect(()=>{
     // baixa o catálogo do Cardápio na 1ª vez e revalida a cada 2h (cache offline)
@@ -4985,7 +5014,8 @@ function App({auth}){
   },[]);
 
   let screen;
-  if(view.name==='students') screen=<Students db={db} setDb={setDb} nav={nav}/>;
+  if(view.name==='students') screen=<Students db={db} setDb={setDb} nav={nav}
+    onAcompanhar={(id)=>{ setVerComoAluno(true); nav({name:'student',studentId:id}); }}/>;
   else if(view.name==='avaliacao') screen=(window.AvaliacaoDor
     ? React.createElement(window.AvaliacaoDor.Componente,{
         studentId:view.studentId, momento:view.momento||momentoAvulso(db.ciclo), flash:flash,
@@ -5003,12 +5033,12 @@ function App({auth}){
   else if(view.name==='dor') screen=<TelaDor db={db} setDb={setDb} nav={nav} studentId={view.studentId} flash={flash}/>;
   else if(view.name==='checkin') screen=<CheckinSemanal db={db} nav={nav} studentId={view.studentId} flash={flash} recarregar={recarregar}/>;
   else if(view.name==='plano') screen=<PlanoFases db={db} nav={nav} studentId={view.studentId}/>;
-  else if(view.name==='progresso') screen=<Progresso db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
-  else if(view.name==='agenda') screen=<Agenda db={db} nav={nav} studentId={view.studentId} ehAluno={ehAluno}/>;
-  else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} faseId={view.faseId||null} flash={flash} ehAluno={ehAluno} onSair={auth?auth.sair:null} cardio={cardio}/>;
-  else if(view.name==='correcoes') screen=<Correcoes db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} flash={flash} ehAluno={ehAluno}/>;
-  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} flash={flash} ehAluno={ehAluno} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio} iso={iso}/>;
-  else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={ehAluno}/>;
+  else if(view.name==='progresso') screen=<Progresso db={db} nav={nav} studentId={view.studentId} ehAluno={visaoAluno}/>;
+  else if(view.name==='agenda') screen=<Agenda db={db} nav={nav} studentId={view.studentId} ehAluno={visaoAluno}/>;
+  else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} faseId={view.faseId||null} flash={flash} ehAluno={visaoAluno} souAluno={ehAluno} acompanhando={verComoAluno} onSair={auth?auth.sair:null} cardio={cardio}/>;
+  else if(view.name==='correcoes') screen=<Correcoes db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} flash={flash} ehAluno={visaoAluno}/>;
+  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} flash={flash} ehAluno={visaoAluno} acompanhando={verComoAluno} onEditarTreino={()=>setVerComoAluno(false)} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio} iso={iso}/>;
+  else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={visaoAluno}/>;
   // FCmáx do aluno cuja tela está aberta (o cardio roda por cima de qualquer view)
   const fcMaxDoAlunoEmFoco = (()=>{
     const id = view.studentId || (ehAluno?meuAlunoId:null);
@@ -5709,7 +5739,8 @@ function Correcoes({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno}){
       onSalvar={salvarEdicao} onClose={()=>setEditando(null)} flash={flash}/>}
   </React.Fragment>);
 }
-function Students({db,setDb,nav}){
+function Students({db,setDb,nav,onAcompanhar}){
+  const [abertoId,setAbertoId]=useState(null); // card com as abas abertas
   const [q,setQ]=useState('');
   const [adding,setAdding]=useState(false);
   const [name,setName]=useState('');
@@ -5849,9 +5880,11 @@ function Students({db,setDb,nav}){
             const dias=diasAteAniversario(s.nascimento);
             const fazAniver = dias!=null && dias<=7;
             const inativo=(s.status||'ativo')!=='ativo';
+            const aberto = abertoId===s.id;
             return (
-            <div key={s.id} className={'card rowcard'+(inativo?' inativo':'')}
-              onClick={()=>nav({name:'student',studentId:s.id})}>
+            <React.Fragment key={s.id}>
+            <div className={'card rowcard'+(inativo?' inativo':'')+(aberto?' abertoacomp':'')}
+              onClick={()=>setAbertoId(aberto?null:s.id)}>
               <Avatar nome={s.name} foto={s.foto} onPick={f=>trocarFoto(s,f)} busy={subindo===s.id}/>
               <div className="meta"><div className="name">{s.name}
                 {inativo && <span className="tagstatus">{s.status}</span>}
@@ -5862,8 +5895,21 @@ function Students({db,setDb,nav}){
               </div>
                 <div className="desc">{(s.treinos||[]).length} {(s.treinos||[]).length===1?'treino':'treinos'}</div></div>
               <button className="menudot" onClick={e=>{e.stopPropagation();setMenu(s);}}>⋯</button>
-              <div className="chev">›</div>
-            </div>);
+              <div className="chev">{aberto?'⌄':'›'}</div>
+            </div>
+            {/* mesmo desenho das abas do aluno (.trabas): a acao principal em
+                destaque e a secundaria logo abaixo, sem folha por cima. */}
+            {aberto && <div className="trabas">
+              <button className="trab principal" onClick={()=>onAcompanhar && onAcompanhar(s.id)}>
+                <span className="tabtxt">👁 Acompanhar
+                  <span className="tabsub">Abre o app exatamente como {primeiroNome(s.name)} vê.</span>
+                </span></button>
+              <button className="trab" onClick={()=>nav({name:'student',studentId:s.id})}>
+                <span className="tabtxt">✎ Editar treinos
+                  <span className="tabsub">Fases, sessões, exercícios e cargas.</span>
+                </span></button>
+            </div>}
+            </React.Fragment>);
           })}
         </React.Fragment>))}
     </div>
@@ -6104,7 +6150,7 @@ function SeletorSessoes({db, alunoAtualId, nomesExistentes, titulo, subtitulo, r
       </div>
     </div></div>);
 }
-function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair,cardio}){
+function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,acompanhando,onSair,cardio}){
   const s=db.students.find(x=>x.id===studentId);
   const [adding,setAdding]=useState(false);
   const [nome,setNome]=useState('');
@@ -6121,7 +6167,10 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair,cardi
      Mínimo de 6 sessões — abaixo disso a tela sairia constrangedora justo
      para quem mais precisaria de estímulo. */
   useEffect(()=>{
-    if(!ehAluno || !s) return;
+    /* `souAluno`, nao `ehAluno`: em acompanhamento a retrospectiva dispararia
+       no aparelho do treinador e ainda queimaria a chave do localStorage da
+       fase, tirando a tela de quem deveria ve-la. */
+    if(!souAluno || !s) return;
     const f=faseVigente(s); if(!f) return;
     const d=diasRestantes(f);
     if(d==null || d>7 || d<0) return;
@@ -6174,7 +6223,13 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair,cardi
   const faseAberta = faseId ? (fases.find(f=>f.id===faseId)||null) : null;
   // ALUNO: home lista as fases; ao abrir uma, vê os treinos dela.
   // TREINADOR: continua navegando pelas abas Anteriores/Atuais/Futuros.
-  const faseEmFoco = ehAluno ? faseAberta : (faseSel || faseAtual);
+  /* A fase selecionada so vale DENTRO da aba em que foi escolhida. Sem isso,
+     trocar para "Anteriores" mantinha a fase atual em foco e as sessoes dela
+     seguiam listadas ate o treinador clicar numa fase anterior. */
+  const faseSelDaAba = (faseSel && (grupoFases[abaFase]||[]).some(f=>f.id===faseSel.id))
+    ? faseSel : null;
+  const faseEmFoco = ehAluno ? faseAberta
+    : (faseSelDaAba || (abaFase==='atual' ? faseAtual : null));
   const treinosSemFase = treinos.filter(t=>!t.faseId);
   const treinosVisiveis = ehAluno
     ? (faseAberta ? treinos.filter(t=>t.faseId===faseAberta.id)
@@ -6266,9 +6321,14 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair,cardi
   return (<React.Fragment>
     <TopBar title={ehAluno?(faseId?'Treinos':'Idealis'):s.name}
       sub={ehAluno?(faseId?primeiroNome(s.name):'Presencial'):'Treinos fixos'}
-      onBack={ehAluno?(faseId?()=>nav({name:'student',studentId}):null):()=>nav({name:'students'})}
-      logo={ehAluno && !faseId} onSair={onSair}/>
+      onBack={faseId?()=>nav({name:'student',studentId})
+                    :(souAluno?null:()=>nav({name:'students'}))}
+      logo={ehAluno && !faseId} onSair={souAluno?onSair:null}/>
     <div className="screen">
+      {/* na home do aluno a topbar vira a marca e some o <; sem esta faixa o
+          treinador ficaria sem saida (e o botao "Sair" ali e LOGOUT). */}
+      {acompanhando && <button className="acompbar" onClick={()=>nav({name:'students'})}>
+        👁 Acompanhando {primeiroNome(s.name)} · toque para sair</button>}
       {ehAluno && !faseId && <React.Fragment>
         <div className="perfilrow">
           <Avatar nome={s.name} foto={s.foto} size={92} onPick={trocarFotoAluno} busy={subindoFoto}/>
@@ -6352,12 +6412,14 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair,cardi
       })()}
       {!ehAluno && <React.Fragment>
         <div className="fasetabs">
+          {/* `fases` vem ordenado por inicio DESC, entao [0] de "anteriores" e a
+              ultima fase encerrada -- o default que o treinador espera ver. */}
           <button className={abaFase==='anteriores'?'on':''}
-            onClick={()=>{setAbaFase('anteriores');setFaseSel(null);}}>Anteriores</button>
+            onClick={()=>{setAbaFase('anteriores');setFaseSel((grupoFases.anteriores||[])[0]||null);}}>Anteriores</button>
           <button className={abaFase==='atual'?'on':''}
-            onClick={()=>{setAbaFase('atual');setFaseSel(null);}}>Atuais</button>
+            onClick={()=>{setAbaFase('atual');setFaseSel((grupoFases.atual||[])[0]||null);}}>Atuais</button>
           <button className={abaFase==='futuros'?'on':''}
-            onClick={()=>{setAbaFase('futuros');setFaseSel(null);}}>Futuros</button>
+            onClick={()=>{setAbaFase('futuros');setFaseSel((grupoFases.futuros||[])[0]||null);}}>Futuros</button>
         </div>
         {grupoFases[abaFase].length===0
           ? <div className="empty" style={{padding:'18px 8px'}}>
@@ -6386,10 +6448,12 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,onSair,cardi
                 <div className="fasedt" onClick={e=>e.stopPropagation()}>
                   <label>Início
                     <input type="date" value={f.inicio}
+                      onFocus={abrirCalendario} onClick={abrirCalendario}
                       onChange={e=>e.target.value && mudarDataFase(f,'inicio',e.target.value)}/>
                   </label>
                   <label>Fim
                     <input type="date" min={f.inicio} value={f.fim}
+                      onFocus={abrirCalendario} onClick={abrirCalendario}
                       onChange={e=>e.target.value && mudarDataFase(f,'fim',e.target.value)}/>
                   </label>
                 </div>
@@ -7810,7 +7874,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
       </button>}
     </div></div>);
 }
-function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,seriesFeitas,setSeriesFeitas,catalogoVer,cardio,iso}){
+function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompanhando,onEditarTreino,timer,seriesFeitas,setSeriesFeitas,catalogoVer,cardio,iso}){
   const s=db.students.find(x=>x.id===studentId);
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
   const [editingEx,setEditingEx]=useState(null);
@@ -8327,6 +8391,10 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,timer,
       onProgresso={()=>{ setCelebrando(false); nav({name:'progresso',studentId}); }}
       onHome={fecharCelebracao}/>}
     <div className="screen">
+      {/* ajuste rapido sem perder o lugar: desliga so a visao, a tela continua
+          nesta mesma sessao, agora com os campos de edicao. */}
+      {acompanhando && <button className="acompbar" onClick={onEditarTreino}>
+        ✎ Editar treino</button>}
       {(t.exercises||[]).length>0 && (()=>{
         const te=tempoEstimado(t.exercises); if(!te) return null;
         return <div className="tempoest">
