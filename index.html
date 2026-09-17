@@ -2504,17 +2504,17 @@ function tarefaDaSemana(db, s){
     // só oferece se ainda não respondeu esse marco
     if(marco && feitas.some(v=>v.momento===marco)) return null;
     return {tipo:'avaliacao', momento:m, semana:c.semana,
-            rotulo: marco ? ('Avaliação da semana '+c.semana) : 'Avaliação inicial'};
+            rotulo: (marco && marco!=='D0') ? 'Reavaliação completa' : 'Avaliação inicial'};
   }
   if(marco){
     if(feitas.some(v=>v.momento===marco)) return null;
     return {tipo:'avaliacao', momento:marco, semana:c.semana,
-            rotulo:'Avaliação da semana '+c.semana};
+            rotulo: marco==='D0' ? 'Avaliação inicial' : 'Reavaliação completa'};
   }
   // já respondeu esta semana? não insiste — o banco tem unique
   // (aluno, dor, semana) e tentar de novo só geraria erro na fila
   if(checkinFeito(s)) return null;
-  return {tipo:'checkin', semana:c.semana, rotulo:'Check-in da semana '+c.semana};
+  return {tipo:'checkin', semana:c.semana, rotulo:'Como foi sua semana?'};
 }
 /* ===== CHECK-IN SEMANAL =====
    O ÚNICO momento de quantificação numérica do dia a dia. Semáforo e
@@ -2552,7 +2552,7 @@ function CheckinSemanal({db,nav,studentId,flash,recarregar}){
     if(recarregar) recarregar();   // o db em memória não sabe do que acabou de subir
   };
   if(pronto) return (<React.Fragment>
-    <TopBar title="Check-in" sub="Semana registrada"
+    <TopBar title="Check-in" sub="Registro enviado"
       onBack={()=>nav({name:'dor',studentId})}/>
     <div className="screen"><div className="avfim">
       <div className="avfimico">✅</div>
@@ -2563,7 +2563,6 @@ function CheckinSemanal({db,nav,studentId,flash,recarregar}){
   </React.Fragment>);
   return (<React.Fragment>
     <TopBar title="Check-in da semana"
-      sub={semanaDoAluno(s)?('Semana '+semanaDoAluno(s)):''}
       onBack={()=>nav({name:'dor',studentId})}/>
     <div className="screen avscreen">
       {dores.length===0
@@ -2637,13 +2636,13 @@ function TelaDor({db,setDb,nav,studentId,flash}){
     setCarregando(false);
   };
   return (<React.Fragment>
-    <TopBar title="Sua dor" sub={semanaDoAluno(s)?('Semana '+semanaDoAluno(s)):s.name}
+    <TopBar title="Sua dor" sub="Seu acompanhamento de dor"
       onBack={()=>nav({name:'student',studentId})}/>
     <div className="screen">
       {tarefa && tarefa.tipo==='avaliacao' && <div className="dortarefa">
         <div className="dtico">🩺</div>
         <div className="dttit">{tarefa.rotulo}</div>
-        <div className="dttxt">Leva uns 8 minutos. Melhor fazer com calma, em casa.</div>
+        <div className="dttxt">Leva uns 8 minutos. É o raio-X da sua dor — melhor fazer com calma, em casa.</div>
         <button className="btn" disabled={carregando} onClick={abrirAvaliacao}>
           {carregando?'Carregando…':'Começar'}</button>
         {erro && <div className="loginerro" style={{marginTop:10}}>{erro}</div>}
@@ -2651,7 +2650,7 @@ function TelaDor({db,setDb,nav,studentId,flash}){
       {tarefa && tarefa.tipo==='checkin' && <div className="dortarefa">
         <div className="dtico">📆</div>
         <div className="dttit">{tarefa.rotulo}</div>
-        <div className="dttxt">Um minuto para registrar como foi a semana.</div>
+        <div className="dttxt">Um minuto pra registrar sua dor. É assim que eu acompanho sua evolução.</div>
         <button className="btn" onClick={()=>nav({name:'checkin',studentId})}>Responder</button>
       </div>}
       {/* confirmação positiva em vez de simplesmente sumir o cartão:
