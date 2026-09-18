@@ -193,25 +193,102 @@
     align-items:baseline;justify-content:space-between;gap:10px}
   .tempoest .tetxt b{font-size:15px;font-weight:800;color:var(--text);white-space:nowrap}
   .pgtopo{display:flex;gap:10px;margin:0 4px 14px}
-  /* ===== PLANEJAMENTO ===== */
-  .plntit{font-size:18px;font-weight:800;color:var(--text);margin:0 4px 3px;letter-spacing:-.02em}
-  .plnsub{font-size:12.5px;color:var(--muted);margin:0 4px 18px}
-  .plnfase{margin:0 4px 12px;padding:14px 15px;border-radius:14px;background:var(--surface);
-    border:1px solid var(--line);border-left:3px solid var(--line)}
-  .plnfase.ativa{border-color:var(--cyan);border-left-width:4px;
-    background:rgba(0,201,204,.06);box-shadow:0 0 0 1px rgba(0,201,204,.2)}
-  .plnfase.fut{opacity:.72}
-  .plnfase.fim{opacity:.5}
-  .plntopo{display:flex;align-items:center;gap:9px;margin-bottom:5px}
-  .plnnum{font-size:10.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;
-    letter-spacing:.08em;flex:1}
-  .plnchip{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;
-    border-radius:999px;padding:3px 9px;color:var(--on-cyan);background:var(--cyan);white-space:nowrap}
-  .plnchip.fut{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
-  .plnchip.fim{color:var(--muted-2);background:transparent;border:1px solid var(--line)}
-  .plnnome{font-size:15.5px;font-weight:800;color:var(--text);line-height:1.25;letter-spacing:-.01em}
-  .plnper{font-size:12px;color:var(--muted);margin-top:4px}
-  .plnper b{color:var(--cyan-2);font-weight:800}
+  /* ===== PLANEJAMENTO DE TREINOS (v2) =====
+     Linha de estações vertical: nó à esquerda + card. A fase ATUAL é a única
+     peça que brilha; o resto fica quieto para não competir com ela. */
+  .pjpass{margin:4px 4px 22px;padding:16px;border-radius:20px;background:var(--surface);
+    border:1px solid var(--line)}
+  .pjpasstopo{display:flex;align-items:center;gap:13px}
+  .pjpassico{flex:0 0 46px;width:46px;height:46px;border-radius:14px;display:flex;
+    align-items:center;justify-content:center;color:var(--cyan);
+    background:rgba(0,201,204,.12);border:1px solid rgba(0,201,204,.35)}
+  .pjpassid{flex:1;min-width:0}
+  .pjeyebrow{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--muted-2)}
+  .pjpassnome{font-size:16.5px;font-weight:800;color:var(--text);letter-spacing:-.01em;
+    overflow-wrap:anywhere;margin-top:2px}
+  .pjpassdt{flex:0 0 auto;text-align:right;font-size:10.5px;color:var(--muted-2);line-height:1.5}
+  .pjpassdt b{display:block;font-size:13.5px;color:var(--muted);font-weight:700;
+    font-variant-numeric:tabular-nums}
+  .pjmsg{margin:14px 0 0;padding-top:13px;border-top:1px solid var(--line);font-size:12.5px;
+    line-height:1.55;color:var(--muted)}
+  .pjlinha{list-style:none;margin:0 4px;padding:0}
+  .pjest{display:grid;grid-template-columns:58px minmax(0,1fr);column-gap:12px;margin-bottom:18px}
+  .pjest:last-child{margin-bottom:8px}
+  .pjtrilho{display:flex;flex-direction:column;align-items:center;padding-top:14px}
+  .pjno{position:relative;z-index:1;flex:0 0 auto;width:40px;height:40px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;
+    font-variant-numeric:tabular-nums;background:var(--bg)}
+  .pjest.fut .pjno,.pjvazio .pjno{border:2px dashed var(--line);color:var(--muted-2)}
+  .pjest.fim .pjno{background:var(--lime);color:var(--on-accent)}
+  .pjest.prox .pjno{border:2px solid var(--cyan);color:var(--cyan-2)}
+  .pjest.ativa .pjno{width:56px;height:56px;font-size:19px;letter-spacing:-.01em;background:var(--cyan);color:var(--on-cyan);
+    box-shadow:0 0 0 6px rgba(0,201,204,.16),0 0 28px rgba(0,201,204,.35);
+    animation:pjpulso 1.6s ease-in-out infinite}
+  /* onda que sai do nó: é o "você está aqui" que o olho encontra primeiro */
+  .pjest.ativa .pjno::after{content:'';position:absolute;inset:-2px;border-radius:50%;
+    border:2px solid var(--cyan);pointer-events:none;animation:pjonda 1.6s ease-out infinite}
+  @keyframes pjpulso{0%,100%{transform:scale(1);
+      box-shadow:0 0 0 6px rgba(0,201,204,.16),0 0 28px rgba(0,201,204,.35)}
+    50%{transform:scale(1.07);box-shadow:0 0 0 10px rgba(0,201,204,.10),0 0 42px rgba(0,201,204,.65)}}
+  @keyframes pjonda{from{transform:scale(1);opacity:.85}to{transform:scale(1.45);opacity:0}}
+  /* conector atravessa o espaço entre as estações (18px de margem + 14px de respiro) */
+  .pjcon{flex:1 1 auto;min-height:24px;margin:6px 0 -32px}
+  .pjest.fim .pjcon{width:3px;border-radius:2px;background:var(--lime-line)}
+  .pjest.ativa .pjcon{width:4px;border-radius:2px;
+    background:linear-gradient(var(--cyan),var(--line) 45%)}
+  .pjest.fut .pjcon{width:0;border-left:2px dashed var(--line)}
+  .pjcard{min-width:0;padding:15px 16px 10px;border-radius:20px;background:var(--surface);
+    border:1px solid var(--line)}
+  .pjest.fim .pjcard{opacity:.62}
+  .pjest.ativa .pjcard{border-color:var(--cyan);
+    box-shadow:0 0 0 1px rgba(0,201,204,.22),0 12px 30px -14px rgba(0,201,204,.5)}
+  .pjtopo{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .pjtopo .pjeyebrow{flex:1;min-width:0}
+  .pjchip{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;font-size:10px;
+    font-weight:800;border-radius:999px;padding:4px 10px;white-space:nowrap}
+  .pjchip.aqui{background:var(--cyan);color:var(--on-cyan);text-transform:uppercase;letter-spacing:.05em}
+  .pjchip.breve{color:var(--muted-2);background:var(--surface-2);border:1px solid var(--line)}
+  .pjchip.prox{color:var(--cyan-2);border:1px solid var(--cyan)}
+  .pjchip.feito{color:var(--lime-chip-fg);background:var(--lime-chip);border:1px solid var(--lime-chip-line)}
+  .pjnome{font-size:18px;font-weight:800;line-height:1.22;letter-spacing:-.02em;color:var(--text);
+    overflow-wrap:anywhere}
+  .pjest.ativa .pjnome{color:var(--cyan-2)}
+  .pjest.fut .pjnome{opacity:.86}
+  .pjdatas{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-top:7px}
+  .pjper{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .pjper i{font-style:normal;color:var(--muted-2);margin:0 3px}
+  .pjfalta{font-size:12px;font-weight:800;color:var(--lime-chip-fg);background:var(--lime-chip);
+    border:1px solid var(--lime-chip-line);border-radius:8px;padding:3px 9px;white-space:nowrap}
+  .pjprog{margin-top:14px}
+  .pjproglab{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:7px}
+  .pjproglab b{color:var(--cyan-2);font-weight:800;font-variant-numeric:tabular-nums}
+  .pjbarra{height:7px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);
+    overflow:hidden}
+  .pjbarra span{display:block;height:100%;width:0;border-radius:999px;
+    background:linear-gradient(90deg,var(--cyan),var(--lime));
+    transition:width .9s cubic-bezier(.22,1,.36,1)}
+  .pjdesb{display:flex;gap:8px;align-items:flex-start;margin-top:12px;padding-top:11px;
+    border-top:1px solid var(--line);font-size:12.5px;line-height:1.45;color:var(--muted-2)}
+  .pjdesb svg{flex:0 0 auto;margin-top:2px}
+  .pjdesb b{color:var(--muted);font-weight:700}
+  .pjver{display:flex;align-items:center;gap:6px;margin:6px 0 0 auto;padding:6px 2px;
+    font-size:13px;font-weight:800;color:var(--cyan)}
+  .pjchev{display:inline-block;font-size:18px;line-height:1;transition:transform .2s}
+  .pjver[aria-expanded="true"] .pjchev{transform:rotate(90deg)}
+  .pjver:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:6px}
+  .pjdet{margin-top:6px;animation:pjin .22s ease both}
+  @keyframes pjin{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+  .pjvazio{margin:28px 4px;padding:30px 22px;text-align:center;border-radius:20px;
+    border:1px dashed var(--line);background:var(--surface)}
+  .pjvzlinha{display:flex;justify-content:center;align-items:center;margin-bottom:18px}
+  .pjvzfio{width:26px;border-top:2px dashed var(--line)}
+  .pjvztit{font-size:17px;font-weight:800;color:var(--text);margin-bottom:6px}
+  .pjvazio p{margin:0;font-size:13px;line-height:1.5;color:var(--muted)}
+  @media (prefers-reduced-motion:reduce){
+    .pjbarra span{transition:none}.pjdet{animation:none}.pjchev{transition:none}
+    .pjest.ativa .pjno{animation:none}.pjest.ativa .pjno::after{display:none}}
+  /* detalhes da fase (objetivo / métodos / observação) */
   .plncat{display:inline-block;font-size:9.5px;font-weight:800;text-transform:uppercase;
     letter-spacing:.05em;border:1px solid var(--line);border-radius:999px;
     padding:2px 9px;margin-top:8px;color:var(--muted)}
@@ -222,8 +299,33 @@
     white-space:pre-line;margin-bottom:2px}
   .plnobs{margin-top:11px;padding:9px 11px;border-radius:10px;font-size:11.5px;line-height:1.45;
     color:var(--warn-fg);background:var(--warn-bg);border:1px solid var(--line)}
-  .plnver{margin-top:9px;background:none;border:none;color:var(--muted);font-family:inherit;
-    font-size:11.5px;text-decoration:underline;cursor:pointer;padding:4px 2px}
+  /* ===== STORIES 9:16 ===== modal sempre escuro: é prévia de uma imagem escura */
+  .stback{position:fixed;inset:0;z-index:95;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:16px;
+    padding:calc(20px + env(safe-area-inset-top)) 18px calc(20px + env(safe-area-inset-bottom));
+    background:rgba(4,8,9,.88);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+    animation:ptin .2s ease both}
+  .stprev{width:min(340px,calc((100vh - 200px) * .5625),100%);
+    width:min(340px,calc((100dvh - 200px) * .5625),100%);aspect-ratio:9/16;border-radius:22px;
+    overflow:hidden;background:#0d1315;border:1px solid rgba(0,201,204,.3);
+    box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .stprev img{display:block;width:100%;height:100%}
+  .stload{height:100%;display:grid;place-items:center;padding:20px;text-align:center;
+    color:#9fb3b8;font-size:13px}
+  .stacts{display:flex;gap:10px;width:min(340px,100%)}
+  .stbtn{flex:1;padding:14px 10px;border-radius:13px;font-size:14px;font-weight:800;
+    border:1px solid #394245;color:#eef7f8;background:rgba(255,255,255,.05)}
+  .stbtn.pri{border:none;background:#ddff00;color:#0b0f10}
+  .stbtn:disabled{opacity:.45}
+  .stbtn:active{transform:scale(.97)}
+  .stfechar{position:absolute;top:calc(14px + env(safe-area-inset-top));right:14px;width:40px;
+    height:40px;border-radius:50%;color:#eef7f8;background:rgba(255,255,255,.08);font-size:16px}
+  .stbtn:focus-visible,.stfechar:focus-visible{outline:2px solid #00c9cc;outline-offset:2px}
+  .celbtn.share{border-color:var(--cyan);color:var(--cyan-2);font-weight:800}
+  .pgshare{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 8px);
+    margin:-4px 4px 16px;padding:12px;border-radius:13px;border:1px solid var(--cyan);
+    background:rgba(0,201,204,.08);color:var(--cyan-2);font-size:13.5px;font-weight:800}
+  .pgshare:active{transform:scale(.98)}
   /* ===== INDICADOR DE PROGRESSÃO ===== */
   .secaotit.sectit-i{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .infobtn{flex:0 0 22px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);
@@ -2000,71 +2102,163 @@ function FaseSheet({inicial,db,studentId,onSalvar,onClose}){
         onFechar={()=>setSelAberto(false)}/>}
     </div></div>);
 }
-/* ===== PLANEJAMENTO DE PERIODIZAÇÃO =====
+/* ===== PLANEJAMENTO DE TREINOS (v2) =====
    Vertical de propósito: o documento tem 4 colunas lado a lado, o que não
-   cabe em tela de celular. Aqui a fase ATUAL é o que salta — é justamente
-   o que o PDF impresso não consegue fazer. */
+   cabe em tela de celular. Nenhum dado novo — lê o mesmo s.planejamento que
+   vem de vw_planejamento_doc. A fase ATUAL é o que salta. */
+const PLN_MSG='Esse plano foi criado personalizadamente pra você pelo Matheus. Foi pensado através de todas as nossas conversas anteriores para que você consiga ir evoluindo em direção aos seus objetivos';
+function PlnIco({tipo,size}){
+  const z=size||16;
+  const p={width:z,height:z,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',
+    strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':'true'};
+  if(tipo==='check') return <svg {...p} strokeWidth={3}><polyline points="5 12.5 10 17 19 7.5"/></svg>;
+  if(tipo==='bussola') return <svg {...p}><circle cx="12" cy="12" r="9"/>
+    <polygon points="15.5 8.5 13.5 13.5 8.5 15.5 10.5 10.5"/></svg>;
+  if(tipo==='brilho') return <svg {...p} fill="currentColor" stroke="none">
+    <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>;
+  return <svg {...p}><rect x="5" y="11" width="14" height="10" rx="2"/>
+    <path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>;
+}
 function PlanoFases({db,nav,studentId}){
   const s=db.students.find(x=>x.id===studentId);
+  // TODOS os hooks antes de qualquer return (erro #310)
   const [abertas,setAbertas]=useState({});
+  const [anim,setAnim]=useState(false);
+  const alvoRef=React.useRef(null);
   const plano=s?s.planejamento:null;
+  // a view pode devolver uma linha "casca" (sem nome e sem datas) quando o
+  // planejamento existe mas ainda está sendo montado: isso NÃO conta como fase
+  const fasesOk=((plano && plano.fases) || []).filter(f=>f && (f.nome || f.inicio || f.fim));
+  const temFases=fasesOk.length>0;
+  useEffect(()=>{
+    const id=requestAnimationFrame(()=>setAnim(true));
+    return ()=>cancelAnimationFrame(id);
+  },[]);
+  // leva o aluno até a fase atual quando há fases concluídas empurrando ela pra baixo
+  useEffect(()=>{
+    const el=alvoRef.current; if(!el) return;
+    if(el.getBoundingClientRect().top < window.innerHeight*0.6) return;
+    const reduz=!!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const t=setTimeout(()=>{ try{ el.scrollIntoView({behavior:reduz?'auto':'smooth',block:'center'}); }catch(e){} },350);
+    return ()=>clearTimeout(t);
+  },[studentId,temFases]);
   const fmtBR=(d)=>{ if(!d) return '—';
     const p=String(d).slice(0,10).split('-'); return p[2]+'/'+p[1]+'/'+p[0].slice(2); };
   const linhas=(txt)=>String(txt||'').split('\n').map(l=>l.trim()).filter(Boolean);
+  const dia=(d)=>{ const p=String(d).slice(0,10).split('-').map(Number);
+    return Date.UTC(p[0],(p[1]||1)-1,p[2]||1)/864e5; };
+  const semMarcador=(l)=>String(l||'').replace(/^[-–•*·]+\s*/,'');
+  const hoje=todayISO();
   if(!s) return <div className="screen"><div className="empty"><p>Aluno não encontrado.</p></div></div>;
-  if(!plano || !plano.fases.length) return (<React.Fragment>
-    <TopBar title="Seu planejamento" sub={s.name} onBack={()=>nav({name:'student',studentId})}/>
-    <div className="screen"><div className="empty"><div className="big">🗺️</div>
-      <p>Seu planejamento ainda não foi montado.<br/>Fale com o Matheus.</p></div></div>
+  const voltar=()=>nav({name:'student',studentId});
+  if(!temFases) return (<React.Fragment>
+    <TopBar title="Seu Planejamento de Treinos" sub={s.name} onBack={voltar}/>
+    <div className="screen"><div className="pjvazio">
+      <div className="pjvzlinha" aria-hidden="true">
+        <span className="pjno"><PlnIco tipo="cadeado"/></span><span className="pjvzfio"></span>
+        <span className="pjno"><PlnIco tipo="cadeado"/></span><span className="pjvzfio"></span>
+        <span className="pjno"><PlnIco tipo="cadeado"/></span>
+      </div>
+      <div className="pjvztit">Planejamento em Produção</div>
+      <p>Seu planejamento está em produção e em breve aparecerá aqui.</p>
+    </div></div>
   </React.Fragment>);
-  const fases=plano.fases.slice().sort((a,b)=>(a.posicao||0)-(b.posicao||0));
+  const fases=fasesOk.slice().sort((a,b)=>(a.posicao||0)-(b.posicao||0));
+  // situação vem da view; se vier vazia, deduz pelas datas
+  const sit=(f)=>{
+    if(f.situacao==='ativa'||f.situacao==='encerrada'||f.situacao==='futura') return f.situacao;
+    if(f.fim && f.fim<hoje) return 'encerrada';
+    if(f.inicio && f.inicio>hoje) return 'futura';
+    return (f.inicio && f.fim) ? 'ativa' : 'futura';
+  };
+  let idxAlvo=fases.findIndex(f=>sit(f)==='ativa');
+  const semAtiva=idxAlvo<0;
+  if(semAtiva) idxAlvo=fases.findIndex(f=>sit(f)==='futura');   // intervalo entre fases
   return (<React.Fragment>
-    <TopBar title="Seu planejamento"
-      sub={plano.dataEmissao?('Emitido em '+fmtBR(plano.dataEmissao)):s.name}
-      onBack={()=>nav({name:'student',studentId})}/>
+    <TopBar title="Seu Planejamento de Treinos" onBack={voltar}/>
     <div className="screen">
-      {plano.titulo && <div className="plntit">{plano.titulo}</div>}
-      {plano.semanas && <div className="plnsub">{plano.semanas} semanas de planejamento</div>}
-      {fases.map(f=>{
-        const ativa=f.situacao==='ativa', encerrada=f.situacao==='encerrada';
-        // encerrada nasce recolhida, mas NUNCA some: o aluno precisa enxergar
-        // o caminho inteiro, inclusive o que já passou
-        const aberta = ativa || abertas[f.faseId] || !encerrada;
-        return (<div key={f.faseId}
-          className={'plnfase'+(ativa?' ativa':'')+(encerrada?' fim':'')+(f.situacao==='futura'?' fut':'')}
-          style={f.cor?{borderLeftColor:f.cor}:null}>
-          <div className="plntopo">
-            <span className="plnnum">Fase {f.posicao}</span>
-            {ativa && <span className="plnchip">Fase atual</span>}
-            {f.situacao==='futura' && <span className="plnchip fut">A seguir</span>}
-            {encerrada && <span className="plnchip fim">Concluída</span>}
+      <div className="pjpass">
+        <div className="pjpasstopo">
+          <span className="pjpassico"><PlnIco tipo="bussola" size={22}/></span>
+          <div className="pjpassid">
+            <div className="pjeyebrow">Planejamento</div>
+            <div className="pjpassnome">{primeiroNome(s.name)}</div>
           </div>
-          <div className="plnnome">{f.nome}</div>
-          <div className="plnper"><b>{
-            f.situacao==='futura'    ? 'Começa em '+fmtBR(f.inicio)
-          : f.situacao==='encerrada' ? 'Encerrada em '+fmtBR(f.fim)
-          : (f.diasRestantes==null ? fmtBR(f.fim)
-             : (f.diasRestantes<=0 ? 'Último dia'
-                : (f.diasRestantes===1?'Falta 1 dia':'Faltam '+f.diasRestantes+' dias')))
-          }</b></div>
-          {f.categoria && <div className="plncat"
-            style={f.cor?{color:f.cor,borderColor:f.cor}:null}>{f.categoria}</div>}
-          {aberta && <React.Fragment>
-            {linhas(f.objetivo).length>0 && <div className="plnsec">
-              <div className="plnlab">Objetivo</div>
-              {linhas(f.objetivo).map((l,i)=><div key={i} className="plnli">{l}</div>)}
-            </div>}
-            {linhas(f.metodos).length>0 && <div className="plnsec">
-              <div className="plnlab">Métodos</div>
-              {linhas(f.metodos).map((l,i)=><div key={i} className="plnli">{l}</div>)}
-            </div>}
-            {f.observacao && <div className="plnobs">{f.observacao}</div>}
-          </React.Fragment>}
-          {encerrada && !abertas[f.faseId] &&
-            <button className="plnver" onClick={()=>setAbertas(m=>({...m,[f.faseId]:true}))}>
-              ver detalhes ▾</button>}
-        </div>);
-      })}
+          <div className="pjpassdt">Emitido por<b>Matheus Ferreira</b></div>
+        </div>
+        <p className="pjmsg">{PLN_MSG}</p>
+      </div>
+      <ol className="pjlinha">
+        {fases.map((f,i)=>{
+          const st=sit(f);
+          const cls= st==='ativa'?'ativa':(st==='encerrada'?'fim':'fut');
+          const prox= semAtiva && i===idxAlvo;
+          const num=f.posicao||(i+1);
+          const chave=f.faseId||('p'+num);
+          const aberta=!!abertas[chave];
+          const obj=linhas(f.objetivo), met=linhas(f.metodos);
+          const foco=obj.length?semMarcador(obj[0]):'';
+          const temDet=obj.length>0||met.length>0||!!f.observacao||!!f.categoria;
+          let restam=f.diasRestantes;
+          if(restam==null && f.fim) restam=dia(f.fim)-dia(hoje);
+          const diasTxt= restam==null ? '' : (restam<=0?'Último dia':(restam===1?'Falta 1 dia':'Faltam '+restam+' dias'));
+          let pct=null;
+          if(st==='ativa' && f.inicio && f.fim){
+            const total=dia(f.fim)-dia(f.inicio)+1;
+            const feitos=Math.min(total,Math.max(0,dia(hoje)-dia(f.inicio)+1));
+            pct=total>0?Math.round(feitos/total*100):null;
+          }
+          return (<li key={chave} ref={i===idxAlvo?alvoRef:null}
+            className={'pjest '+cls+(prox?' prox':'')} aria-current={st==='ativa'?'step':undefined}>
+            <div className="pjtrilho" aria-hidden="true">
+              <span className="pjno">{
+                st==='encerrada' ? <PlnIco tipo="check"/>
+              : (st==='ativa'||prox) ? num
+              : <PlnIco tipo="cadeado"/>}</span>
+              {i<fases.length-1 && <span className="pjcon"></span>}
+            </div>
+            <div className="pjcard">
+              <div className="pjtopo">
+                <span className="pjeyebrow">Fase {num}</span>
+                {st==='ativa' && <span className="pjchip aqui"><PlnIco tipo="brilho" size={13}/>Você está aqui</span>}
+                {prox && <span className="pjchip prox">Próxima fase</span>}
+                {st==='futura' && !prox && <span className="pjchip breve">Em breve</span>}
+                {st==='encerrada' && <span className="pjchip feito">Concluída</span>}
+              </div>
+              <div className="pjnome">{f.nome||('Fase '+num)}</div>
+              <div className="pjdatas">
+                <span className="pjper">{fmtBR(f.inicio)}<i>→</i>{fmtBR(f.fim)}</span>
+                {st==='ativa' && diasTxt && <span className="pjfalta">{diasTxt}</span>}
+              </div>
+              {pct!=null && <div className="pjprog">
+                <div className="pjproglab"><span>Progresso da fase</span><b>{pct}%</b></div>
+                <div className="pjbarra" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+                  <span style={{width:(anim?Math.max(pct,3):0)+'%'}}></span></div>
+              </div>}
+              {st==='futura' && <div className="pjdesb">
+                <PlnIco tipo="cadeado" size={14}/><span>{foco
+                  ? <React.Fragment>Desbloqueia: <b>{foco}</b></React.Fragment>
+                  : 'Você ainda vai desbloquear essa fase. Continue pegando firme!'}</span></div>}
+              {aberta && st!=='futura' && <div className="pjdet">
+                {f.categoria && <div className="plncat"
+                  style={f.cor?{color:f.cor,borderColor:f.cor}:null}>{f.categoria}</div>}
+                {obj.length>0 && <div className="plnsec">
+                  <div className="plnlab">Objetivo</div>
+                  {obj.map((l,k)=><div key={k} className="plnli">{l}</div>)}
+                </div>}
+                {met.length>0 && <div className="plnsec">
+                  <div className="plnlab">Métodos</div>
+                  {met.map((l,k)=><div key={k} className="plnli">{l}</div>)}
+                </div>}
+                {f.observacao && <div className="plnobs">{f.observacao}</div>}
+              </div>}
+              {temDet && st!=='futura' && <button className="pjver" aria-expanded={aberta}
+                onClick={()=>setAbertas(m=>({...m,[chave]:!m[chave]}))}>
+                {aberta?'Ocultar detalhes':'Ver detalhes'}<span className="pjchev">›</span></button>}
+            </div>
+          </li>);
+        })}
+      </ol>
     </div>
   </React.Fragment>);
 }
@@ -2074,6 +2268,7 @@ function Progresso({db,nav,studentId,ehAluno}){
   // hook ANTES de qualquer saída antecipada — hook depois de return faz o
   // React executar quantidades diferentes entre renders (erro #310)
   const [infoProg,setInfoProg]=useState(false);
+  const [story,setStory]=useState(null);
   if(!s) return <div className="screen"><div className="empty"><p>Aluno não encontrado.</p></div></div>;
   const fase=faseVigente(s);
   const p=calcProgresso(s, fase);
@@ -2098,6 +2293,9 @@ function Progresso({db,nav,studentId,ehAluno}){
         </div>
         <CardVolume kg={p.volume}/>
       </div>
+      {p.volume>0 && <button className="pgshare"
+        onClick={()=>setStory(dadosStoryFase(s,fase,p.volume))}>📸 Compartilhar nos Stories</button>}
+      {story && <StoryModal dados={story} onFechar={()=>setStory(null)}/>}
       {/* indicador de progressão — LIVRE, sem XP. Se o app sabe que ele pode
           subir carga, esconder isso o faria treinar abaixo do potencial. */}
       {p.podem.length>0 && <React.Fragment>
@@ -2337,7 +2535,7 @@ function equivalencias(kg){
   const bons=EQUIVALENTES.filter(e=>{ const n=kg/e.kg; return n>=1 && n<=300; });
   const base=(bons.length?bons:[EQUIVALENTES[0]]).map(e=>{
     const n=Math.round(kg/e.kg);
-    return {n, texto:(n===1?('1 '+e.sing):(n+' '+e.plur)), ico:e.ico};
+    return {n, texto:(n===1?e.sing:(n+' '+e.plur)), ico:e.ico};   // sing já traz 'um/uma'
   });
   // maior unidade primeiro (impressiona mais); o resto vem sorteado
   const ordenada=base.slice().sort((a,b)=>a.n-b.n);
@@ -5325,9 +5523,243 @@ function saudacao(){
 }
 /* cronômetro da topbar: o tick fica confinado aqui — o TreinoView (com todos
    os cards) não re-renderiza a cada segundo por causa do relógio */
+/* ===== STORIES 9:16 =====
+   Desenhado direto no canvas (1080x1920): o mesmo resultado em qualquer celular,
+   sem biblioteca de "print de tela" (que borra mal os brilhos do fundo).
+   Honestidade do selo: "NOVO RECORDE PESSOAL" só quando o volume do dia supera
+   TODAS as sessões anteriores do MESMO treino — mesma lógica da Agenda
+   (comparar A de perna com C de braço distorce tudo). */
+const ST_FAM="'Sora', system-ui, -apple-system, 'Segoe UI', sans-serif";
+const ST_ICO={
+  trofeu:['M6 9H4.5a2.5 2.5 0 0 1 0-5H6','M18 9h1.5a2.5 2.5 0 0 0 0-5H18','M4 22h16',
+    'M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22',
+    'M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22','M18 2H6v7a6 6 0 0 0 12 0V2Z'],
+  haltere:['m6.5 6.5 11 11','m21 21-1-1','m3 3 1 1','m18 22 4-4','m2 6 4-4','m3 10 7-7','m14 21 7-7'],
+  fogo:['M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z']
+};
+// mesma fórmula do card de volume: carga × repetições, série a série
+function volLogStory(l){ const c=numFrom(l.carga), r=parseInt(l.reps,10); return (c>0 && r>0)?c*r:0; }
+function destaqueStory(porEx){ return Object.keys(porEx).sort((a,b)=>porEx[b]-porEx[a])[0]||''; }
+function dadosStorySessao(s,t,dataISO){
+  const porDia={}, porEx={};
+  ((t&&t.exercises)||[]).forEach(ex=>(ex.logs||[]).forEach(l=>{
+    const v=volLogStory(l); if(!v || !l.date) return;
+    porDia[l.date]=(porDia[l.date]||0)+v;
+    if(l.date===dataISO) porEx[ex.name]=(porEx[ex.name]||0)+v;
+  }));
+  const volume=Math.round(porDia[dataISO]||0);
+  const anteriores=Object.keys(porDia).filter(d=>d<dataISO).map(d=>porDia[d]);
+  const melhor=anteriores.length?Math.max(...anteriores):0;
+  const recorde=volume>0 && melhor>0 && volume>melhor;
+  return {tipo:'sessao', nome:primeiroNome(s&&s.name), foto:(s&&s.foto)||'', titulo:(t&&t.nome)||'', data:dataISO,
+    volume, recorde, ganhoPct:recorde?Math.round((volume/melhor-1)*100):0, destaque:destaqueStory(porEx)};
+}
+function dadosStoryFase(s,fase,volume){
+  const ini=fase?fase.inicio:null, fim=fase?fase.fim:null;
+  const dentro=(d)=>(!ini||d>=ini) && (!fim||d<=fim);
+  const porEx={};
+  ((s&&s.treinos)||[]).filter(t=>!fase||t.faseId===fase.id).forEach(t=>
+    (t.exercises||[]).forEach(ex=>(ex.logs||[]).forEach(l=>{
+      if(!l.date || !dentro(l.date)) return;
+      const v=volLogStory(l); if(v) porEx[ex.name]=(porEx[ex.name]||0)+v;
+    })));
+  return {tipo:'fase', nome:primeiroNome(s&&s.name), foto:(s&&s.foto)||'', titulo:fase?fase.nome:'', data:todayISO(),
+    volume:Math.round(volume||0), recorde:false, ganhoPct:0, destaque:destaqueStory(porEx)};
+}
+function stRR(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function stIco(ctx,paths,x,y,size,cor,lw){
+  ctx.save(); ctx.translate(x,y); const k=size/24; ctx.scale(k,k);
+  ctx.strokeStyle=cor; ctx.lineWidth=lw||2; ctx.lineCap='round'; ctx.lineJoin='round';
+  paths.forEach(p=>ctx.stroke(new Path2D(p))); ctx.restore(); }
+// encolhe a fonte até caber; se nem assim, corta com reticências. Deixa ctx.font ajustado.
+function stFit(ctx,txt,maxW,size,peso){
+  let s=size; ctx.font=peso+' '+s+'px '+ST_FAM;
+  while(ctx.measureText(txt).width>maxW && s>size*0.6){ s-=2; ctx.font=peso+' '+s+'px '+ST_FAM; }
+  let t=String(txt||'');
+  if(ctx.measureText(t).width>maxW){
+    while(t.length>1 && ctx.measureText(t+'…').width>maxW) t=t.slice(0,-1);
+    t=t.replace(/\s+$/,'')+'…';
+  }
+  return t;
+}
+// espaçamento entre letras manual: canvas.letterSpacing ainda falha em iPhone antigo
+function stTrack(ctx,txt,x,y,esp,alinha){
+  const cs=Array.from(String(txt)); const ws=cs.map(c=>ctx.measureText(c).width);
+  const tot=ws.reduce((a,b)=>a+b,0)+esp*Math.max(0,cs.length-1);
+  let px= alinha==='left' ? x : x-tot/2;
+  const al=ctx.textAlign; ctx.textAlign='left';
+  cs.forEach((c,i)=>{ ctx.fillText(c,px,y); px+=ws[i]+esp; });
+  ctx.textAlign=al; return tot;
+}
+// foto do aluno: crossOrigin + parâmetro extra para não reaproveitar do cache uma
+// cópia baixada SEM CORS (isso "contamina" o canvas e bloqueia a exportação)
+function stFoto(url){
+  if(!url) return Promise.resolve(null);
+  return new Promise(res=>{
+    try{
+      const img=new Image(); img.crossOrigin='anonymous';
+      const t=setTimeout(()=>res(null),4000);
+      img.onload=()=>{ clearTimeout(t); res(img); };
+      img.onerror=()=>{ clearTimeout(t); res(null); };
+      img.src= /^data:/.test(url) ? url : url+(url.indexOf('?')<0?'?':'&')+'story=1';
+    }catch(e){ res(null); }
+  });
+}
+// logo oficial (o mesmo LOGO_SVG do app), pintado no lime da marca
+function stLogo(){
+  return new Promise(res=>{
+    try{
+      const svg=LOGO_SVG.replace(/currentColor/g,'#ddff00').replace('<svg ','<svg width="512" height="512" ');
+      const img=new Image(); const t=setTimeout(()=>res(null),1500);
+      img.onload=()=>{ clearTimeout(t); res(img); };
+      img.onerror=()=>{ clearTimeout(t); res(null); };
+      img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+    }catch(e){ res(null); }
+  });
+}
+function stPintar(ctx,d,foto,logo){
+  const W=1080, H=1920, CX=540;
+  ctx.textBaseline='alphabetic'; ctx.textAlign='left';
+  // fundo: escuro + luz ciano (alto-esquerda) + luz lime (baixo-direita) + grade
+  ctx.fillStyle='#0a0f10'; ctx.fillRect(0,0,W,H);
+  const luz=(x,y,r,cor)=>{ const rg=ctx.createRadialGradient(x,y,0,x,y,r);
+    rg.addColorStop(0,cor); rg.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); };
+  luz(260,460,860,'rgba(0,201,204,.26)'); luz(900,1600,860,'rgba(170,200,0,.22)');
+  ctx.strokeStyle='rgba(0,201,204,.06)'; ctx.lineWidth=1.5; ctx.beginPath();
+  for(let x=0;x<=W;x+=60){ ctx.moveTo(x+.5,0); ctx.lineTo(x+.5,H); }
+  for(let y=0;y<=H;y+=60){ ctx.moveTo(0,y+.5); ctx.lineTo(W,y+.5); }
+  ctx.stroke();
+  // pílula da marca: <logo> Idealis - por: Matheus Ferreira (grupo centralizado)
+  stRR(ctx,140,230,800,130,65); ctx.fillStyle='rgba(18,24,26,.92)'; ctx.fill();
+  ctx.strokeStyle='rgba(0,201,204,.45)'; ctx.lineWidth=3; ctx.stroke();
+  const tLogo=logo?76:0, gap1=logo?20:0, gap2=18;
+  ctx.font='800 46px '+ST_FAM; const wMarca=ctx.measureText('Idealis').width;
+  ctx.font='500 30px '+ST_FAM; const wPor=ctx.measureText('- por: Matheus Ferreira').width;
+  let px=CX-(tLogo+gap1+wMarca+gap2+wPor)/2;
+  if(logo){ ctx.drawImage(logo,px,257,76,76); px+=tLogo+gap1; }
+  ctx.fillStyle='#ffffff'; ctx.font='800 46px '+ST_FAM; ctx.fillText('Idealis',px,312); px+=wMarca+gap2;
+  ctx.fillStyle='#9fb3b8'; ctx.font='500 30px '+ST_FAM; ctx.fillText('- por: Matheus Ferreira',px,310);
+  // foto com anel ciano
+  const fx=CX, fy=580, r=118;
+  ctx.save(); ctx.shadowColor='rgba(0,201,204,.65)'; ctx.shadowBlur=55;
+  ctx.beginPath(); ctx.arc(fx,fy,r+16,0,Math.PI*2); ctx.fillStyle='#00c9cc'; ctx.fill(); ctx.restore();
+  ctx.beginPath(); ctx.arc(fx,fy,r+3,0,Math.PI*2); ctx.fillStyle='#0a0f10'; ctx.fill();
+  ctx.save(); ctx.beginPath(); ctx.arc(fx,fy,r,0,Math.PI*2); ctx.clip();
+  if(foto){
+    const k=Math.max(2*r/foto.width, 2*r/foto.height), w=foto.width*k, h=foto.height*k;
+    ctx.drawImage(foto, fx-w/2, fy-h/2, w, h);
+  }else{
+    ctx.fillStyle='#182023'; ctx.fillRect(fx-r,fy-r,2*r,2*r);
+    ctx.fillStyle='#71fcff'; ctx.font='800 110px '+ST_FAM; ctx.textAlign='center';
+    ctx.fillText((d.nome||'?').charAt(0).toUpperCase(),fx,fy+38);
+  }
+  ctx.restore();
+  // nome + subtítulo
+  ctx.textAlign='center'; ctx.fillStyle='#ffffff';
+  ctx.fillText(stFit(ctx,d.nome||'',880,78,'800'),CX,790);
+  ctx.fillStyle='#48eef2'; ctx.font='800 30px '+ST_FAM;
+  stTrack(ctx, d.recorde?'NOVO RECORDE PESSOAL':'CONQUISTA DE FORÇA & VOLUME', CX, 842, 8);
+  // card central
+  stRR(ctx,100,910,880,730,56); ctx.fillStyle='#111617'; ctx.fill();
+  ctx.strokeStyle='rgba(200,230,0,.6)'; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle='#9fb3b8';
+  ctx.fillText(stFit(ctx, d.tipo==='fase'?'PESO TOTAL LEVANTADO NA FASE':'PESO TOTAL LEVANTADO NO TREINO',780,36,'700'),CX,995);
+  // valor: número grande, unidade menor, um degradê só atravessando os dois
+  const kg=d.volume||0;
+  const num= kg>=1000 ? (kg/1000).toFixed(1).replace('.',',') : String(kg);
+  const uni= kg>=1000 ? 'Toneladas' : 'kg';
+  let tn=118, tu=74, wn, wu;
+  const medir=()=>{ ctx.font='800 '+tn+'px '+ST_FAM; wn=ctx.measureText(num).width;
+    ctx.font='800 '+tu+'px '+ST_FAM; wu=ctx.measureText(uni).width; };
+  medir(); while(wn+20+wu>780 && tn>70){ tn-=4; tu=Math.round(tn*.63); medir(); }
+  const x0=CX-(wn+20+wu)/2;
+  const gv=ctx.createLinearGradient(x0,0,x0+wn+20+wu,0);
+  gv.addColorStop(0,'#1fd3d6'); gv.addColorStop(.45,'#71fcff'); gv.addColorStop(1,'#c8ff3a');
+  ctx.textAlign='left'; ctx.fillStyle=gv;
+  ctx.font='800 '+tn+'px '+ST_FAM; ctx.fillText(num,x0,1112);
+  ctx.font='800 '+tu+'px '+ST_FAM; ctx.fillText(uni,x0+wn+20,1112);
+  ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=2; ctx.beginPath();
+  ctx.moveTo(200,1170); ctx.lineTo(880,1170); ctx.stroke();
+  // equivalência divertida — a MESMA do card de volume do app, agora em destaque
+  const eq=(typeof equivalencias==='function') ? equivalencias(kg)[0] : null;
+  if(eq){
+    const emo='"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    const n=eq.n, rep=n<=8, k=rep?n:1;
+    const tam= n<=3 ? 150 : (n<=5 ? 118 : (rep ? Math.floor(680/n) : 150));
+    ctx.font=tam+'px '+emo; const wg=ctx.measureText(eq.ico).width, gap=tam*.25;
+    let tot=k*wg+(k-1)*gap; const suf= rep ? '' : '×'+n;
+    if(suf){ ctx.font='800 72px '+ST_FAM; tot+=18+ctx.measureText(suf).width; }
+    let x=CX-tot/2; ctx.textAlign='left'; ctx.font=tam+'px '+emo;
+    for(let i=0;i<k;i++){ ctx.fillText(eq.ico,x,1345); x+=wg+gap; }
+    if(suf){ ctx.fillStyle='#ddff00'; ctx.font='800 72px '+ST_FAM; ctx.fillText(suf,x-gap+18,1330); }
+    ctx.textAlign='center'; ctx.fillStyle='#ddff00';
+    ctx.fillText(stFit(ctx,String(eq.texto||''),780,56,'700'),CX,1440);
+  }
+  // prova do recorde: quanto passou da melhor sessão anterior do mesmo treino
+  if(d.recorde && d.ganhoPct>0){
+    ctx.textAlign='center'; ctx.fillStyle='#71fcff';
+    ctx.fillText(stFit(ctx,'↑ '+d.ganhoPct+'% acima da sua melhor sessão desse treino',780,30,'600'),CX,1512);
+  }
+  ctx.textAlign='center'; ctx.fillStyle='#9fb3b8'; ctx.font='500 26px '+ST_FAM;
+  ctx.fillText('Volume calculado por: carga × repetições × séries',CX,1592);
+  // rodapé: só o @
+  ctx.fillStyle='#cfe0e3'; ctx.font='700 34px '+ST_FAM; ctx.fillText('@matferreiratrainer',CX,1745);
+}
+async function desenharStory(d){
+  try{ await Promise.race([
+    Promise.all(['800 100px Sora','700 50px Sora','600 36px Sora','500 36px Sora'].map(f=>document.fonts.load(f))),
+    new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+  const [foto,logo]=await Promise.all([stFoto(d.foto), stLogo()]);
+  const gerar=(img)=>{
+    const cv=document.createElement('canvas'); cv.width=1080; cv.height=1920;
+    stPintar(cv.getContext('2d'),d,img,logo);
+    return new Promise((res,rej)=>{
+      try{ cv.toBlob(b=>b?res(b):rej(new Error('toBlob vazio')),'image/png'); }catch(e){ rej(e); } });
+  };
+  // se a foto bloquear a exportação (servidor sem CORS), refaz com a inicial no lugar
+  try{ return await gerar(foto); }
+  catch(e){ if(!foto) throw e; console.warn('[stories] foto bloqueou a exportação:', e&&e.message); return await gerar(null); }
+}
+function StoryModal({dados,onFechar}){
+  const [url,setUrl]=useState(null);
+  const [erro,setErro]=useState('');
+  const blobRef=React.useRef(null);
+  useEffect(()=>{
+    let vivo=true, u=null;
+    desenharStory(dados).then(b=>{ if(!vivo) return;
+      blobRef.current=b; u=URL.createObjectURL(b); setUrl(u); })
+    .catch(e=>{ console.warn('[stories]', e&&e.message); if(vivo) setErro('Não consegui gerar a imagem. Feche e tente de novo.'); });
+    return ()=>{ vivo=false; if(u) URL.revokeObjectURL(u); };
+  },[]);
+  const podeShare=React.useMemo(()=>{
+    try{ return !!(navigator.canShare && navigator.canShare({files:[new File([new Blob(['x'])],'x.png',{type:'image/png'})]})); }
+    catch(e){ return false; }
+  },[]);
+  const nomeArq='idealis-'+(dados.tipo==='fase'?'fase':'treino')+'-'+dados.data+'.png';
+  const baixar=()=>{ if(!url) return; const a=document.createElement('a');
+    a.href=url; a.download=nomeArq; document.body.appendChild(a); a.click(); a.remove(); };
+  const compartilhar=async()=>{
+    const b=blobRef.current; if(!b) return;
+    try{ await navigator.share({files:[new File([b],nomeArq,{type:'image/png'})]}); }
+    catch(e){ if(!e || e.name!=='AbortError') baixar(); }   // cancelou: não faz nada
+  };
+  return (<div className="stback" onClick={onFechar}>
+    <button className="stfechar" onClick={onFechar} aria-label="Fechar">✕</button>
+    <div className="stprev" onClick={e=>e.stopPropagation()}>
+      {url ? <img src={url} alt="Prévia do card para os Stories"/>
+           : <div className="stload">{erro||'Gerando imagem…'}</div>}
+    </div>
+    <div className="stacts" onClick={e=>e.stopPropagation()}>
+      {podeShare && <button className="stbtn pri" disabled={!url} onClick={compartilhar}>Compartilhar</button>}
+      <button className={'stbtn'+(podeShare?'':' pri')} disabled={!url} onClick={baixar}>Baixar imagem</button>
+    </div>
+  </div>);
+}
 /* celebração ao concluir o treino: confete em CSS puro, sem biblioteca */
 const CONFETE_CORES=['#ddff00','#00c9cc','#71fcff','#6ee89a','#ffa45c','#a2feff'];
-function Celebracao({nome,onProgresso,onHome}){
+function Celebracao({nome,onProgresso,onHome,onCompartilhar}){
   // sem auto-fechar: o aluno escolhe para onde vai. Antes ela sumia sozinha
   // em 2s e ele nem via o que tinha acabado de conquistar.
   const pecas=React.useMemo(()=>Array.from({length:38}).map((_,i)=>({
@@ -5352,6 +5784,7 @@ function Celebracao({nome,onProgresso,onHome}){
       {nome && <div className="celsub">{nome}</div>}
       <div className="celacts">
         <button className="celbtn prog" onClick={onProgresso}>📊 Progresso da fase</button>
+        {onCompartilhar && <button className="celbtn share" onClick={onCompartilhar}>📸 Compartilhar conquista</button>}
         <button className="celbtn" onClick={onHome}>🏠 Início</button>
       </div>
     </div>
@@ -8233,6 +8666,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
   };
   useViradaDoDia(); // ao virar a meia-noite, o "concluído hoje" cai sozinho
   const [celebrando,setCelebrando]=useState(false);
+  const [story,setStory]=useState(null);           // card de Stories aberto
   // ---- RELATOS (append-only, tabela própria): o canal de voz do ALUNO ----
   // Vive fora de `sessoes` de propósito: desfazer a conclusão NÃO pode apagar
   // um relato de dor. E não depende de sessão existir pra ser gravado.
@@ -8514,8 +8948,11 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
     <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId,faseId:deFase||null})}
       right={<CronoBadge inicio={inicio} onZerar={zerarRelogio}/>}/>
     {celebrando && <Celebracao nome={t.nome}
+      onCompartilhar={(()=>{ const d=dadosStorySessao(s,t,todayISO());
+        return d.volume>0 ? (()=>setStory(d)) : null; })()}
       onProgresso={()=>{ setCelebrando(false); nav({name:'progresso',studentId}); }}
       onHome={fecharCelebracao}/>}
+    {story && <StoryModal dados={story} onFechar={()=>setStory(null)}/>}
     <div className="screen">
       {/* ajuste rapido sem perder o lugar: desliga so a visao, a tela continua
           nesta mesma sessao, agora com os campos de edicao. */}
