@@ -246,6 +246,34 @@
     text-decoration-color:var(--muted-2)}
   .pgsug{font-size:23px;font-weight:800;color:var(--lime);letter-spacing:-.02em}
   .progpq{font-size:11.5px;color:var(--muted-2);margin-top:6px;line-height:1.4}
+  /* ===== PRÉ-TREINO: sugestão de carga no topo da sessão =====
+     Minimalista: um bloco, linhas com fio fino, lime só no número sugerido.
+     Reaproveita .infobtn/.infobox do Progresso: o aluno aprende o cálculo uma vez. */
+  .ptwrap{position:relative;margin:0 0 16px;padding:16px 16px 6px;border-radius:var(--radius);
+    background:var(--surface);border:1px solid var(--line);animation:ptin .28s ease both}
+  @keyframes ptin{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.ptwrap{animation:none}}
+  .ptfechar{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;
+    border:0;background:transparent;color:var(--muted-2);font-family:inherit;font-size:14px;
+    line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .ptfechar:active{background:var(--surface-2)}
+  .ptfechar:focus-visible,.infobtn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  .ptabertura{font-size:17px;font-weight:700;color:var(--text);line-height:1.3;
+    letter-spacing:-.015em;padding-right:34px;text-wrap:balance}
+  .pthead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+  .ptaviso{margin:0;font-size:12.5px;line-height:1.5;color:var(--muted)}
+  .ptwrap .infobox{margin:10px 0 0}
+  .ptlista{list-style:none;margin:10px 0 0;padding:0}
+  .ptrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--hair)}
+  .ptex{flex:1;min-width:0}
+  .ptnome{display:block;font-size:14px;font-weight:600;color:var(--text);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ptpq{display:block;font-size:11.5px;color:var(--muted-2);margin-top:2px}
+  .ptpeso{flex:0 0 auto;display:flex;align-items:baseline;gap:7px;white-space:nowrap}
+  .ptde{font-size:13px;color:var(--muted-2)}
+  .ptseta{font-size:12px;color:var(--muted-2)}
+  .ptpara{font-size:18px;font-weight:800;color:var(--lime);letter-spacing:-.02em}
+  .ptpara small{font-size:11px;font-weight:600;margin-left:1px}
   .pgtopo{display:flex;gap:10px;margin:0 4px 14px;align-items:stretch}
   .pgcard{flex:1;padding:16px 12px;border-radius:14px;background:var(--surface);
     border:1px solid var(--line);text-align:center;display:flex;flex-direction:column;
@@ -2843,6 +2871,10 @@ function calcProgresso(s, fase){
   Object.keys(porEx).forEach(k=>{
     const e=porEx[k];
     const ls=e.logs.slice().sort((a,b)=>a.date.localeCompare(b.date));
+    // indicador de progressão ANTES do corte: usa o histórico todo do exercício,
+    // então numa fase recém-começada (sem log na fase) ele continua aparecendo
+    if(e.ex){ const p=podeAumentar(e.ex, allLogsOfExercise(s, e.ex.name, e.ex.exerciseId));
+      if(p) podem.push(p); }
     if(!ls.length) return;
     ls.forEach(l=>{ const c=numFrom(l.carga), r=parseInt(l.reps,10);
       if(c && r) volume+=c*r; });
@@ -2859,9 +2891,6 @@ function calcProgresso(s, fase){
     const d0=dorDoDia(dias[0]), d1=dorDoDia(dias[dias.length-1]);
     if(dias.length>=2 && d0!=null && d1!=null && (d0-d1)>=2)
       dorMelhorou.push({nome:e.nome, de:Math.round(d0), para:Math.round(d1)});
-    // indicador de progressão — usa TODOS os logs do exercício, não só os da fase
-    if(e.ex){ const p=podeAumentar(e.ex, allLogsOfExercise(s, e.ex.name, e.ex.exerciseId));
-      if(p) podem.push(p); }
   });
   subiram.sort((a,b)=>b.ganho-a.ganho);
   dorMelhorou.sort((a,b)=>(b.de-b.para)-(a.de-a.para));
@@ -5252,6 +5281,40 @@ function fraseDoDia(alunoId){
   const f=FRASES_DIA[(((dias+h)%n)+n)%n];
   // cola o último token (emoji) na palavra anterior: evita emoji órfão na quebra
   return f.replace(/\s+(\S+)$/,'\u00A0$1');
+}
+/* Frase de ABERTURA do pré-treino: ação + agora, sem saudação por hora
+   (o relógio do aparelho erra: "boa tarde" 12h05 pra quem começou 11h50).
+   Semente própria ('ab:'+id), senão roda em par sincronizado com a frasedia. */
+const FRASES_ABERTURA=[
+  "Bora que o treino vai começar! 💪🏼",
+  "Chegou a hora. Bora pra cima! 🔥",
+  "Tudo pronto? Então vamos 🚀",
+  "Treino de hoje te esperando 👊🏼",
+  "É agora. Bora fazer acontecer ⚡",
+  "Mais um dia, mais um treino 🏋️",
+  "Simbora, o treino já começou 🎯",
+  "Aquece que a gente começa já 🔄",
+  "Fone no ouvido e bora 🎧",
+  "Vamos que vamos 🙌🏼",
+];
+function fraseAbertura(alunoId){
+  const dias=Math.floor(Date.parse(todayISO()+'T00:00:00Z')/86400000);
+  let h=0; const a='ab:'+String(alunoId||'');
+  for(let i=0;i<a.length;i++){ h=((h<<5)-h+a.charCodeAt(i))|0; }
+  const n=FRASES_ABERTURA.length;
+  return FRASES_ABERTURA[(((dias+h)%n)+n)%n].replace(/\s+(\S+)$/,'\u00A0$1');
+}
+/* Cota: até 2x por dia por treino. Duas porque é comum abrir pra conferir e
+   voltar depois pra treinar de fato. Data no nome da chave = expira sozinha. */
+const PT_MAX_DIA=2;
+function chaveBriefing(treinoId){ return 'idealis_brief_'+String(treinoId||'')+'_'+todayISO(); }
+function briefingVistas(treinoId){
+  try{ if(!LS_OK) return 0; return parseInt(window.localStorage.getItem(chaveBriefing(treinoId))||'0',10)||0; }
+  catch(e){ return 0; }
+}
+function briefingPodeMostrar(treinoId){ return briefingVistas(treinoId) < PT_MAX_DIA; }
+function briefingConsumir(treinoId){
+  try{ if(LS_OK) window.localStorage.setItem(chaveBriefing(treinoId), String(briefingVistas(treinoId)+1)); }catch(e){}
 }
 function primeiroNome(n){ return String(n||'').trim().split(/\s+/)[0] || ''; }
 function saudacao(){
@@ -7873,6 +7936,53 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
       </button>}
     </div></div>);
 }
+/* ===== PRÉ-TREINO =====
+   O `podeAumentar` do Progresso filtrado só pelos exercícios DESTA sessão.
+   Mesma fórmula, mesma copy, mesmo "i". Máximo 3: antes do treino, seis
+   sugestões viram lista de tarefa e o aluno não faz nenhuma. */
+function sugestoesDoTreino(aluno, treino){
+  const vistos=new Set();
+  return (treino.exercises||[])
+    .map(ex=>podeAumentar(ex, allLogsOfExercise(aluno, ex.name, ex.exerciseId)))
+    .filter(x=>x && !vistos.has(x.nome) && vistos.add(x.nome))
+    .sort((a,b)=>b.atual-a.atual)
+    .slice(0,3);
+}
+const kgBR=(v)=>String(v).replace('.',',');
+function PreTreino({aluno,treino,onFechar}){
+  const [info,setInfo]=useState(false);
+  const sugestoes=React.useMemo(()=>sugestoesDoTreino(aluno,treino),[aluno,treino]);
+  if(!sugestoes.length) return null;
+  return (<section className="ptwrap" aria-label="Sugestão de carga para hoje">
+    <button className="ptfechar" onClick={onFechar} aria-label="Fechar">✕</button>
+    <div className="ptabertura">{fraseAbertura(aluno.id)}</div>
+    <div className="pthead">
+      <p className="ptaviso">Acho que você pode tentar aumentar o peso nesses exercícios
+        (lembre-se da execução correta) 👇🏼 🙏🏼 ✅</p>
+      <button className="infobtn" onClick={()=>setInfo(v=>!v)}
+        aria-expanded={info} aria-label="Como isso é calculado">i</button>
+    </div>
+    {info && <div className="infobox">
+      Essa estimativa vem de uma fórmula que o Matheus desenvolveu.
+      Ela cruza o seu histórico de carga, quantas repetições você fez em
+      relação ao que foi prescrito, o esforço que você registrou e se houve
+      dor no exercício.
+    </div>}
+    <ul className="ptlista">
+      {sugestoes.map(x=>(<li key={x.nome} className="ptrow">
+        <div className="ptex">
+          <span className="ptnome">{x.nome}</span>
+          <span className="ptpq">{x.sessoes} {x.sessoes===1?'sessão':'sessões'} fechando {x.topo} repetições</span>
+        </div>
+        <div className="ptpeso">
+          <span className="ptde">{kgBR(x.atual)}</span>
+          <span className="ptseta" aria-hidden="true">→</span>
+          <span className="ptpara">{kgBR(x.sugerida)}<small>kg</small></span>
+        </div>
+      </li>))}
+    </ul>
+  </section>);
+}
 function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompanhando,onEditarTreino,timer,seriesFeitas,setSeriesFeitas,catalogoVer,cardio,iso}){
   const s=db.students.find(x=>x.id===studentId);
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
@@ -7960,6 +8070,23 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
   },[registering]);
   useEffect(()=>()=>{ Object.values(timersRef.current).forEach(clearTimeout); },[]);
   useEffect(()=>{ setInicio(lerInicio(treinoId)); },[treinoId]);
+  /* pré-treino: decide UMA vez ao abrir a sessão. Não aparece se o treino já
+     foi concluído hoje, já começou (relógio ou série marcada) ou a cota do dia
+     acabou. Só consome cota se houver sugestão pra mostrar. O treinador em
+     "ver como aluno" vê o card sem gastar a cota. */
+  const [mostrarBrief,setMostrarBrief]=useState(false);
+  useEffect(()=>{
+    if(!ehAluno || !s || !t) return;
+    const hoje=todayISO();
+    const concluido=(t.sessoes||[]).some(x=>x.data===hoje && x.origem!=='inferido');
+    const comecou=lerInicio(treinoId)!=null ||
+      (t.exercises||[]).some(ex=>(seriesFeitas[ex.id]||0)>0);
+    if(concluido || comecou) return;
+    if(!acompanhando && !briefingPodeMostrar(treinoId)) return;
+    if(!sugestoesDoTreino(s,t).length) return;
+    if(!acompanhando) briefingConsumir(treinoId);
+    setMostrarBrief(true);
+  },[treinoId, !!t]);
   // tela preta era isto: `return null` sem nada renderizado. Se o treino
   // sumiu (fase apagada, sync ainda em curso), mostre e ofereça a saída.
   if(!t) return (<React.Fragment>
@@ -8394,6 +8521,8 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
           nesta mesma sessao, agora com os campos de edicao. */}
       {acompanhando && <button className="acompbar" onClick={onEditarTreino}>
         ✎ Editar treino</button>}
+      {mostrarBrief && inicio==null && !treinoConcluidoHoje &&
+        <PreTreino aluno={s} treino={t} onFechar={()=>setMostrarBrief(false)}/>}
       {(t.exercises||[]).length>0 && (()=>{
         const te=tempoEstimado(t.exercises); if(!te) return null;
         return <div className="tempoest">
