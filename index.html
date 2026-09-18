@@ -321,7 +321,31 @@
   .stfechar{position:absolute;top:calc(14px + env(safe-area-inset-top));right:14px;width:40px;
     height:40px;border-radius:50%;color:#eef7f8;background:rgba(255,255,255,.08);font-size:16px}
   .stbtn:focus-visible,.stfechar:focus-visible{outline:2px solid #00c9cc;outline-offset:2px}
-  .celbtn.share{border-color:var(--cyan);color:var(--cyan-2);font-weight:800}
+  /* tela de treino finalizado (card) */
+  .cel2card{position:relative;width:min(440px,calc(100vw - 32px));padding:28px 20px 16px;
+    border-radius:28px;text-align:center;background:var(--surface);border:2px solid var(--lime-line);
+    box-shadow:0 24px 70px -24px rgba(221,255,0,.4);animation:celpop .45s cubic-bezier(.2,1.3,.4,1)}
+  .cel2ico{width:96px;height:96px;margin:0 auto;border-radius:50%;display:grid;place-items:center;
+    font-size:46px;line-height:1;background:var(--lime-bg);border:1px solid var(--lime-line)}
+  .cel2eyebrow{margin-top:18px;font-size:13px;font-weight:800;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--cyan)}
+  .cel2tit{margin-top:8px;font-size:26px;font-weight:800;line-height:1.18;letter-spacing:-.02em;
+    color:var(--text);overflow-wrap:anywhere}
+  .cel2sub{margin:10px auto 0;max-width:340px;font-size:14px;line-height:1.45;color:var(--muted)}
+  .cel2acts{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+  .cel2btn{display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 14px;
+    border-radius:16px;font-family:inherit;font-size:15.5px;font-weight:800;cursor:pointer;
+    border:1px solid var(--line);background:var(--surface-2);color:var(--text)}
+  .cel2btn.pri{border:none;background:var(--lime);color:var(--on-accent);font-size:16.5px;
+    white-space:nowrap;
+    box-shadow:0 8px 24px -8px rgba(221,255,0,.5)}
+  .cel2btn.sec svg{color:var(--cyan)}
+  .cel2btn svg,.cel2link svg{flex:0 0 auto}
+  .cel2link{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;
+    font-family:inherit;font-size:14.5px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer}
+  .cel2btn:active,.cel2link:active{transform:scale(.97)}
+  .cel2btn:focus-visible,.cel2link:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){.cel2card{animation:none}}
   .pgshare{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 8px);
     margin:-4px 4px 16px;padding:12px;border-radius:13px;border:1px solid var(--cyan);
     background:rgba(0,201,204,.08);color:var(--cyan-2);font-size:13.5px;font-weight:800}
@@ -5642,7 +5666,7 @@ function stPintar(ctx,d,foto,logo){
   ctx.fillStyle='#ffffff'; ctx.font='800 46px '+ST_FAM; ctx.fillText('Idealis',px,312); px+=wMarca+gap2;
   ctx.fillStyle='#9fb3b8'; ctx.font='500 30px '+ST_FAM; ctx.fillText('- por: Matheus Ferreira',px,310);
   // foto com anel ciano
-  const fx=CX, fy=580, r=118;
+  const fx=CX, fy=600, r=140;
   ctx.save(); ctx.shadowColor='rgba(0,201,204,.65)'; ctx.shadowBlur=55;
   ctx.beginPath(); ctx.arc(fx,fy,r+16,0,Math.PI*2); ctx.fillStyle='#00c9cc'; ctx.fill(); ctx.restore();
   ctx.beginPath(); ctx.arc(fx,fy,r+3,0,Math.PI*2); ctx.fillStyle='#0a0f10'; ctx.fill();
@@ -5652,20 +5676,21 @@ function stPintar(ctx,d,foto,logo){
     ctx.drawImage(foto, fx-w/2, fy-h/2, w, h);
   }else{
     ctx.fillStyle='#182023'; ctx.fillRect(fx-r,fy-r,2*r,2*r);
-    ctx.fillStyle='#71fcff'; ctx.font='800 110px '+ST_FAM; ctx.textAlign='center';
-    ctx.fillText((d.nome||'?').charAt(0).toUpperCase(),fx,fy+38);
+    ctx.fillStyle='#71fcff'; ctx.font='800 130px '+ST_FAM; ctx.textAlign='center';
+    ctx.fillText((d.nome||'?').charAt(0).toUpperCase(),fx,fy+45);
   }
   ctx.restore();
-  // nome + subtítulo
-  ctx.textAlign='center'; ctx.fillStyle='#ffffff';
-  ctx.fillText(stFit(ctx,d.nome||'',880,78,'800'),CX,790);
-  ctx.fillStyle='#48eef2'; ctx.font='800 30px '+ST_FAM;
-  stTrack(ctx, d.recorde?'NOVO RECORDE PESSOAL':'CONQUISTA DE FORÇA & VOLUME', CX, 842, 8);
+  // selo (o nome agora vive DENTRO do card, na frase de parabéns)
+  ctx.textAlign='center'; ctx.fillStyle='#48eef2'; ctx.font='800 30px '+ST_FAM;
+  stTrack(ctx, d.recorde?'NOVO RECORDE PESSOAL':'CONQUISTA DE FORÇA & VOLUME', CX, 822, 8);
   // card central
-  stRR(ctx,100,910,880,730,56); ctx.fillStyle='#111617'; ctx.fill();
+  stRR(ctx,100,880,880,760,56); ctx.fillStyle='#111617'; ctx.fill();
   ctx.strokeStyle='rgba(200,230,0,.6)'; ctx.lineWidth=3; ctx.stroke();
-  ctx.fillStyle='#9fb3b8';
-  ctx.fillText(stFit(ctx, d.tipo==='fase'?'PESO TOTAL LEVANTADO NA FASE':'PESO TOTAL LEVANTADO NO TREINO',780,36,'700'),CX,995);
+  // parabéns em 2 linhas: numa só, nome longo encolheria tudo
+  ctx.fillStyle='#ffffff';
+  ctx.fillText(stFit(ctx,'Parabéns, '+(d.nome||'')+'!',780,56,'800'),CX,972);
+  ctx.fillStyle='#e3f1f3';
+  ctx.fillText(stFit(ctx, d.tipo==='fase'?'Nessa fase você já levantou:':'Nesse treino você levantou:',780,44,'700'),CX,1034);
   // valor: número grande, unidade menor, um degradê só atravessando os dois
   const kg=d.volume||0;
   const num= kg>=1000 ? (kg/1000).toFixed(1).replace('.',',') : String(kg);
@@ -5678,10 +5703,10 @@ function stPintar(ctx,d,foto,logo){
   const gv=ctx.createLinearGradient(x0,0,x0+wn+20+wu,0);
   gv.addColorStop(0,'#1fd3d6'); gv.addColorStop(.45,'#71fcff'); gv.addColorStop(1,'#c8ff3a');
   ctx.textAlign='left'; ctx.fillStyle=gv;
-  ctx.font='800 '+tn+'px '+ST_FAM; ctx.fillText(num,x0,1112);
-  ctx.font='800 '+tu+'px '+ST_FAM; ctx.fillText(uni,x0+wn+20,1112);
+  ctx.font='800 '+tn+'px '+ST_FAM; ctx.fillText(num,x0,1160);
+  ctx.font='800 '+tu+'px '+ST_FAM; ctx.fillText(uni,x0+wn+20,1160);
   ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=2; ctx.beginPath();
-  ctx.moveTo(200,1170); ctx.lineTo(880,1170); ctx.stroke();
+  ctx.moveTo(200,1212); ctx.lineTo(880,1212); ctx.stroke();
   // equivalência divertida — a MESMA do card de volume do app, agora em destaque
   const eq=(typeof equivalencias==='function') ? equivalencias(kg)[0] : null;
   if(eq){
@@ -5692,18 +5717,18 @@ function stPintar(ctx,d,foto,logo){
     let tot=k*wg+(k-1)*gap; const suf= rep ? '' : '×'+n;
     if(suf){ ctx.font='800 72px '+ST_FAM; tot+=18+ctx.measureText(suf).width; }
     let x=CX-tot/2; ctx.textAlign='left'; ctx.font=tam+'px '+emo;
-    for(let i=0;i<k;i++){ ctx.fillText(eq.ico,x,1345); x+=wg+gap; }
-    if(suf){ ctx.fillStyle='#ddff00'; ctx.font='800 72px '+ST_FAM; ctx.fillText(suf,x-gap+18,1330); }
+    for(let i=0;i<k;i++){ ctx.fillText(eq.ico,x,1375); x+=wg+gap; }
+    if(suf){ ctx.fillStyle='#ddff00'; ctx.font='800 72px '+ST_FAM; ctx.fillText(suf,x-gap+18,1360); }
     ctx.textAlign='center'; ctx.fillStyle='#ddff00';
-    ctx.fillText(stFit(ctx,String(eq.texto||''),780,56,'700'),CX,1440);
+    ctx.fillText(stFit(ctx,String(eq.texto||''),780,56,'700'),CX,1466);
   }
   // prova do recorde: quanto passou da melhor sessão anterior do mesmo treino
   if(d.recorde && d.ganhoPct>0){
     ctx.textAlign='center'; ctx.fillStyle='#71fcff';
-    ctx.fillText(stFit(ctx,'↑ '+d.ganhoPct+'% acima da sua melhor sessão desse treino',780,30,'600'),CX,1512);
+    ctx.fillText(stFit(ctx,'↑ '+d.ganhoPct+'% acima da sua melhor sessão desse treino',780,30,'600'),CX,1532);
   }
   ctx.textAlign='center'; ctx.fillStyle='#9fb3b8'; ctx.font='500 26px '+ST_FAM;
-  ctx.fillText('Volume calculado por: carga × repetições × séries',CX,1592);
+  ctx.fillText('Volume calculado por: carga × repetições × séries',CX,1602);
   // rodapé: só o @
   ctx.fillStyle='#cfe0e3'; ctx.font='700 34px '+ST_FAM; ctx.fillText('@matferreiratrainer',CX,1745);
 }
@@ -5721,6 +5746,14 @@ async function desenharStory(d){
   // se a foto bloquear a exportação (servidor sem CORS), refaz com a inicial no lugar
   try{ return await gerar(foto); }
   catch(e){ if(!foto) throw e; console.warn('[stories] foto bloqueou a exportação:', e&&e.message); return await gerar(null); }
+}
+function CelIco({t}){
+  const p={width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2.2,
+    strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':'true'};
+  if(t==='share') return <svg {...p}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/>
+    <circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>;
+  if(t==='barras') return <svg {...p}><path d="M6 20v-5"/><path d="M12 20V9"/><path d="M18 20V4"/></svg>;
+  return <svg {...p}><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>;
 }
 function StoryModal({dados,onFechar}){
   const [url,setUrl]=useState(null);
@@ -5778,14 +5811,18 @@ function Celebracao({nome,onProgresso,onHome,onCompartilhar}){
           animationDelay:p.delay+'s', animationDuration:p.dur+'s', '--giro':p.giro+'deg'}}></span>
       ))}
     </div>
-    <div className="celbox">
-      <div className="celemoji">🎉</div>
-      <div className="celtit">Treino Concluído!</div>
-      {nome && <div className="celsub">{nome}</div>}
-      <div className="celacts">
-        <button className="celbtn prog" onClick={onProgresso}>📊 Progresso da fase</button>
-        {onCompartilhar && <button className="celbtn share" onClick={onCompartilhar}>📸 Compartilhar conquista</button>}
-        <button className="celbtn" onClick={onHome}>🏠 Início</button>
+    <div className="cel2card" role="dialog" aria-label="Treino finalizado">
+      <div className="cel2ico" aria-hidden="true">🎉</div>
+      <div className="cel2eyebrow">Treino finalizado</div>
+      <div className="cel2tit">{nome||'Treino concluído'}</div>
+      <p className="cel2sub">Excelente constância! Cada repetição registrada alimenta seu histórico e evolução.</p>
+      <div className="cel2acts">
+        {onCompartilhar && <button className="cel2btn pri" onClick={onCompartilhar}>
+          <CelIco t="share"/>Compartilhar nos Stories</button>}
+        {/* sem volume (ex.: só cardio) não há card: o progresso vira a ação principal */}
+        <button className={'cel2btn '+(onCompartilhar?'sec':'pri')} onClick={onProgresso}>
+          <CelIco t="barras"/>Ver Progresso</button>
+        <button className="cel2link" onClick={onHome}><CelIco t="casa"/>Voltar ao Início</button>
       </div>
     </div>
   </div>);
@@ -8949,7 +8986,11 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
       right={<CronoBadge inicio={inicio} onZerar={zerarRelogio}/>}/>
     {celebrando && <Celebracao nome={t.nome}
       onCompartilhar={(()=>{ const d=dadosStorySessao(s,t,todayISO());
-        return d.volume>0 ? (()=>setStory(d)) : null; })()}
+        if(d.volume>0) return ()=>setStory(d);
+        // nenhuma série com carga hoje (ex.: peso corporal, cardio): em vez de sumir
+        // com o botão, compartilha o acumulado da fase
+        const f=faseVigente(s), v=calcProgresso(s,f).volume;
+        return v>0 ? (()=>setStory(dadosStoryFase(s,f,v))) : null; })()}
       onProgresso={()=>{ setCelebrando(false); nav({name:'progresso',studentId}); }}
       onHome={fecharCelebracao}/>}
     {story && <StoryModal dados={story} onFechar={()=>setStory(null)}/>}
