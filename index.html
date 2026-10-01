@@ -1469,6 +1469,8 @@
   .isoiniciar:active{opacity:.85}
   /* --- isometria: toggle no editor --- */
   .isotgl{margin-top:10px}
+  .isotgls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .isotgls .isotgl{margin-top:0;padding:11px 10px;gap:9px}
   .isogrid{margin-top:10px}
   /* --- isometria: overlay em execução --- */
   .isoover{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;
@@ -2172,6 +2174,16 @@ function PlanoFases({db,nav,studentId}){
   const dia=(d)=>{ const p=String(d).slice(0,10).split('-').map(Number);
     return Date.UTC(p[0],(p[1]||1)-1,p[2]||1)/864e5; };
   const semMarcador=(l)=>String(l||'').replace(/^[-–•*·]+\s*/,'');
+  /* LOTE1_PLN_SEM_DATAS */
+  // duração da fase em semanas (fase futura não mostra data, só quanto dura)
+  const durFase=(f)=>{
+    if(!f || !f.inicio || !f.fim) return '';
+    const d=dia(f.fim)-dia(f.inicio)+1;
+    if(!(d>0)) return '';
+    if(d<14 && d%7!==0) return d+(d===1?' dia':' dias');
+    const s=Math.round(d/7);
+    return (d%7===0?'':'~')+s+(s===1?' semana':' semanas');
+  };
   const hoje=todayISO();
   if(!s) return <div className="screen"><div className="empty"><p>Aluno não encontrado.</p></div></div>;
   const voltar=()=>nav({name:'student',studentId});
@@ -2250,10 +2262,17 @@ function PlanoFases({db,nav,studentId}){
                 {st==='encerrada' && <span className="pjchip feito">Concluída</span>}
               </div>
               <div className="pjnome">{f.nome||('Fase '+num)}</div>
-              <div className="pjdatas">
-                <span className="pjper">{fmtBR(f.inicio)}<i>→</i>{fmtBR(f.fim)}</span>
-                {st==='ativa' && diasTxt && <span className="pjfalta">{diasTxt}</span>}
-              </div>
+              {/* sem datas na ativa (só quanto falta) e na futura (só a duração).
+                  A encerrada mantém o período: é histórico, não planejamento. */}
+              {(()=>{
+                const durTxt=durFase(f);
+                const cont = st==='encerrada'
+                  ? <span className="pjper">{fmtBR(f.inicio)}<i>→</i>{fmtBR(f.fim)}</span>
+                  : st==='ativa'
+                  ? (diasTxt ? <span className="pjfalta">{diasTxt}</span> : null)
+                  : (durTxt ? <span className="pjper">Duração: {durTxt}</span> : null);
+                return cont ? <div className="pjdatas">{cont}</div> : null;
+              })()}
               {pct!=null && <div className="pjprog">
                 <div className="pjproglab"><span>Progresso da fase</span><b>{pct}%</b></div>
                 <div className="pjbarra" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
@@ -4802,6 +4821,11 @@ const ISO_FAIXAS=[
   {min:30, max:40},
 ];
 const rotIso=(f)=> f ? (f.min+'-'+f.max+'"') : '';
+/* LOTE2_ALONGAMENTO */
+/* ALONGAMENTO: mesmo jsonb da isometria com modo:'alongamento'. Sem `modo` =
+   isometria, então tudo que já existe continua igual. Cópia de sessão e
+   duplicação de fase copiam o jsonb inteiro: o modo viaja junto sozinho. */
+const ehAlong=(f)=>!!(f && f.modo==='alongamento');
 /* 3 segundos de preparo antes de contar. Sem isso o aluno perde os primeiros
    segundos guardando o celular e entrando na posição. */
 const ISO_PREP=3;
@@ -4826,7 +4850,8 @@ function useIsoTimer(){
   const iniciar=(faixa,nome,exId,serie)=>{
     if(!faixa || faixa.max==null) return;
     const d={inicio:Date.now(), min:faixa.min, max:faixa.max,
-             nome:nome||'', exId:exId||null, serie:serie||null};
+             nome:nome||'', exId:exId||null, serie:serie||null,
+             modo:ehAlong(faixa)?'alongamento':null};
     setSessao(d);
     try{ if(LS_OK) window.localStorage.setItem(ISO_KEY,JSON.stringify(d)); }catch(e){}
   };
@@ -4843,7 +4868,7 @@ function IsoFim({estado,onSalvar,onFechar}){
   return (<div className="isofimwrap">
     <div className="isofimico">{bateu?'✅':'💪🏼'}</div>
     <div className="isofimnum">{estado.segurados}s</div>
-    <div className="isofimtit">{bateu?'Isometria concluída!':'Registrado'}</div>
+    <div className="isofimtit">{bateu?(ehAlong(estado)?'Alongamento concluído!':'Isometria concluída!'):'Registrado'}</div>
     <div className="isofimsub">Alvo: {estado.min}–{estado.max}s</div>
     <div className="cdform">
       <label className="cdflab">Como foi? <span>(opcional)</span></label>
@@ -4901,7 +4926,7 @@ function IsoOverlay({iso}){
   },[seg,emPrep,parouEm,sessao]);
   if(!sessao) return null;
   const terminou = parouEm!=null || estourou;
-  const est={min:sessao.min, max:sessao.max,
+  const est={min:sessao.min, max:sessao.max, modo:sessao.modo||null,
              segurados: terminou ? Math.min(segurados, sessao.max+ISO_TOLERANCIA) : segurados};
   // faixa: antes do mínimo é neutro, dentro é verde, passou do máximo é âmbar
   const fase = seg<sessao.min ? 'antes' : (seg<=sessao.max ? 'dentro' : 'passou');
@@ -5104,7 +5129,7 @@ function App({auth}){
       carga:null, reps:null, serie:(sessao.serie!=null?sessao.serie:null), variante:'',
       intensidade:(extras && extras.esforco!=null) ? extras.esforco : null,
       dor:null,
-      extra:{ tipo:'isometria', segundos:estado.segurados,
+      extra:{ tipo:(sessao.modo==='alongamento'?'alongamento':'isometria'), segundos:estado.segurados,
               alvoMin:sessao.min, alvoMax:sessao.max,
               completo: estado.segurados>=sessao.min }
     };
@@ -6895,7 +6920,7 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
               {dias!=null && <span className={'fasedias'+(dias<=7?' perto':'')}>
                 {dias<=0?'Último dia':(dias===1?'Falta 1 dia':'Faltam '+dias+' dias')}</span>}
             </div>
-            {f.objetivo && <div className="faseobj">{f.objetivo}</div>}
+            {/* objetivo saiu do card da home (poluía); segue dentro da fase */}
             <div className="fasefoot">
               <span>{n} {n===1?'treino':'treinos'}</span>
               <span className="fasechev">›</span>
@@ -8010,22 +8035,36 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
         {/* toggle logo abaixo das repetições: isometria SUBSTITUI a repetição,
             não convive com ela. Ligado, o campo acima some para não sobrar
             prescrição contraditória ("3 × 10" e "segurar 20s" ao mesmo tempo). */}
-        <button type="button" className={'filmtoggle isotgl'+(iso?' on':'')}
-          onClick={()=>setIso(x=>x?null:{min:ISO_FAIXAS[2].min,max:ISO_FAIXAS[2].max})}>
-          <span className="ftbox">{iso?'✓':''}</span>
-          <span className="fttxt">
-            <span className="ftlab">🔥 Isometria</span>
-            <span className="fthint">{iso
-              ? ('Segurar '+rotIso(iso)+' em cada série')
-              : 'Troca repetição por tempo de sustentação'}</span>
-          </span>
-        </button>
+        {/* Isometria e Alongamento: mesmo jsonb, um exclui o outro. Trocar de
+            um para o outro mantém a faixa escolhida. */}
+        <div className="isotgls">
+          <button type="button" className={'filmtoggle isotgl'+(iso&&!ehAlong(iso)?' on':'')}
+            onClick={()=>setIso(x=>(x&&!ehAlong(x))?null:{min:(x?x.min:ISO_FAIXAS[2].min),max:(x?x.max:ISO_FAIXAS[2].max)})}>
+            <span className="ftbox">{iso&&!ehAlong(iso)?'✓':''}</span>
+            <span className="fttxt">
+              <span className="ftlab">🔥 Isometria</span>
+              <span className="fthint">{iso&&!ehAlong(iso)
+                ? ('Segurar '+rotIso(iso)+' por série')
+                : 'Tempo de sustentação'}</span>
+            </span>
+          </button>
+          <button type="button" className={'filmtoggle isotgl'+(ehAlong(iso)?' on':'')}
+            onClick={()=>setIso(x=>ehAlong(x)?null:{min:(x?x.min:ISO_FAIXAS[2].min),max:(x?x.max:ISO_FAIXAS[2].max),modo:'alongamento'})}>
+            <span className="ftbox">{ehAlong(iso)?'✓':''}</span>
+            <span className="fttxt">
+              <span className="ftlab">🧘 Alongamento</span>
+              <span className="fthint">{ehAlong(iso)
+                ? ('Alongar '+rotIso(iso)+' por série')
+                : 'Tempo de alongamento'}</span>
+            </span>
+          </button>
+        </div>
         {iso && <div className="pickgrid s3 isogrid">
           {ISO_FAIXAS.map(f=>{
             const k=f.min+'_'+f.max;
             const sel=(iso.min===f.min && iso.max===f.max);
             return (<button type="button" key={k} className={'pcell'+(sel?' sel':'')}
-              onClick={()=>setIso({min:f.min,max:f.max})}>{f.min}-{f.max}"</button>);
+              onClick={()=>setIso(x=>ehAlong(x)?{min:f.min,max:f.max,modo:'alongamento'}:{min:f.min,max:f.max})}>{f.min}-{f.max}"</button>);
           })}
         </div>}
       </div>}
@@ -9045,7 +9084,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                 {(()=>{ const tot=totalSeries(ex); const fe=seriesFeitas[ex.id]||0;
                   const cl='exseries'+((ex.metodo||ex.cardio||ex.isometria)?' met':'')+((tot&&fe>=tot)?' concl':'');
                   if(ex.cardio) return <span className={cl}>🏃 Cardio · {fmtMin(totalCardioSeg(ex.cardio))}</span>;
-                  if(ex.isometria) return <span className={cl}>🔥 Isometria · {rotIso(ex.isometria)}{tot?(' · '+tot+'×'):''}</span>;
+                  if(ex.isometria) return <span className={cl}>{ehAlong(ex.isometria)?'🧘 Alongamento':'🔥 Isometria'} · {rotIso(ex.isometria)}{tot?(' · '+tot+'×'):''}</span>;
                   if(ex.metodo) return <span className={cl}>🔺 {ex.metodo.nome}</span>;
                   return ex.series ? <span className={cl}>{ex.series}</span> : null; })()}
                 {ex.filmar && <span className="exfilm">🎥 Recomendado Filmar</span>}
@@ -9091,7 +9130,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
             </div>
             <button className="isoiniciar"
               onClick={()=>iso.iniciar(ex.isometria, ex.name, ex.id, (seriesFeitas[ex.id]||0)+1)}>
-              ▶ Iniciar isometria · {rotIso(ex.isometria)}</button>
+              ▶ Iniciar {ehAlong(ex.isometria)?'alongamento':'isometria'} · {rotIso(ex.isometria)}</button>
           </div>}
           {ex.metodo && <div className="metplanowrap">
             <div className="metplano">
