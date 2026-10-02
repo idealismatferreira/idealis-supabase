@@ -1945,35 +1945,6 @@
   .seltroca{font-family:inherit;font-size:13px;font-weight:700;color:var(--cyan);
     background:none;border:0;padding:6px;cursor:pointer;text-decoration:underline;
     -webkit-tap-highlight-color:transparent}
-
-  /* ===== ÍCONES (Phosphor preenchido) + COR POR PAPEL — lote ícones+mapa =====
-     Os papéis apontam para variáveis que o tema claro já redefine. */
-  .ic{display:inline-flex;align-items:center;justify-content:center;flex:none;line-height:0;vertical-align:-.16em}
-  .ic .icg{width:1.1em;height:1.1em;fill:currentColor;display:block}
-  .icc{width:1.8em;height:1.8em;border-radius:50%;vertical-align:middle;
-    background:rgba(128,128,128,.14);background:color-mix(in srgb,currentColor 16%,transparent)}
-  .icc .icg{width:.95em;height:.95em}
-  .ic-coach{color:var(--lime-chip-fg)}
-  .ic-aluno{color:var(--cyan)}
-  .ic-corr{color:var(--soft-orange)}
-  .ic-cardio{color:var(--soft-red)}
-  .ic-saude{color:var(--soft-green-2)}
-  .ic-danger{color:var(--danger)}
-  .exobs .eoico .icc,.exrel .erico .icc,.crbox .cbico .icc{font-size:15px}
-  .big .icc,.dlgico .icc,.dtico .icc{width:1.6em;height:1.6em}
-  .big .icc .icg,.dlgico .icc .icg,.dtico .icc .icg{width:.8em;height:.8em}
-  /* ===== MAPA MUSCULAR (ao lado do nome do exercício) ===== */
-  .mmapa{flex:0 0 38px;width:38px;height:46px;border-radius:10px;background:var(--surface-2);
-    border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden}
-  .mmapa svg{width:34px;height:42px;display:block}
-  .mmapa .mmz{fill:#3a4548}
-  .mmapa .mmz.mmon{fill:var(--cyan)}
-  .tema-claro .mmapa .mmz{fill:#c9d4d7}
-  .tema-claro .mmapa .mmz.mmon{fill:var(--cyan)}
-  .mmapa.mmic{color:var(--cyan)}
-  .mmapa.mmic .icg{width:20px;height:20px}
-  .mmapa.mmvazio{color:var(--muted-2)}
-  .exrow.done .mmapa{opacity:.55}
 </style>
 </head>
 <body>
@@ -1989,65 +1960,6 @@
 <div id="root"></div>
 <script type="text/babel">
 const {useState,useEffect,useMemo} = React;
-
-/* ===== ÍCONES (Phosphor, preenchidos · licença MIT) — lote ícones+mapa ===== */
-const IC_PATHS = {"wrench": "<path d=\"M232,96a72,72,0,0,1-100.94,66L79,222.22c-.12.14-.26.29-.39.42a32,32,0,0,1-45.26-45.26c.14-.13.28-.27.43-.39L94,124.94a72.07,72.07,0,0,1,83.54-98.78,8,8,0,0,1,3.93,13.19L144,80l5.66,26.35L176,112l40.65-37.52a8,8,0,0,1,13.19,3.93A72.6,72.6,0,0,1,232,96Z\"/>", "chat": "<path d=\"M128,24A104,104,0,0,0,36.18,176.88L24.83,210.93a16,16,0,0,0,20.24,20.24l34.05-11.35A104,104,0,1,0,128,24Zm32,128H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Zm0-32H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Z\"/>", "mic": "<path d=\"M80,128V64a48,48,0,0,1,96,0v64a48,48,0,0,1-96,0Zm128,0a8,8,0,0,0-16,0,64,64,0,0,1-128,0,8,8,0,0,0-16,0,80.11,80.11,0,0,0,72,79.6V240a8,8,0,0,0,16,0V207.6A80.11,80.11,0,0,0,208,128Z\"/>", "video": "<path d=\"M192,72V184a16,16,0,0,1-16,16H32a16,16,0,0,1-16-16V72A16,16,0,0,1,32,56H176A16,16,0,0,1,192,72Zm58,.25a8.23,8.23,0,0,0-6.63,1.22L209.78,95.86A4,4,0,0,0,208,99.19v57.62a4,4,0,0,0,1.78,3.33l33.78,22.52a8,8,0,0,0,8.58.19,8.33,8.33,0,0,0,3.86-7.17V80A8,8,0,0,0,250,72.25Z\"/>", "note": "<path d=\"M224,128v80a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V48A16,16,0,0,1,48,32h80a8,8,0,0,1,0,16H48V208H208V128a8,8,0,0,1,16,0Zm5.66-58.34-96,96A8,8,0,0,1,128,168H96a8,8,0,0,1-8-8V128a8,8,0,0,1,2.34-5.66l96-96a8,8,0,0,1,11.32,0l32,32A8,8,0,0,1,229.66,69.66Zm-17-5.66L192,43.31,179.31,56,200,76.69Z\"/>", "pin": "<path d=\"M235.33,104l-53.47,53.65c4.56,12.67,6.45,33.89-13.19,60A15.93,15.93,0,0,1,157,224c-.38,0-.75,0-1.13,0a16,16,0,0,1-11.32-4.69L96.29,171,53.66,213.66a8,8,0,0,1-11.32-11.32L85,159.71l-48.3-48.3A16,16,0,0,1,38,87.63c25.42-20.51,49.75-16.48,60.4-13.14L152,20.7a16,16,0,0,1,22.63,0l60.69,60.68A16,16,0,0,1,235.33,104Z\"/>", "heart": "<path d=\"M240,102c0,70-103.79,126.66-108.21,129a8,8,0,0,1-7.58,0c-3.35-1.8-63.55-34.69-92.68-80.89A4,4,0,0,1,34.92,144H72a8,8,0,0,0,6.66-3.56l9.34-14,25.34,38a8,8,0,0,0,9.16,3.16,8.23,8.23,0,0,0,4.28-3.34L140.28,144H160a8,8,0,0,0,8-8.53,8.18,8.18,0,0,0-8.25-7.47H136a8,8,0,0,0-6.66,3.56l-9.34,14-25.34-38a8,8,0,0,0-9.17-3.16,8.25,8.25,0,0,0-4.27,3.34L67.72,128H23.53a4,4,0,0,1-3.83-2.81A76.93,76.93,0,0,1,16,102,62.07,62.07,0,0,1,78,40c20.65,0,38.73,8.88,50,23.89C139.27,48.88,157.35,40,178,40A62.07,62.07,0,0,1,240,102Z\"/>", "run": "<path d=\"M120,56a32,32,0,1,1,32,32A32,32,0,0,1,120,56Zm103.28,74.08a8,8,0,0,0-10.6-4c-.25.12-26.71,10.72-72.18-20.19-52.29-35.54-88-7.77-89.51-6.57a8,8,0,1,0,10,12.48c.26-.21,25.12-19.5,64.07,3.27-4.25,13.35-12.76,31.82-25.25,47-18.56,22.48-41.11,32.56-67,30A8,8,0,0,0,31.2,208a92.29,92.29,0,0,0,9.34.47c27.38,0,52-12.38,71.63-36.18.57-.69,1.14-1.4,1.69-2.1C133.31,175.29,168,190.3,168,232a8,8,0,0,0,16,0c0-24.65-10.08-45.35-29.15-59.86a104.29,104.29,0,0,0-31.31-15.81A169.31,169.31,0,0,0,139,124c26.14,16.09,46.84,20,60.69,20,12.18,0,19.06-3,19.67-3.28A8,8,0,0,0,223.28,130.08Z\"/>", "steth": "<path d=\"M240,160a32,32,0,1,0-39.93,31,8,8,0,0,0-.07,1,32,32,0,0,1-32,32H144a32,32,0,0,1-32-32V151.48c31.47-4,56-31.47,56-64.31V40a8,8,0,0,0-8-8H136a8,8,0,0,0,0,16h16V87.17c0,26.58-21.25,48.49-47.36,48.83A48,48,0,0,1,56,88V48H72a8,8,0,0,0,0-16H48a8,8,0,0,0-8,8V88a64,64,0,0,0,56,63.49V192a48.05,48.05,0,0,0,48,48h24a48.05,48.05,0,0,0,48-48,8,8,0,0,0-.07-1A32,32,0,0,0,240,160Zm-32,8a8,8,0,1,1,8-8A8,8,0,0,1,208,168Z\"/>", "warn": "<path d=\"M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM120,104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm8,88a12,12,0,1,1,12-12A12,12,0,0,1,128,192Z\"/>", "trash": "<path d=\"M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM112,168a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm0-120H96V40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8Z\"/>", "timer": "<path d=\"M128,40a96,96,0,1,0,96,96A96.11,96.11,0,0,0,128,40Zm45.66,61.66-40,40a8,8,0,0,1-11.32-11.32l40-40a8,8,0,0,1,11.32,11.32ZM96,16a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,16Z\"/>", "barbell": "<path d=\"M200,64V192a16,16,0,0,1-16,16H168a16,16,0,0,1-16-16V136H104v56a16,16,0,0,1-16,16H72a16,16,0,0,1-16-16V64A16,16,0,0,1,72,48H88a16,16,0,0,1,16,16v56h48V64a16,16,0,0,1,16-16h16A16,16,0,0,1,200,64ZM36,72H32A16,16,0,0,0,16,88v32H8.27A8.18,8.18,0,0,0,0,127.47,8,8,0,0,0,8,136h8v32a16,16,0,0,0,16,16h4a4,4,0,0,0,4-4V76A4,4,0,0,0,36,72Zm220,55.47a8.18,8.18,0,0,0-8.25-7.47H240V88a16,16,0,0,0-16-16h-4a4,4,0,0,0-4,4V180a4,4,0,0,0,4,4h4a16,16,0,0,0,16-16V136h8A8,8,0,0,0,256,127.47Z\"/>", "trend": "<path d=\"M240,56v64a8,8,0,0,1-13.66,5.66L200,99.31l-58.34,58.35a8,8,0,0,1-11.32,0L96,123.31,29.66,189.66a8,8,0,0,1-11.32-11.32l72-72a8,8,0,0,1,11.32,0L136,140.69,188.69,88,162.34,61.66A8,8,0,0,1,168,48h64A8,8,0,0,1,240,56Z\"/>", "chart": "<path d=\"M232,208a8,8,0,0,1-8,8H32a8,8,0,0,1,0-16h8V136a8,8,0,0,1,8-8H72a8,8,0,0,1,8,8v64H96V88a8,8,0,0,1,8-8h32a8,8,0,0,1,8,8V200h16V40a8,8,0,0,1,8-8h40a8,8,0,0,1,8,8V200h8A8,8,0,0,1,232,208Z\"/>", "hourglass": "<path d=\"M200,75.64V40a16,16,0,0,0-16-16H72A16,16,0,0,0,56,40V76a16.07,16.07,0,0,0,6.4,12.8L114.67,128,62.4,167.2A16.07,16.07,0,0,0,56,180v36a16,16,0,0,0,16,16H184a16,16,0,0,0,16-16V180.36a16.09,16.09,0,0,0-6.35-12.77L141.27,128l52.38-39.59A16.09,16.09,0,0,0,200,75.64ZM184,180.36V216H72V180l48-36v24a8,8,0,0,0,16,0V144.08Zm0-104.72L178.23,80H77.33L72,76V40H184Z\"/>", "link": "<path d=\"M117.18,188.74a12,12,0,0,1,0,17l-5.12,5.12A58.26,58.26,0,0,1,70.6,228h0A58.62,58.62,0,0,1,29.14,127.92L63.89,93.17a58.64,58.64,0,0,1,98.56,28.11,12,12,0,1,1-23.37,5.44,34.65,34.65,0,0,0-58.22-16.58L46.11,144.89A34.62,34.62,0,0,0,70.57,204h0a34.41,34.41,0,0,0,24.49-10.14l5.11-5.12A12,12,0,0,1,117.18,188.74ZM226.83,45.17a58.65,58.65,0,0,0-82.93,0l-5.11,5.11a12,12,0,0,0,17,17l5.12-5.12a34.63,34.63,0,1,1,49,49L175.1,145.86A34.39,34.39,0,0,1,150.61,156h0a34.63,34.63,0,0,1-33.69-26.72,12,12,0,0,0-23.38,5.44A58.64,58.64,0,0,0,150.56,180h.05a58.28,58.28,0,0,0,41.47-17.17l34.75-34.75a58.62,58.62,0,0,0,0-82.91Z\"/>", "calendar": "<path d=\"M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Zm0,48H48V48H72v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24Z\"/>", "search": "<path d=\"M232.49,215.51,185,168a92.12,92.12,0,1,0-17,17l47.53,47.54a12,12,0,0,0,17-17ZM44,112a68,68,0,1,1,68,68A68.07,68.07,0,0,1,44,112Z\"/>", "pencil": "<path d=\"M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108.68,147.31,64l24-24L216,84.68Z\"/>", "cake": "<path d=\"M208,88H136V79a32.06,32.06,0,0,0,24-31c0-28-26.44-45.91-27.56-46.66a8,8,0,0,0-8.88,0C122.44,2.09,96,20,96,48a32.06,32.06,0,0,0,24,31v9H48a24,24,0,0,0-24,24v23.33a40.84,40.84,0,0,0,8,24.24V200a24,24,0,0,0,24,24H200a24,24,0,0,0,24-24V159.57a40.84,40.84,0,0,0,8-24.24V112A24,24,0,0,0,208,88ZM112,48c0-13.57,10-24.46,16-29.79,6,5.33,16,16.22,16,29.79a16,16,0,0,1-32,0Zm104,87.33c0,13.25-10.46,24.31-23.32,24.66A24,24,0,0,1,168,136a8,8,0,0,0-16,0,24,24,0,0,1-48,0,8,8,0,0,0-16,0,24,24,0,0,1-24.68,24C50.46,159.64,40,148.58,40,135.33V112a8,8,0,0,1,8-8H208a8,8,0,0,1,8,8Z\"/>", "eye": "<path d=\"M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,168a40,40,0,1,1,40-40A40,40,0,0,1,128,168Z\"/>", "check": "<path d=\"M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z\"/>", "x": "<path d=\"M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z\"/>", "lotus": "<path d=\"M245.83,121.63a15.53,15.53,0,0,0-9.52-7.33,73.55,73.55,0,0,0-22.17-2.22c4-19.85,1-35.55-2-44.86a16.17,16.17,0,0,0-18.8-10.88,85.53,85.53,0,0,0-28.55,12.12,94.58,94.58,0,0,0-27.11-33.25,16.05,16.05,0,0,0-19.26,0A94.58,94.58,0,0,0,91.26,68.46,85.53,85.53,0,0,0,62.71,56.34,16.14,16.14,0,0,0,43.92,67.22c-3,9.31-6,25-2.06,44.86a73.55,73.55,0,0,0-22.17,2.22,15.53,15.53,0,0,0-9.52,7.33,16,16,0,0,0-1.6,12.26c3.39,12.58,13.8,36.49,45.33,55.33S113.13,208,128.05,208s42.67,0,74-18.78c31.53-18.84,41.94-42.75,45.33-55.33A16,16,0,0,0,245.83,121.63ZM62.1,175.49C35.47,159.57,26.82,140.05,24,129.7a59.61,59.61,0,0,1,22.5-1.17,129.08,129.08,0,0,0,9.15,19.41,142.28,142.28,0,0,0,34,39.56A114.92,114.92,0,0,1,62.1,175.49ZM128,190.4c-9.33-6.94-32-28.23-32-71.23C96,76.7,118.38,55.24,128,48c9.62,7.26,32,28.72,32,71.19C160,162.17,137.33,183.46,128,190.4Zm104-60.68c-2.77,10.24-11.4,29.81-38.09,45.77a114.92,114.92,0,0,1-27.55,12,142.28,142.28,0,0,0,34-39.56,129.08,129.08,0,0,0,9.15-19.41A59.69,59.69,0,0,1,232,129.71Z\"/>", "ladder": "<path d=\"M192,24a8,8,0,0,0-8,8v8H72V32a8,8,0,0,0-16,0V224a8,8,0,0,0,16,0v-8H184v8a8,8,0,0,0,16,0V32A8,8,0,0,0,192,24ZM176,184H80a8,8,0,0,1,0-16h96a8,8,0,0,1,0,16Zm0-48H80a8,8,0,0,1,0-16h96a8,8,0,0,1,0,16Zm0-48H80a8,8,0,0,1,0-16h96a8,8,0,0,1,0,16Z\"/>", "throw": "<path d=\"M96,56a32,32,0,1,1,32,32A32,32,0,0,1,96,56ZM221,99.36c-1.5-1.2-37.22-29-89.51,6.57C86,136.84,59.57,126.23,59.32,126.12a8,8,0,1,0-6.63,14.56c.61.28,7.49,3.27,19.67,3.27,14.21,0,35.64-4.11,62.77-21.29-2.28,29.41-12.73,83.47-73.43,101.68a8,8,0,1,0,4.6,15.32c34.83-10.45,59.45-32.34,73.2-65.08a141.86,141.86,0,0,0,5.1-14.33l22.08,18.4-14.27,42.82a8,8,0,0,0,15.18,5.06l16-48a8,8,0,0,0-2.47-8.68l-32.42-27a215.91,215.91,0,0,0,3-30.34c36.18-18.57,59-.85,59.28-.65a8,8,0,1,0,10-12.48ZM64,112A16,16,0,1,0,48,96,16,16,0,0,0,64,112Z\"/>", "bolt": "<path d=\"M213.85,125.46l-112,120a8,8,0,0,1-13.69-7l14.66-73.33L45.19,143.49a8,8,0,0,1-3-13l112-120a8,8,0,0,1,13.69,7L153.18,90.9l57.63,21.61a8,8,0,0,1,3,12.95Z\"/>", "walk": "<path d=\"M120,48a32,32,0,1,1,32,32A32,32,0,0,1,120,48Zm88,88c-28.64,0-41.81-13.3-55.75-27.37-3.53-3.57-7.18-7.26-11-10.58-37-32.14-96.22,22.73-98.72,25.08a8,8,0,0,0,10.95,11.66A163.88,163.88,0,0,1,84,113c13.78-7.38,25.39-10.23,34.7-8.58L64.66,228.81a8,8,0,0,0,4.15,10.52A7.84,7.84,0,0,0,72,240a8,8,0,0,0,7.34-4.81l33.59-77.27L144,180.12V232a8,8,0,0,0,16,0V176a8,8,0,0,0-3.35-6.51l-37.2-26.57L132.88,112c2.64,2.44,5.26,5.07,8,7.84C155.05,134.19,172.69,152,208,152a8,8,0,0,0,0-16Z\"/>", "firstaid": "<path d=\"M232,108v40a16,16,0,0,1-16,16H164v52a16,16,0,0,1-16,16H108a16,16,0,0,1-16-16V164H40a16,16,0,0,1-16-16V108A16,16,0,0,1,40,92H92V40a16,16,0,0,1,16-16h40a16,16,0,0,1,16,16V92h52A16,16,0,0,1,232,108Z\"/>", "map": "<path d=\"M228.92,49.69a8,8,0,0,0-6.86-1.45L160.93,63.52,99.58,32.84a8,8,0,0,0-5.52-.6l-64,16A8,8,0,0,0,24,56V200a8,8,0,0,0,9.94,7.76l61.13-15.28,61.35,30.68A8.15,8.15,0,0,0,160,224a8,8,0,0,0,1.94-.24l64-16A8,8,0,0,0,232,200V56A8,8,0,0,0,228.92,49.69ZM96,176a8,8,0,0,0-1.94.24L40,189.75V62.25L95.07,48.48l.93.46Zm120,17.75-55.07,13.77-.93-.46V80a8,8,0,0,0,1.94-.23L216,66.25Z\"/>"};
-/* r = papel da cor (coach | aluno | corr | cardio | saude | danger); sem r herda a cor do texto.
-   c = dentro de círculo tingido. Cor por PAPEL, não por cor: no multitenant o tenant troca o tom do papel. */
-function Ic({n,r,c,cls}){
-  const d=IC_PATHS[n]; if(!d) return null;
-  return <span className={'ic'+(r?' ic-'+r:'')+(c?' icc':'')+(cls?' '+cls:'')} aria-hidden="true">
-    <svg className="icg" viewBox="0 0 256 256" focusable="false" dangerouslySetInnerHTML={{__html:d}}/>
-  </span>;
-}
-/* ===== MAPA MUSCULAR — grupo vem do cache do Cardápio (campo grupo) ===== */
-const MAPA_BODY = {"common": "<ellipse class=\"mmz\" cx=\"30\" cy=\"8.6\" rx=\"5.1\" ry=\"6.1\"/><path class=\"mmz\" d=\"M27.7 13.8L32.3 13.8L33 18.2L27 18.2Z\"/><circle class=\"mmz\" cx=\"14.7\" cy=\"56\" r=\"1.9\" data-arm=\"1\"/><circle class=\"mmz\" cx=\"45.3\" cy=\"56\" r=\"1.9\" data-arm=\"1\"/><ellipse class=\"mmz\" cx=\"25\" cy=\"99.6\" rx=\"3\" ry=\"1.5\"/><ellipse class=\"mmz\" cx=\"35\" cy=\"99.6\" rx=\"3\" ry=\"1.5\"/>", "front": "<path class=\"mmz\" d=\"M14.2 41.4C12.6 44.6 12.6 49.6 13.6 53.6C14.4 54.2 15.6 54.2 16.3 53.6C17.4 49.6 18 44.8 17.4 41.6C16.4 40.8 15.2 40.8 14.2 41.4Z\" data-g=\"ante_flex\" data-arm=\"1\"/><path class=\"mmz\" d=\"M 45.8 41.4 C 47.4 44.6 47.4 49.6 46.4 53.6 C 45.6 54.2 44.4 54.2 43.7 53.6 C 42.6 49.6 42 44.8 42.6 41.6 C 43.6 40.8 44.8 40.8 45.8 41.4Z\" data-g=\"ante_flex\" data-arm=\"1\"/><path class=\"mmz\" d=\"M21.8 20.6C18.6 20.4 15.8 22.4 15.5 26.2C15.4 28 15.9 29.4 16.8 30.2C17.6 27.2 19.2 24.6 21.4 23.2Z\" data-g=\"ombro\"/><path class=\"mmz\" d=\"M 38.2 20.6 C 41.4 20.4 44.2 22.4 44.5 26.2 C 44.6 28 44.1 29.4 43.2 30.2 C 42.4 27.2 40.8 24.6 38.6 23.2Z\" data-g=\"ombro\"/><path class=\"mmz\" d=\"M29.6 20.8L29.6 30C27 31.4 23.6 31 21.8 29.4C20.8 27.4 21 24.2 22.4 22C24.4 20.6 27 20.4 29.6 20.8Z\" data-g=\"peito\"/><path class=\"mmz\" d=\"M 30.4 20.8 L 30.4 30 C 33 31.4 36.4 31 38.2 29.4 C 39.2 27.4 39 24.2 37.6 22 C 35.6 20.6 33 20.4 30.4 20.8Z\" data-g=\"peito\"/><path class=\"mmz\" d=\"M16.2 31.2C14.6 33.4 14.4 37.6 15 40.2C15.8 40.8 17.2 40.8 18 40.2C19.2 37.4 19.4 33.6 18.6 31.4C17.8 30.8 16.9 30.8 16.2 31.2Z\" data-g=\"biceps\"/><path class=\"mmz\" d=\"M 43.8 31.2 C 45.4 33.4 45.6 37.6 45 40.2 C 44.2 40.8 42.8 40.8 42 40.2 C 40.8 37.4 40.6 33.6 41.4 31.4 C 42.2 30.8 43.1 30.8 43.8 31.2Z\" data-g=\"biceps\"/><rect class=\"mmz\" x=\"25.6\" y=\"31.6\" width=\"8.8\" height=\"16.4\" rx=\"2.6\" data-g=\"abd\"/><path class=\"mmz\" d=\"M22.4 32.4C23.6 32.2 24.8 32.6 25 33.4L25 46.4C24 46.2 23.2 45.6 22.8 44.6C22 40.4 21.8 36 22.4 32.4Z\" data-g=\"abd obliquo\"/><path class=\"mmz\" d=\"M 37.6 32.4 C 36.4 32.2 35.2 32.6 35 33.4 L 35 46.4 C 36 46.2 36.8 45.6 37.2 44.6 C 38 40.4 38.2 36 37.6 32.4Z\" data-g=\"abd obliquo\"/><path class=\"mmz\" d=\"M23 48.8L37 48.8C36.8 52 35 54.6 30 55.6C25 54.6 23.2 52 23 48.8Z\"/><path class=\"mmz\" d=\"M21.8 52.6C23.8 53.4 25.4 54.6 26.3 56C25.7 62 26.1 68 27.1 73.4L27.6 77.2C26.4 79 23.8 79 22.4 77.4C20.2 69.6 19.8 60 21.8 52.6Z\" data-g=\"quad inferiores\"/><path class=\"mmz\" d=\"M 38.2 52.6 C 36.2 53.4 34.6 54.6 33.7 56 C 34.3 62 33.9 68 32.9 73.4 L 32.4 77.2 C 33.6 79 36.2 79 37.6 77.4 C 39.8 69.6 40.2 60 38.2 52.6Z\" data-g=\"quad inferiores\"/><path class=\"mmz\" d=\"M26.9 56.4C27.8 55.8 28.8 55.6 29.7 55.8L29.7 60.6C29.2 65 28.4 69.2 27.7 72.6C26.6 67.2 26.4 61.6 26.9 56.4Z\" data-g=\"adutor inferiores\"/><path class=\"mmz\" d=\"M 33.1 56.4 C 32.2 55.8 31.2 55.6 30.3 55.8 L 30.3 60.6 C 30.8 65 31.6 69.2 32.3 72.6 C 33.4 67.2 33.6 61.6 33.1 56.4Z\" data-g=\"adutor inferiores\"/><ellipse class=\"mmz\" cx=\"25\" cy=\"79.7\" rx=\"2\" ry=\"1.3\"/><ellipse class=\"mmz\" cx=\"35\" cy=\"79.7\" rx=\"2\" ry=\"1.3\"/><path class=\"mmz\" d=\"M22.6 81.6C21.6 85.4 21.8 90.6 23.4 95.4L23.8 97.6L26.4 97.6C26.6 93 27.4 89.4 27.6 85.4C27.6 83.8 27.4 82.4 27 81.4C25.6 80.8 24 80.8 22.6 81.6Z\" data-g=\"inferiores\"/><path class=\"mmz\" d=\"M 37.4 81.6 C 38.4 85.4 38.2 90.6 36.6 95.4 L 36.2 97.6 L 33.6 97.6 C 33.4 93 32.6 89.4 32.4 85.4 C 32.4 83.8 32.6 82.4 33 81.4 C 34.4 80.8 36 80.8 37.4 81.6Z\" data-g=\"inferiores\"/>", "back": "<path class=\"mmz\" d=\"M14.2 41.4C12.6 44.6 12.6 49.6 13.6 53.6C14.4 54.2 15.6 54.2 16.3 53.6C17.4 49.6 18 44.8 17.4 41.6C16.4 40.8 15.2 40.8 14.2 41.4Z\" data-g=\"ante_ext\" data-arm=\"1\"/><path class=\"mmz\" d=\"M 45.8 41.4 C 47.4 44.6 47.4 49.6 46.4 53.6 C 45.6 54.2 44.4 54.2 43.7 53.6 C 42.6 49.6 42 44.8 42.6 41.6 C 43.6 40.8 44.8 40.8 45.8 41.4Z\" data-g=\"ante_ext\" data-arm=\"1\"/><path class=\"mmz\" d=\"M29.7 13.8C28.6 15.6 27 17 24.6 18.6C22.6 19.7 20.7 20.3 19.3 21.2C21.6 22.1 24.2 23.8 26 26.6C27.6 29.6 28.8 33.4 29.7 37Z\" data-g=\"trap\"/><path class=\"mmz\" d=\"M 30.3 13.8 C 31.4 15.6 33 17 35.4 18.6 C 37.4 19.7 39.3 20.3 40.7 21.2 C 38.4 22.1 35.8 23.8 34 26.6 C 32.4 29.6 31.2 33.4 30.3 37Z\" data-g=\"trap\"/><path class=\"mmz\" d=\"M19 21.3C16.3 21.7 15.2 24.4 15.6 27.7C16 29.3 17 30.1 18 30.3C18.4 27.2 19.6 24.6 21.6 22.8Z\" data-g=\"deltpost\"/><path class=\"mmz\" d=\"M 41 21.3 C 43.7 21.7 44.8 24.4 44.4 27.7 C 44 29.3 43 30.1 42 30.3 C 41.6 27.2 40.4 24.6 38.4 22.8Z\" data-g=\"deltpost\"/><path class=\"mmz\" d=\"M20.5 26.8C22.8 26 24.8 27.6 26.2 29.8C27.6 32.2 28.8 35.4 29.7 38.8L29.7 45C27 45.4 24.6 45.2 23.4 44.4C21.6 39.6 20.6 33.2 20.5 26.8Z\" data-g=\"costas\"/><path class=\"mmz\" d=\"M 39.5 26.8 C 37.2 26 35.2 27.6 33.8 29.8 C 32.4 32.2 31.2 35.4 30.3 38.8 L 30.3 45 C 33 45.4 35.4 45.2 36.6 44.4 C 38.4 39.6 39.4 33.2 39.5 26.8Z\" data-g=\"costas\"/><path class=\"mmz\" d=\"M16.2 31.2C14.6 33.4 14.4 37.6 15 40.2C15.8 40.8 17.2 40.8 18 40.2C19.2 37.4 19.4 33.6 18.6 31.4C17.8 30.8 16.9 30.8 16.2 31.2Z\" data-g=\"triceps\"/><path class=\"mmz\" d=\"M 43.8 31.2 C 45.4 33.4 45.6 37.6 45 40.2 C 44.2 40.8 42.8 40.8 42 40.2 C 40.8 37.4 40.6 33.6 41.4 31.4 C 42.2 30.8 43.1 30.8 43.8 31.2Z\" data-g=\"triceps\"/><path class=\"mmz\" d=\"M26.2 45.9L29.7 45.9L29.7 50.6C28 50.9 26.6 50.4 25.8 49.6C25.6 48.3 25.8 47 26.2 45.9Z\" data-g=\"lombar\"/><path class=\"mmz\" d=\"M 33.8 45.9 L 30.3 45.9 L 30.3 50.6 C 32 50.9 33.4 50.4 34.2 49.6 C 34.4 48.3 34.2 47 33.8 45.9Z\" data-g=\"lombar\"/><path class=\"mmz\" d=\"M21.2 48.4C22.8 47.6 25 47.8 26 49.6C24.6 50.8 22.6 51.6 21 52.2C20.6 50.8 20.7 49.4 21.2 48.4Z\" data-g=\"abdutor gluteo\"/><path class=\"mmz\" d=\"M 38.8 48.4 C 37.2 47.6 35 47.8 34 49.6 C 35.4 50.8 37.4 51.6 39 52.2 C 39.4 50.8 39.3 49.4 38.8 48.4Z\" data-g=\"abdutor gluteo\"/><path class=\"mmz\" d=\"M21.3 52.8C22.9 51.4 26.2 51 29.6 51.8L29.6 59.8C27 61.4 23.4 61 21.8 59.2C20.7 57.4 20.7 54.8 21.3 52.8Z\" data-g=\"gluteo\"/><path class=\"mmz\" d=\"M 38.7 52.8 C 37.1 51.4 33.8 51 30.4 51.8 L 30.4 59.8 C 33 61.4 36.6 61 38.2 59.2 C 39.3 57.4 39.3 54.8 38.7 52.8Z\" data-g=\"gluteo\"/><path class=\"mmz\" d=\"M21.6 61.2C21.2 66 21.8 72 23.2 77.5C24.6 78.6 26.6 78.6 27.8 77.4C28.6 72 29 66 28.8 61.8C26.6 62.6 23.8 62.4 21.6 61.2Z\" data-g=\"post\"/><path class=\"mmz\" d=\"M 38.4 61.2 C 38.8 66 38.2 72 36.8 77.5 C 35.4 78.6 33.4 78.6 32.2 77.4 C 31.4 72 31 66 31.2 61.8 C 33.4 62.6 36.2 62.4 38.4 61.2Z\" data-g=\"post\"/><ellipse class=\"mmz\" cx=\"25.3\" cy=\"79.6\" rx=\"1.8\" ry=\"1\"/><ellipse class=\"mmz\" cx=\"34.7\" cy=\"79.6\" rx=\"1.8\" ry=\"1\"/><path class=\"mmz\" d=\"M22.8 81C21.4 84 21.4 88.5 23 91.5C23.8 93.5 24.4 95.5 24.6 97.4L26.2 97.4C26.4 95.4 27 93.4 27.6 91.4C28.6 88.4 28.4 84 27.2 81C25.8 80.2 24.2 80.2 22.8 81Z\" data-g=\"pant\"/><path class=\"mmz\" d=\"M 37.2 81 C 38.6 84 38.6 88.5 37 91.5 C 36.2 93.5 35.6 95.5 35.4 97.4 L 33.8 97.4 C 33.6 95.4 33 93.4 32.4 91.4 C 31.4 88.4 31.6 84 32.8 81 C 34.2 80.2 35.8 80.2 37.2 81Z\" data-g=\"pant\"/>"};
-const MAPA_GRUPOS = {
-  'abdomen':{v:'front',c:'up',lit:['abd']},
-  'adutores':{v:'front',c:'low',lit:['adutor']},
-  'aerobios':{icon:'heart',r:'cardio'},
-  'antebraco extensores':{v:'back',c:'up',lit:['ante_ext']},
-  'antebraco flexores':{v:'front',c:'up',lit:['ante_flex']},
-  'biceps':{v:'front',c:'up',lit:['biceps']},
-  'cardio':{icon:'heart',r:'cardio'},
-  'coordenacao':{icon:'ladder'},
-  'costas':{v:'back',c:'up',lit:['costas']},
-  'deltoides':{v:'front',c:'up',lit:['ombro']},
-  'funcional':{icon:'throw'},
-  'gluteos':{v:'back',c:'low',lit:['gluteo']},
-  'inferiores':{v:'front',c:'low',lit:['inferiores']},
-  'lombar':{v:'back',c:'up',lit:['lombar']},
-  'melhor idade':{icon:'walk'},
-  'panturrilha':{v:'back',c:'low',lit:['pant']},
-  'peitoral':{v:'front',c:'up',lit:['peito']},
-  'pliometricos':{icon:'bolt'},
-  'posteriores':{v:'back',c:'low',lit:['post']},
-  'quadriceps':{v:'front',c:'low',lit:['quad']},
-  'trapezios':{v:'back',c:'up',lit:['trap']},
-  'triceps':{v:'back',c:'up',lit:['triceps']},
-  'yoga':{icon:'lotus'},
-  'zona terapeutica':{icon:'firstaid',r:'saude'}
-};
-/* ignora emoji, acento e maiúscula: "🦵 Quadríceps" === "quadriceps" */
-const normGrupo=(t)=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,' ').replace(/\s+/g,' ').trim();
-const _mapaCache={};
-function svgMapa(def){
-  let s=(MAPA_BODY.common+MAPA_BODY[def.v]).replace(/<(\w+)([^>]*?)data-g="([^"]+)"([^>]*)\/>/g,
-    (m,tag,a,gs)=>gs.split(' ').some(x=>def.lit.indexOf(x)>=0)?m.replace('class="mmz"','class="mmz mmon"'):m);
-  if(def.c==='low') s=s.replace(/<[^>]*data-arm[^>]*\/>/g,'');
-  const vb=def.c==='low'?'8 46 44 56':'8 1 44 57';
-  return '<svg viewBox="'+vb+'" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">'+s+'</svg>';
-}
-function MapaMusc({grupo,cardio}){
-  const k=normGrupo(grupo);
-  let def=MAPA_GRUPOS[k];
-  if(!def && cardio){ def=MAPA_GRUPOS['cardio']; }
-  if(!def) return <div className="mmapa mmic mmvazio" aria-hidden="true"><Ic n="barbell"/></div>;
-  const rot=grupo||'Cardio';
-  if(def.icon) return <div className="mmapa mmic" role="img" aria-label={rot}><Ic n={def.icon} r={def.r}/></div>;
-  const html=_mapaCache[k]||(_mapaCache[k]=svgMapa(def));
-  return <div className="mmapa" role="img" aria-label={rot} dangerouslySetInnerHTML={{__html:html}}/>;
-}
 function getRC(){ return (window.Recharts && window.Recharts.LineChart) ? window.Recharts : null; }
 
 /* ===== SUPABASE (login + banco multi-usuário) ===== */
@@ -2461,7 +2373,7 @@ function Progresso({db,nav,studentId,ehAluno}){
           </div>))}
       </React.Fragment>}
       {p.subiram.length>0 && <React.Fragment>
-        <div className="secaotit"><Ic n="trend"/> O que evoluiu</div>
+        <div className="secaotit">📈 O que evoluiu</div>
         {/* barra proporcional ao maior ganho da fase: comparação visual
             imediata, sem precisar ler número por número */}
         {(()=>{ const topo=Math.max(...p.subiram.map(x=>x.ganho));
@@ -2478,7 +2390,7 @@ function Progresso({db,nav,studentId,ehAluno}){
           </div>)); })()}
       </React.Fragment>}
       {p.cargas.length>0 && <React.Fragment>
-        <div className="secaotit"><Ic n="barbell"/> Cargas atuais</div>
+        <div className="secaotit">🏋️ Cargas atuais</div>
         {/* grade de 2 colunas: a lista vertical de 20 linhas virava rolagem
             infinita e escondia o que importa */}
         <div className="cgrade">
@@ -2492,14 +2404,14 @@ function Progresso({db,nav,studentId,ehAluno}){
       {/* vazio EXPLICATIVO: se as seções simplesmente não aparecem, o aluno
           nunca descobre que registrar carga desbloqueia isso. */}
       {p.subiram.length===0 && <div className="vaziopre">
-        <div className="vpico"><Ic n="trend" c/></div>
+        <div className="vpico">📈</div>
         <div className="vptit">O que evoluiu</div>
         <div className="vptxt">{p.cargas.length>0
           ? 'Assim que você repetir um exercício com carga maior, a evolução aparece aqui.'
           : 'Registre suas cargas e veja aqui o quanto você progrediu em cada exercício.'}</div>
       </div>}
       {p.cargas.length===0 && <div className="vaziopre">
-        <div className="vpico"><Ic n="barbell" c/></div>
+        <div className="vpico">🏋️</div>
         <div className="vptit">Cargas atuais</div>
         <div className="vptxt">Toque em “Registrar Carga” ao terminar cada série.
           Suas cargas de cada exercício ficam guardadas aqui.</div>
@@ -2539,7 +2451,7 @@ function Retrospectiva({s, fase, faseAnterior, onRelato, onFechar}){
         <CardVolume kg={p.volume} destaque/>
       </div>
       {p.subiram.length>0 && <React.Fragment>
-        <div className="rtsec"><Ic n="trend"/> Cargas que evoluíram</div>
+        <div className="rtsec">📈 Cargas que evoluíram</div>
         {p.subiram.slice(0,6).map(x=>(
           <div key={x.nome} className="pglinha">
             <span className="pgnome">{x.nome}</span>
@@ -2548,14 +2460,14 @@ function Retrospectiva({s, fase, faseAnterior, onRelato, onFechar}){
       </React.Fragment>}
       {/* só melhora de 2+ pontos entra aqui. Piora não é mencionada. */}
       {p.dorMelhorou.length>0 && <React.Fragment>
-        <div className="rtsec"><Ic n="steth" r="saude"/> Dor que diminuiu</div>
+        <div className="rtsec">🩺 Dor que diminuiu</div>
         {p.dorMelhorou.slice(0,4).map(x=>(
           <div key={x.nome} className="pglinha">
             <span className="pgnome">{x.nome}</span>
             <span className="pgvalor">{x.de}/10 → <b>{x.para}/10</b></span>
           </div>))}
       </React.Fragment>}
-      <div className="rtsec"><Ic n="chat" r="coach"/> O que você sentiu de diferente nessa fase?</div>
+      <div className="rtsec">💬 O que você sentiu de diferente nessa fase?</div>
       {enviado
         ? <div className="rtok">Anotado! Vou ler antes da nossa conversa. 💪🏼</div>
         : <React.Fragment>
@@ -2708,7 +2620,7 @@ function RetroSheet({dores,dataRef,onResponder,onPular}){
   const algum=Object.keys(esc).some(k=>esc[k]);
   return (<div className="dlgback">
     <div className="dlg retro2">
-      <div className="dlgico"><Ic n="steth" r="saude" c/></div>
+      <div className="dlgico">🩺</div>
       <div className="dlgtit">Depois do treino de {fmtDate(dataRef)}</div>
       <div className="dlgtxt">Como cada região se comportou?</div>
       {(dores||[]).map(d=>(
@@ -2923,7 +2835,7 @@ function CheckinSemanal({db,nav,studentId,flash,recarregar}){
       onBack={()=>nav({name:'dor',studentId})}/>
     <div className="screen avscreen">
       {dores.length===0
-        ? <div className="empty"><div className="big"><Ic n="steth" r="saude" c/></div>
+        ? <div className="empty"><div className="big">🩺</div>
             <p>Você ainda não tem nenhuma dor em acompanhamento.</p></div>
         : <React.Fragment>
             <div className="avpasso">
@@ -2934,7 +2846,7 @@ function CheckinSemanal({db,nav,studentId,flash,recarregar}){
                   const on=sel.indexOf(d.id)>=0;
                   return (<button key={d.id} type="button" className={'avopt'+(on?' on':'')}
                     onClick={()=>alterna(d.id)}>
-                    <span className="avcheck">{on?<Ic n="check"/>:''}</span>
+                    <span className="avcheck">{on?'✓':''}</span>
                     <span>{nomeDor(d)}</span>
                   </button>);
                 })}
@@ -2997,7 +2909,7 @@ function TelaDor({db,setDb,nav,studentId,flash}){
       onBack={()=>nav({name:'student',studentId})}/>
     <div className="screen">
       {tarefa && tarefa.tipo==='avaliacao' && <div className="dortarefa">
-        <div className="dtico"><Ic n="steth" r="saude" c/></div>
+        <div className="dtico">🩺</div>
         <div className="dttit">{tarefa.rotulo}</div>
         <div className="dttxt">Leva uns 8 minutos. É o raio-X da sua dor — melhor fazer com calma, em casa.</div>
         <button className="btn" disabled={carregando} onClick={abrirAvaliacao}>
@@ -3053,7 +2965,7 @@ function TelaDor({db,setDb,nav,studentId,flash}){
           </div>
         </div></div>}
       {dores.length===0 && !tarefa &&
-        <div className="empty"><div className="big"><Ic n="steth" r="saude" c/></div>
+        <div className="empty"><div className="big">🩺</div>
           <p>Nada para registrar por enquanto.</p></div>}
     </div>
   </React.Fragment>);
@@ -3378,7 +3290,7 @@ function Agenda({db,nav,studentId,ehAluno}){
         </div>
       </div>}
       {lista.length===0 &&
-        <div className="empty"><div className="big"><Ic n="calendar" c/></div>
+        <div className="empty"><div className="big">📅</div>
           <p>{ehAluno?'Nenhum treino concluído ainda. Toque em "Finalizar Treino" ao terminar.':'Nada registrado ainda.'}</p></div>}
     </div>
   </React.Fragment>);
@@ -3502,7 +3414,7 @@ function GravadorAudio({exId,valor,onMudar,flash}){
     <div className="audioacts">
       {!grav
         ? <button type="button" className={'audiobtn'+(subindo?' off':'')} disabled={subindo}
-            onClick={iniciar}>{subindo?'⏳ enviando…':(valor?<React.Fragment><Ic n="mic" r="coach"/> Regravar</React.Fragment>:<React.Fragment><Ic n="mic" r="coach"/> Gravar dica</React.Fragment>)}</button>
+            onClick={iniciar}>{subindo?'⏳ enviando…':(valor?'🎤 Regravar':'🎤 Gravar dica')}</button>
         : <button type="button" className="audiobtn rec" onClick={parar}>
             ⏹ Parar · {mmss(seg)}</button>}
       {valor && !grav && !subindo &&
@@ -4227,7 +4139,7 @@ function SerieRing({total,feitas,onAvancar,onZerar,rotulo}){
           strokeDasharray={C} strokeDashoffset={C*(1-frac)}
           transform="rotate(-90 22 22)"/>
       </svg>
-      <span className="srnum">{completo?<Ic n="check"/>:(feitas+'/'+total)}</span>
+      <span className="srnum">{completo?'✓':(feitas+'/'+total)}</span>
     </span>
     <span className="srbot">{completo?'Concluído':'Pendente'}</span>
   </button>);
@@ -4256,7 +4168,7 @@ function VideoExercicio({url}){
     <iframe src={'https://www.youtube.com/embed/'+id+'?rel=0&playsinline=1&autoplay=1'}
       title="Vídeo do exercício" frameBorder="0" allowFullScreen
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"></iframe>
-    <button className="vidclose" onClick={()=>setTocando(false)} aria-label="Fechar vídeo"><Ic n="x"/></button>
+    <button className="vidclose" onClick={()=>setTocando(false)} aria-label="Fechar vídeo">✕</button>
   </div>);
 }
 
@@ -4663,7 +4575,7 @@ function CardioFim({estado,onSalvar,onFechar}){
     <div className="cdfimtit">Cardio concluído!</div>
     <div className="cdfimsub">{fmtMin(estado.total)} · {estado.blocos.length} blocos</div>
     <div className="cdform">
-      <label className="cdflab"><Ic n="heart" r="cardio"/> BPM ao terminar <span>(opcional)</span></label>
+      <label className="cdflab">💓 BPM ao terminar <span>(opcional)</span></label>
       <BpmPicker valor={bpm} onChange={setBpm}/>
       <label className="cdflab">Como foi? <span>(opcional)</span></label>
       <div className="cdcarinhas">
@@ -4831,7 +4743,7 @@ function CardioOverlay({cardio}){
       <span className="cdpz">{nRef.label}</span>
       <span className="cdpnum">{crono}</span>
       {e.pausado && <span className="cdppau">{CD_ICO.pausa}</span>}
-      {pendente!=null && <span className="cdpck" aria-label="Check-in disponível"><Ic n="heart" r="cardio"/></span>}
+      {pendente!=null && <span className="cdpck" aria-label="Check-in disponível">💓</span>}
       <span className="cdpexp">{CD_ICO.sobe}</span>
     </button>);
   const rot = atual && atual.rotulo && atual.rotulo!==zonaInfo(nRef.zona).label && atual.rotulo!==nRef.label
@@ -4848,7 +4760,7 @@ function CardioOverlay({cardio}){
       <button className="cdsair cdminbtn" style={fase==='run'?null:{visibility:'hidden'}}
         onClick={()=>cardio.minimizar(true)} aria-label="Minimizar cardio">‹</button>
       <span className="cdnome">{e.nome}</span>
-      <button className="cdsair" onClick={cardio.parar} aria-label="Fechar cardio"><Ic n="x"/></button>
+      <button className="cdsair" onClick={cardio.parar} aria-label="Fechar cardio">✕</button>
     </div>
     {fase==='prev' && <div className="cdprev">
       <div className="cdpvnome">{e.nome}</div>
@@ -5023,7 +4935,7 @@ function IsoOverlay({iso}){
   return (<div className={'isoover f-'+fase} style={{'--cd':cor}}>
     <div className="cdtop">
       <span className="cdnome">{sessao.nome}</span>
-      <button className="cdsair" onClick={iso.parar} aria-label="Fechar"><Ic n="x"/></button>
+      <button className="cdsair" onClick={iso.parar}>✕</button>
     </div>
     {terminou
       ? <IsoFim estado={est}
@@ -5077,7 +4989,7 @@ function ArcoZonas({zona,fcMax}){
   return (<div className="czwrap">
     <div className="czbpm">
       {faixa
-        ? <React.Fragment><span className="czco" aria-hidden="true"><Ic n="heart" r="cardio"/></span><b style={{color:Z.cor}}>{faixa.de}–{faixa.ate}</b> bpm</React.Fragment>
+        ? <React.Fragment><span className="czco" aria-hidden="true">💓</span><b style={{color:Z.cor}}>{faixa.de}–{faixa.ate}</b> bpm</React.Fragment>
         : <span className="czsem">bpm alvo indisponível</span>}
     </div>
     <div className="czarco">
@@ -5108,8 +5020,8 @@ function CheckinSheet({seg,onResponder}){
     <div className="cksheet">
       <div className="ckopc">(opcional)</div>
       <div className="ckhead">
-        <span className="cktit"><Ic n="heart" r="cardio"/> Como está agora?</span>
-        <button className="ckx" onClick={()=>onResponder({pulado:true})} aria-label="Pular"><Ic n="x"/></button>
+        <span className="cktit">💓 Como está agora?</span>
+        <button className="ckx" onClick={()=>onResponder({pulado:true})}>✕</button>
       </div>
       <BpmPicker valor={bpm} onChange={setBpm} compacto/>
       <div className="ckcarinhas">
@@ -5142,9 +5054,9 @@ function RestTimerOverlay({timer,voltar}){
   // sem perder a contagem de quanto tempo passou
   if(passouMax) return (
     <button className="rtpill" onClick={cancel} aria-label="Parar contagem do descanso">
-      <span className="rtpico"><Ic n="timer"/></span>
+      <span className="rtpico">🕐</span>
       <span className="rtpnum">+{elapsed-max}s</span>
-      <span className="rtpx"><Ic n="x"/></span>
+      <span className="rtpx">✕</span>
     </button>);
   return (<div className={'rtrunning '+cls} onClick={cancel}>
     {voltar && <button className="rtvolta" aria-label="Voltar"
@@ -5422,7 +5334,7 @@ function App({auth}){
     view.name==='student'   ? (view.faseId ? ()=>nav({name:'student',studentId:view.studentId})
                                             : (ehAluno?null:()=>nav({name:'students'}))) : null);
   return (<div className={claroAtivo?'tema-claro':''}>
-    {!LS_OK && <div className="warnbar"><Ic n="warn"/> Modo temporário: os dados somem ao fechar. Abra pelo link do GitHub Pages para salvar.</div>}
+    {!LS_OK && <div className="warnbar">⚠️ Modo temporário: os dados somem ao fechar. Abra pelo link do GitHub Pages para salvar.</div>}
     {auth && !ehAluno && <div className="rolebar">
       <span>👤 Treinador</span>
       <div className="rolebaracts">
@@ -5892,7 +5804,7 @@ function StoryModal({dados,onFechar}){
     catch(e){ if(!e || e.name!=='AbortError') baixar(); }   // cancelou: não faz nada
   };
   return (<div className="stback" onClick={onFechar}>
-    <button className="stfechar" onClick={onFechar} aria-label="Fechar"><Ic n="x"/></button>
+    <button className="stfechar" onClick={onFechar} aria-label="Fechar">✕</button>
     <div className="stprev" onClick={e=>e.stopPropagation()}>
       {url ? <img src={url} alt="Prévia do card para os Stories"/>
            : <div className="stload">{erro||'Gerando imagem…'}</div>}
@@ -5960,7 +5872,7 @@ function RelatoSheet({exNome,inicial,fixadoInicial,onSalvar,onApagar,onClose}){
   return (<div className="backdrop" onClick={onClose}>
     <div className="sheet" onClick={e=>e.stopPropagation()}>
       <div className="rlwrap">
-        <div className="rltit"><Ic n="note" r="aluno"/> {exNome?'Algo sobre '+exNome+'?':'Como foi o treino?'}</div>
+        <div className="rltit">✍️ {exNome?'Algo sobre '+exNome+'?':'Como foi o treino?'}</div>
         <div className="rlsub">
           {exNome
             ? 'Dor, incômodo, sensação estranha, o que funcionou bem — escreva do seu jeito. Só o Matheus vê.'
@@ -5974,7 +5886,7 @@ function RelatoSheet({exNome,inicial,fixadoInicial,onSalvar,onApagar,onClose}){
           <input type="checkbox" checked={fixo} onChange={e=>setFixo(e.target.checked)}/>
           <span className="swtrack"></span>
           <span className="swtxt">
-            <span className="swtit"><Ic n="pin" r="aluno"/> Manter fixo pra mim</span>
+            <span className="swtit">📌 Manter fixo pra mim</span>
             <span className="swsub">Continua salvo neste exercício pra você consultar depois.</span>
           </span>
         </label>
@@ -6021,7 +5933,7 @@ function FimTreinoSheet({relatosHoje,nomePorEx,dores,onConcluir,onClose}){
               </div>
             </div>))}
         </div>}
-        <div className="rltit">{tem?<React.Fragment><Ic n="note" r="aluno"/> Você anotou hoje</React.Fragment>:'Como foi o treino de hoje?'}</div>
+        <div className="rltit">{tem?'✍️ Você anotou hoje':'Como foi o treino de hoje?'}</div>
         {tem
           ? <React.Fragment>
               <div className="ftlista" style={{marginTop:10,marginBottom:12}}>
@@ -6134,7 +6046,7 @@ function AcademiasSheet({academias,atuais,onSalvar,onClose}){
           const on=marcadas.indexOf(a.id)>=0;
           return (<div key={a.id} className={'acaditem'+(on?' on':'')}>
             <button type="button" className="acadnome" onClick={()=>alternar(a.id)}>
-              <span className="acadcheck">{on?<Ic n="check"/>:''}</span>
+              <span className="acadcheck">{on?'✓':''}</span>
               <span className="acadtxt">{a.nome}
                 {a.cidade && <span className="acadcid">{a.cidade}</span>}</span>
             </button>
@@ -6162,21 +6074,21 @@ function RowMenu({label,currentName,onRename,onDelete,onClose,academia,onAcademi
     <div className="sheet menusheet" onClick={e=>e.stopPropagation()}>
       {mode==='menu' && <React.Fragment>
         <h2>{currentName}</h2><div className="h2sub">O que deseja fazer?</div>
-        <button className="opt" onClick={()=>setMode('rename')}><Ic n="pencil"/> Editar nome</button>
+        <button className="opt" onClick={()=>setMode('rename')}>✎ Editar nome</button>
         {onCardio && <label className="swrow" style={{margin:'2px 0 10px'}}>
           <input type="checkbox" checked={!!cardioOn} onChange={e=>onCardio(e.target.checked)}/>
           <span className="swtrack"></span>
           <span className="swtxt">
-            <span className="swtit"><Ic n="run" r="cardio"/> Sessão de cardio</span>
+            <span className="swtit">🏃 Sessão de cardio</span>
             <span className="swsub">Para o aluno, aparece no grupo Cardio da fase.</span>
           </span>
         </label>}
         {onAcademias && <button className="opt" onClick={()=>setMode('academias')}>
-          <Ic n="barbell"/> Academias{qtdAcademias?' · '+qtdAcademias:(academia?' · '+academia:'')}</button>}
-        {onAcademia && <button className="opt" onClick={()=>setMode('academia')}><Ic n="pencil"/> Academia (texto livre)</button>}
+          🏋️ Academias{qtdAcademias?' · '+qtdAcademias:(academia?' · '+academia:'')}</button>}
+        {onAcademia && <button className="opt" onClick={()=>setMode('academia')}>✎ Academia (texto livre)</button>}
         {onPerfil && <button className="opt" onClick={()=>setMode('perfil')}>
-          <Ic n="cake"/> Nascimento e FC máx{idade!=null?' · '+idade+' anos':' · faltando'}</button>}
-        <button className="opt del" onClick={()=>setMode('confirm')}><Ic n="trash" r="danger"/> Apagar {label}</button>
+          🎂 Nascimento e FC máx{idade!=null?' · '+idade+' anos':' · faltando'}</button>}
+        <button className="opt del" onClick={()=>setMode('confirm')}>🗑 Apagar {label}</button>
         <div className="sheetactions" style={{marginTop:16}}>
           <button className="btn ghost" onClick={onClose}>Fechar</button></div>
       </React.Fragment>}
@@ -6266,7 +6178,7 @@ function CorrecaoSheet({exNome,inicial,onSalvar,onClose,flash}){
   return (<div className="backdrop" onClick={onClose}>
     <div className="sheet" onClick={e=>e.stopPropagation()}>
       <h2>{inicial?'Editar correção':'Nova correção'}</h2>
-      <div className="h2sub"><Ic n="wrench" r="corr"/> {exNome}</div>
+      <div className="h2sub">🔧 {exNome}</div>
       <div className="field">
         <label>O que corrigir <span className="obscount">{txt.length}/1000</span></label>
         <textarea className="obstext" rows={4} maxLength={1000} autoFocus value={txt}
@@ -6313,7 +6225,7 @@ function Correcoes({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno}){
   const voltar=()=>nav({name:'student',studentId,faseId:deFase||null});
   if(!s || !t) return (<React.Fragment>
     <TopBar title="Correções" onBack={voltar}/>
-    <div className="screen"><div className="empty"><div className="big"><Ic n="search" c/></div>
+    <div className="screen"><div className="empty"><div className="big">🔍</div>
       <p>Este treino não está mais disponível.</p></div></div>
   </React.Fragment>);
   const updCorr=(id,patch,dados,msg)=>{
@@ -6339,15 +6251,15 @@ function Correcoes({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno}){
     <TopBar title="Correções" sub={t.nome+(ehAluno?'':' · '+s.name)} onBack={voltar}/>
     <div className="screen">
       {lista.length===0
-        ? <div className="crvazio"><div className="big"><Ic n="chat" r="coach" c/></div>
+        ? <div className="crvazio"><div className="big">💬</div>
             <p>{ehAluno
               ? 'Nenhuma correção neste treino ainda. Mande um vídeo pro Matheus e ele responde por aqui.'
-              : <React.Fragment>Nenhuma correção ativa. Abra o treino e toque no <Ic n="wrench" r="corr"/> do exercício para escrever.</React.Fragment>}</p>
+              : 'Nenhuma correção ativa. Abra o treino e toque no 🔧 do exercício para escrever.'}</p>
           </div>
         : lista.map(c=>(
           <div key={c.id} className={'crcard'+((ehAluno && !c.vistaEm)?' nova':'')}>
             <div className="crtopo">
-              <span className="crex"><Ic n="wrench" r="corr"/> {c.exNome||'Exercício'}</span>
+              <span className="crex">🔧 {c.exNome||'Exercício'}</span>
               {!c.vistaEm && <span className="crnovo">nova</span>}
               <span className="crdata">{fmtCorrData(c.criadoEm)}</span>
             </div>
@@ -6361,9 +6273,9 @@ function Correcoes({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno}){
               <div className="crstatus">
                 {c.vistaEm?('✓ vista em '+fmtCorrData(c.vistaEm)):'• ainda não vista'}</div>
               <div className="crbtns">
-                <button onClick={()=>setEditando(c)}><Ic n="pencil"/> editar</button>
+                <button onClick={()=>setEditando(c)}>✎ editar</button>
                 {c.vistaEm && <button onClick={()=>reenviar(c)}>↻ reenviar</button>}
-                <button className="perigo" onClick={()=>arquivar(c)}><Ic n="trash" r="danger"/> arquivar</button>
+                <button className="perigo" onClick={()=>arquivar(c)}>🗑 arquivar</button>
               </div>
             </React.Fragment>}
           </div>))}
@@ -6375,7 +6287,7 @@ function Correcoes({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno}){
           onChange={e=>{ setNoTreino(e.target.checked); setCorrNoTreino(studentId,e.target.checked); }}/>
         <span className="swtrack"></span>
         <span className="swtxt">
-          <span className="swtit"><Ic n="wrench" r="corr"/> Mostrar correções dentro do treino</span>
+          <span className="swtit">🔧 Mostrar correções dentro do treino</span>
           <span className="swsub">Marca os exercícios que têm correção enquanto você treina.</span>
         </span>
       </label>}
@@ -6493,7 +6405,7 @@ function Students({db,setDb,nav,onAcompanhar}){
     <div className="screen">
       <div className="catrow">
         <div className="catinfo">
-          <Ic n="link"/> Cardápio: {catMeta?`${catMeta.total} exercícios`:'não baixado'}
+          🔗 Cardápio: {catMeta?`${catMeta.total} exercícios`:'não baixado'}
           {catMeta && <span className="catwhen"> · {fmtDate(catMeta.atualizado.slice(0,10))}</span>}
         </div>
         <button className="catbtn" onClick={atualizarCatalogo} disabled={catStatus==='baixando'}>
@@ -6506,7 +6418,7 @@ function Students({db,setDb,nav,onAcompanhar}){
           <button key={k} className={statusFiltro===k?'on':''}
             onClick={()=>setStatusFiltro(k)}>{rot}</button>))}
       </div>
-      {listaFiltrada.length===0 && <div className="empty"><div className="big"><Ic n="barbell" c/></div>
+      {listaFiltrada.length===0 && <div className="empty"><div className="big">🏋️</div>
         <p>{q?'Nenhum aluno com esse nome.'
              :(statusFiltro==='ativo'?'Nenhum aluno ativo. Toque em “+ Aluno” para começar.'
                                      :'Nenhum aluno neste filtro.')}</p></div>}
@@ -6535,7 +6447,7 @@ function Students({db,setDb,nav,onAcompanhar}){
                 {inativo && <span className="tagstatus">{s.status}</span>}
                 {/* 🎂 = aniversário de verdade. Data faltando usa marca própria,
                     pra não significar duas coisas no mesmo ícone. */}
-                {fazAniver && <span className="tagbday" title="Aniversário"> <Ic n="cake"/>{dias===0?' hoje':' em '+dias+'d'}</span>}
+                {fazAniver && <span className="tagbday" title="Aniversário"> 🎂{dias===0?' hoje':' em '+dias+'d'}</span>}
                 {!s.nascimento && <span className="tagfalta" title="Sem data de nascimento">sem data</span>}
               </div>
                 <div className="desc">{(s.treinos||[]).length} {(s.treinos||[]).length===1?'treino':'treinos'}</div></div>
@@ -6550,7 +6462,7 @@ function Students({db,setDb,nav,onAcompanhar}){
                   <span className="tabsub">Abre o app exatamente como {primeiroNome(s.name)} vê.</span>
                 </span></button>
               <button className="trab" onClick={()=>nav({name:'student',studentId:s.id})}>
-                <span className="tabtxt"><Ic n="pencil"/> Editar treinos
+                <span className="tabtxt">✎ Editar treinos
                   <span className="tabsub">Fases, sessões, exercícios e cargas.</span>
                 </span></button>
             </div>}
@@ -6759,7 +6671,7 @@ function SeletorSessoes({db, alunoAtualId, nomesExistentes, titulo, subtitulo, r
             const on=!!marcados[t.id];
             return (<button key={t.id} className={'selitem'+(on?' on':'')}
               onClick={()=>alternar(t.id)}>
-              <div className="selmark">{on?<Ic n="check"/>:''}</div>
+              <div className="selmark">{on?'✓':''}</div>
               <div className="selcorpo">
                 <div className="selnome">{t.nome}</div>
                 <div className="selsub">{(t.exercises||[]).length}{' '}
@@ -6778,7 +6690,7 @@ function SeletorSessoes({db, alunoAtualId, nomesExistentes, titulo, subtitulo, r
           </span>
         </label>
         {colisoes.length>0 && <div className="selavi">
-          <Ic n="warn"/> Já existe {colisoes.length===1?'uma sessão chamada':'sessões chamadas'}{' '}
+          ⚠️ Já existe {colisoes.length===1?'uma sessão chamada':'sessões chamadas'}{' '}
           <b>{colisoes.join(', ')}</b> no destino. A cópia entra assim mesmo — renomeie depois se quiser.
         </div>}
       </React.Fragment>}
@@ -6984,10 +6896,10 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
           </div>
         </div>
         <div className="duplobtn">
-          <button className="agbtn" onClick={()=>nav({name:'agenda',studentId})} aria-label="Agenda"><Ic n="calendar"/></button>
-          <button className="agbtn" onClick={()=>nav({name:'progresso',studentId})} aria-label="Progresso"><Ic n="chart"/></button>
-          <button className="agbtn" onClick={()=>nav({name:'plano',studentId})} aria-label="Planejamento"><Ic n="map"/></button>
-          <button className="agbtn dorbtn" onClick={()=>nav({name:'dor',studentId})} aria-label="Dor"><Ic n="steth" r="saude"/>
+          <button className="agbtn" onClick={()=>nav({name:'agenda',studentId})}>📅</button>
+          <button className="agbtn" onClick={()=>nav({name:'progresso',studentId})}>📊</button>
+          <button className="agbtn" onClick={()=>nav({name:'plano',studentId})}>🗺️</button>
+          <button className="agbtn dorbtn" onClick={()=>nav({name:'dor',studentId})}>🩺
             {tarefaDaSemana(db,s) && <span className="agdot"></span>}</button>
         </div>
       </React.Fragment>}
@@ -7084,8 +6996,8 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
                     onChange={e=>renomearFase(f,e.target.value)}
                     placeholder="Nome da fase"/>
                   <span className={'fasetag '+sit}>{sit}</span>
-                  <button className="mini" onClick={e=>{e.stopPropagation();setEditandoFase(f);}} aria-label="Editar fase"><Ic n="pencil"/></button>
-                  <button className="mini" onClick={e=>{e.stopPropagation();apagarFase(f);}} aria-label="Apagar fase"><Ic n="trash" r="danger"/></button>
+                  <button className="mini" onClick={e=>{e.stopPropagation();setEditandoFase(f);}}>✎</button>
+                  <button className="mini" onClick={e=>{e.stopPropagation();apagarFase(f);}}>🗑</button>
                 </div>
                 {f.objetivo && <div className="faseobj">{f.objetivo}</div>}
                 {/* datas editáveis direto no card: ajustar prazo é a operação
@@ -7112,7 +7024,7 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
             })}
         <button className="agbtn" onClick={()=>setEditandoFase('nova')}>+ Nova fase</button>
         <button className="agbtn" onClick={()=>nav({name:'agenda',studentId})}>
-          <Ic n="calendar"/> Agenda de {primeiroNome(s.name)}</button>
+          📅 Agenda de {primeiroNome(s.name)}</button>
         {/* só aparece com uma fase aberta: importar exige destino, e sem fase
             selecionada a sessão cairia solta em "sem fase" sem ele perceber */}
         {faseEmFoco && !ehAluno &&
@@ -7166,13 +7078,13 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
                 que o aluno descobre que este canal existe e passa a mandar vídeo */}
             {c.corrs.length>0
               ? <button className="trab" onClick={c.abrirCorr}>
-                  <span className="tabtxt"><Ic n="chat" r="coach"/> Ver correções do treino
+                  <span className="tabtxt">💬 Ver correções do treino
                     <span className="tabsub">Ajustes de execução que o Matheus mandou pra você.</span>
                   </span>
                   {c.novas>0 && <span className="tabn">{c.novas}</span>}
                 </button>
               : <div className="trab off">
-                  <span className="tabtxt"><Ic n="chat" r="coach"/> Nenhuma correção ainda
+                  <span className="tabtxt">💬 Nenhuma correção ainda
                     <span className="tabsub">Mande um vídeo pro Matheus e ele responde por aqui.</span>
                   </span>
                 </div>}
@@ -7200,7 +7112,7 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
                 {!ehAluno && c.corrs.length>0 &&
                   <button className="corrtag" title="Ver e gerenciar as correções"
                     onClick={e=>{e.stopPropagation();c.abrirCorr();}}>
-                    · <Ic n="chat" r="coach"/> {c.corrs.length===1?'1 correção':c.corrs.length+' correções'}
+                    · 💬 {c.corrs.length===1?'1 correção':c.corrs.length+' correções'}
                     {c.novas>0 && <span className="corrdot"></span>}</button>}
               </div></div>
             {!ehAluno && <button className="menudot" onClick={e=>{e.stopPropagation();setMenu(t);}}>⋯</button>}
@@ -7220,7 +7132,7 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
             <div className="cdlrow" onClick={()=>setTrAberto(c.aberto?null:t.id)}>
               <div className="cdlmini">
                 {exC ? <PerfilCardio blocos={expandirCardio(exC.cardio)} modo="mini"/>
-                     : <span className="cdlsem" aria-hidden="true"><Ic n="run" r="cardio"/></span>}
+                     : <span className="cdlsem" aria-hidden="true">🏃</span>}
               </div>
               <div className="cdlmeta">
                 <div className="cdlnome">{t.nome}</div>
@@ -7271,7 +7183,7 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
           <input type="checkbox" checked={novoCardio} onChange={e=>setNovoCardio(e.target.checked)}/>
           <span className="swtrack"></span>
           <span className="swtxt">
-            <span className="swtit"><Ic n="run" r="cardio"/> Sessão de cardio</span>
+            <span className="swtit">🏃 Sessão de cardio</span>
             <span className="swsub">Para o aluno, aparece no grupo Cardio da fase.</span>
           </span>
         </label>}
@@ -7874,7 +7786,7 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
       <div className="h2sub">Nome, séries e repetições ficam fixos no treino. A carga você registra a cada aula.</div>
       <div className="field autowrap"><label>Exercício</label>
         <input autoFocus value={name} onChange={e=>{setName(e.target.value);setExerciseId(null);setShowAuto(true);}} onFocus={()=>setShowAuto(true)} placeholder="Ex: Supino Reto"/>
-        {exerciseId!=null && <div className="vinculado"><Ic n="link"/> Vinculado ao Cardápio</div>}
+        {exerciseId!=null && <div className="vinculado">🔗 Vinculado ao Cardápio</div>}
         {showAuto && sugestoes.length>0 && <div className="autolist">
           <div className="hint">{catVazio?'Catálogo de exemplo (baixe o Cardápio nas configurações)':'Sugestões do Cardápio'}</div>
           {sugestoes.map(op=>(<div key={(op.id!=null?op.id:op.nome)} className="opt" onClick={()=>escolher(op)}>
@@ -7897,7 +7809,7 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
                              else { setCardio(null); setEscolhendoCard(false); } }}/>
             <span className="swtrack"></span>
             <span className="swtxt">
-              <span className="swtit"><Ic n="run" r="cardio"/> Cardio</span>
+              <span className="swtit">🏃 Cardio</span>
               <span className="swsub">{cardio
                 ? cardio.blocos.length+' blocos · '+fmtMin(totalCardioSeg(cardio))
                 : 'Ative se este exercício for cardio'}</span>
@@ -7933,7 +7845,7 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
                 </div>))}
           <button type="button" className="metopt novo" onClick={()=>aplicarCardio(
             {nome:'Personalizado', repetir:1, blocos:[{tempo:'1min',rotulo:'Leve',nivel:'leve'},{tempo:'1min',rotulo:'Forte',nivel:'forte'}]})}>
-            <span className="monome"><Ic n="pencil"/> Montar do zero</span>
+            <span className="monome">✎ Montar do zero</span>
             <span className="modesc">2 blocos para editar</span>
           </button>
           <button type="button" className="metcancel" onClick={()=>{setEscolhendoCard(false);setBuscaCard('');}}>cancelar</button>
@@ -7952,7 +7864,7 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
               <select className="cdnivel" value={b.nivel||'moderado'} onChange={e=>setNivelC(i,e.target.value)}>
                 {NIVEIS.map(n=><option key={n.k} value={n.k}>{n.label}</option>)}
               </select>
-              {cardio.blocos.length>1 && <button type="button" className="cddel" onClick={()=>delBlocoC(i)} aria-label="Remover bloco"><Ic n="x"/></button>}
+              {cardio.blocos.length>1 && <button type="button" className="cddel" onClick={()=>delBlocoC(i)}>✕</button>}
             </div>
           ))}
         </div>
@@ -8003,13 +7915,13 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
                           <span className="modesc">{t.series.length} séries · {t.tipo==='uniforme'?'iguais':'varia'}</span>
                         </button>
                         {t.custom && <button type="button" className="metdel" title="Apagar template"
-                          onClick={e=>{e.stopPropagation();apagarTemplate(t);}} aria-label="Apagar modelo"><Ic n="x"/></button>}
+                          onClick={e=>{e.stopPropagation();apagarTemplate(t);}}>✕</button>}
                       </div>))}
                   </div>}
                 </div>))}
           <button type="button" className="metopt novo" onClick={()=>aplicarTemplate(
             {nome:'Personalizado', tipo:'porSerie', series:serieRep(3,{reps:'8 a 12',descanso:'90s'})})}>
-            <span className="monome"><Ic n="pencil"/> Montar do zero</span>
+            <span className="monome">✎ Montar do zero</span>
             <span className="modesc">3 séries em branco para editar</span>
           </button>
           <button type="button" className="metcancel" onClick={()=>{setEscolhendoMet(false);setBuscaMet('');}}>cancelar</button>
@@ -8038,7 +7950,7 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
                   onChange={e=>metUniforme?setTodasSeries({descanso:e.target.value}):setSerie(i,{descanso:e.target.value})}/>
                 <button type="button" className="simore" onClick={()=>setExpSerie(expSerie===i?null:i)}>⋯</button>
                 {!metUniforme && metodo.series.length>1 &&
-                  <button type="button" className="sidel" onClick={()=>delSerie(i)} aria-label="Remover série"><Ic n="x"/></button>}
+                  <button type="button" className="sidel" onClick={()=>delSerie(i)}>✕</button>}
               </div>
               {(sr.carga||sr.cadencia||(sr.blocos||[]).length>0||(sr.extensao||[]).length>0) && expSerie!==i &&
                 <div className="siresumo">
@@ -8059,7 +7971,7 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
                   <div className="sdrow bl" key={k}>
                     <input value={b.reps} placeholder="reps" onChange={e=>setBloco(i,k,{reps:e.target.value})}/>
                     <input value={b.pausa||''} placeholder="pausa" onChange={e=>setBloco(i,k,{pausa:e.target.value})}/>
-                    <button type="button" onClick={()=>delBloco(i,k)} aria-label="Remover bloco"><Ic n="x"/></button>
+                    <button type="button" onClick={()=>delBloco(i,k)}>✕</button>
                   </div>))}
                 <button type="button" className="sdadd" onClick={()=>addBloco(i)}>+ bloco</button>
                 <div className="sdsub">Depois das repetições <span className="sdhint">(drop / back-off)</span></div>
@@ -8070,7 +7982,7 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
                       onChange={e=>setSerie(i,{extensao:(sr.extensao||[]).map((y,j)=>j===k?{...y,reducao:e.target.value}:y)})}/>
                     <input value={x.reps||''} placeholder="reps"
                       onChange={e=>setSerie(i,{extensao:(sr.extensao||[]).map((y,j)=>j===k?{...y,reps:e.target.value}:y)})}/>
-                    <button type="button" onClick={()=>delExt(i,k)} aria-label="Remover extensão"><Ic n="x"/></button>
+                    <button type="button" onClick={()=>delExt(i,k)}>✕</button>
                   </div>))}
                 <div className="sdbtns">
                   <button type="button" className="sdadd" onClick={()=>addExt(i,'drop')}>+ drop</button>
@@ -8091,7 +8003,7 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
                 <input autoFocus value={salvandoTpl} placeholder="Nome do template"
                   onChange={e=>setSalvandoTpl(e.target.value)}
                   onKeyDown={e=>{ if(e.key==='Enter')salvarComoTemplate(); if(e.key==='Escape')setSalvandoTpl(null); }}/>
-                <button type="button" className="tplx" onClick={()=>setSalvandoTpl(null)} aria-label="Cancelar"><Ic n="x"/></button>
+                <button type="button" className="tplx" onClick={()=>setSalvandoTpl(null)}>✕</button>
               </div>
               <div className="tplrow">
                 <select className="tplfam" value={famSalvar} onChange={e=>setFamSalvar(e.target.value)}>
@@ -8128,9 +8040,9 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
         <div className="isotgls">
           <button type="button" className={'filmtoggle isotgl'+(iso&&!ehAlong(iso)?' on':'')}
             onClick={()=>setIso(x=>(x&&!ehAlong(x))?null:{min:(x?x.min:ISO_FAIXAS[2].min),max:(x?x.max:ISO_FAIXAS[2].max)})}>
-            <span className="ftbox">{iso&&!ehAlong(iso)?<Ic n="check"/>:''}</span>
+            <span className="ftbox">{iso&&!ehAlong(iso)?'✓':''}</span>
             <span className="fttxt">
-              <span className="ftlab"><Ic n="hourglass"/> Isometria</span>
+              <span className="ftlab">🔥 Isometria</span>
               <span className="fthint">{iso&&!ehAlong(iso)
                 ? ('Segurar '+rotIso(iso)+' por série')
                 : 'Tempo de sustentação'}</span>
@@ -8138,7 +8050,7 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
           </button>
           <button type="button" className={'filmtoggle isotgl'+(ehAlong(iso)?' on':'')}
             onClick={()=>setIso(x=>ehAlong(x)?null:{min:(x?x.min:ISO_FAIXAS[2].min),max:(x?x.max:ISO_FAIXAS[2].max),modo:'alongamento'})}>
-            <span className="ftbox">{ehAlong(iso)?<Ic n="check"/>:''}</span>
+            <span className="ftbox">{ehAlong(iso)?'✓':''}</span>
             <span className="fttxt">
               <span className="ftlab">🧘 Alongamento</span>
               <span className="fthint">{ehAlong(iso)
@@ -8181,9 +8093,9 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
       </div>
       <div className="field">
         <button type="button" className={'filmtoggle'+(filmar?' on':'')} onClick={()=>setFilmar(f=>!f)}>
-          <span className="ftbox">{filmar?<Ic n="check"/>:''}</span>
+          <span className="ftbox">{filmar?'✓':''}</span>
           <span className="fttxt">
-            <span className="ftlab"><Ic n="video" r="coach"/> Recomendado filmar?</span>
+            <span className="ftlab">🎥 Recomendado filmar?</span>
             <span className="fthint">O aluno vê um aviso neste exercício</span>
           </span>
         </button>
@@ -8384,7 +8296,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
         </div>
         {ajuda && <div className="varajuda">
           Use quando o mesmo exercício é feito em máquinas diferentes (outra academia ou outro aparelho).
-          As cargas ficam guardadas separadamente para cada uma. Toque no <Ic n="pencil"/> do chip selecionado para renomear.
+          As cargas ficam guardadas separadamente para cada uma. Toque no ✎ do chip selecionado para renomear.
         </div>}
         <div className="varchips">
           {variantes.map(v=>(
@@ -8392,7 +8304,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
               <button type="button" className={'varchip'+(variante===v?' sel':'')}
                 onClick={()=>escolherVariante(v)}>{v}</button>
               {variante===v && <button type="button" className="varedit" aria-label="Renomear equipamento"
-                onClick={e=>{e.stopPropagation();setRenomeando({antigo:v,novo:v});}} aria-label="Renomear"><Ic n="pencil"/></button>}
+                onClick={e=>{e.stopPropagation();setRenomeando({antigo:v,novo:v});}}>✎</button>}
             </span>
           ))}
           {novaVar===null
@@ -8406,7 +8318,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
           <input autoFocus value={renomeando.novo} onChange={e=>setRenomeando({...renomeando,novo:e.target.value})}
             onKeyDown={e=>{ if(e.key==='Enter')confirmarRenome(); if(e.key==='Escape')setRenomeando(null); }}/>
           <button type="button" className="vrok" onClick={confirmarRenome}>OK</button>
-          <button type="button" className="vrcancel" onClick={()=>setRenomeando(null)} aria-label="Cancelar"><Ic n="x"/></button>
+          <button type="button" className="vrcancel" onClick={()=>setRenomeando(null)}>✕</button>
         </div>}
       </div>
       {!isEdit && series.length>1 && <div className="serietabs">
@@ -8415,7 +8327,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
             className={'stab'+(ativa===i?' sel':'')+(serieCompleta(sr)?' ok':'')}
             onClick={()=>setAtiva(i)}>
             <span className="stnum">{i+1}ª</span>
-            {serieCompleta(sr) && <span className="stok"><Ic n="check"/></span>}
+            {serieCompleta(sr) && <span className="stok">✓</span>}
           </button>))}
       </div>}
       {!isEdit && series.length>1 && <div className="serieresumo">
@@ -8529,7 +8441,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
         <button className="btn ghost" onClick={onClose}>Cancelar</button>
         <button className="btn" onClick={()=>save(false)}>{isEdit?'Salvar alterações':'Salvar'}</button></div>
       {!isEdit && <button className="btnfeita" onClick={()=>save(true)}>
-        <Ic n="check"/> Salvar e marcar série como feita
+        ✓ Salvar e marcar série como feita
       </button>}
     </div></div>);
 }
@@ -8551,7 +8463,7 @@ function PreTreino({aluno,treino,onFechar}){
   const sugestoes=React.useMemo(()=>sugestoesDoTreino(aluno,treino),[aluno,treino]);
   if(!sugestoes.length) return null;
   return (<section className="ptwrap" aria-label="Sugestão de carga para hoje">
-    <button className="ptfechar" onClick={onFechar} aria-label="Fechar"><Ic n="x"/></button>
+    <button className="ptfechar" onClick={onFechar} aria-label="Fechar">✕</button>
     <div className="ptabertura">{fraseAbertura(aluno.id)}</div>
     <div className="pthead">
       <p className="ptaviso">Acho que você pode tentar aumentar o peso nesses exercícios
@@ -8688,7 +8600,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
   // sumiu (fase apagada, sync ainda em curso), mostre e ofereça a saída.
   if(!t) return (<React.Fragment>
     <TopBar title="Treino" sub={s?s.name:''} onBack={()=>nav({name:'student',studentId,faseId:deFase||null})}/>
-    <div className="screen"><div className="empty"><div className="big"><Ic n="search" c/></div>
+    <div className="screen"><div className="empty"><div className="big">🔍</div>
       <p>Este treino não está mais disponível.<br/>Pode ter sido movido ou removido.</p>
       <button className="btn" style={{marginTop:14}}
         onClick={()=>nav({name:'student',studentId})}>Voltar aos treinos</button>
@@ -9108,10 +9020,6 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
   const videoPorId=React.useMemo(()=>{
     const m={}; loadCatalogo().forEach(c=>{ if(c.video) m[String(c.id)]=c.video; }); return m;
   },[catalogoVer]);
-  // mapa cardapio_id -> grupo muscular (do cache do Cardápio) — lote ícones+mapa
-  const grupoPorId=React.useMemo(()=>{
-    const m={}; loadCatalogo().forEach(c=>{ if(c.grupo) m[String(c.id)]=c.grupo; }); return m;
-  },[catalogoVer]);
   return (<React.Fragment>
     <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId,faseId:deFase||null})}
       right={<CronoBadge inicio={inicio} onZerar={zerarRelogio}/>}/>
@@ -9129,7 +9037,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
       {/* ajuste rapido sem perder o lugar: desliga so a visao, a tela continua
           nesta mesma sessao, agora com os campos de edicao. */}
       {acompanhando && <button className="acompbar" onClick={onEditarTreino}>
-        <Ic n="pencil"/> Editar treino</button>}
+        ✎ Editar treino</button>}
       {mostrarBrief && inicio==null && !treinoConcluidoHoje &&
         <PreTreino aluno={s} treino={t} onFechar={()=>setMostrarBrief(false)}/>}
       {(t.exercises||[]).length>0 && (()=>{
@@ -9166,7 +9074,6 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
               <button disabled={bIdx===nBlocos-1} onClick={()=>moveEx(bIdx,1)} aria-label="Descer">▼</button>
             </div>}
             {bl && <div className="gpordem">{'ABCDEFGH'.charAt(pos)||String(pos+1)}</div>}
-            <MapaMusc grupo={ex.exerciseId!=null?(grupoPorId[String(ex.exerciseId)]||''):''} cardio={!!ex.cardio}/>
             <div className="exinfo">
               <div className="exname extgl" role="button" tabIndex={0} aria-expanded={!recolhido}
                 onClick={()=>alternarRecolhido(ex.id)}
@@ -9176,11 +9083,11 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
               {!recolhido && <div className="exmeta">
                 {(()=>{ const tot=totalSeries(ex); const fe=seriesFeitas[ex.id]||0;
                   const cl='exseries'+((ex.metodo||ex.cardio||ex.isometria)?' met':'')+((tot&&fe>=tot)?' concl':'');
-                  if(ex.cardio) return <span className={cl}><Ic n="run" r="cardio"/> Cardio · {fmtMin(totalCardioSeg(ex.cardio))}</span>;
-                  if(ex.isometria) return <span className={cl}>{ehAlong(ex.isometria)?<React.Fragment><Ic n="lotus"/> Alongamento</React.Fragment>:<React.Fragment><Ic n="hourglass"/> Isometria</React.Fragment>} · {rotIso(ex.isometria)}{tot?(' · '+tot+'×'):''}</span>;
+                  if(ex.cardio) return <span className={cl}>🏃 Cardio · {fmtMin(totalCardioSeg(ex.cardio))}</span>;
+                  if(ex.isometria) return <span className={cl}>{ehAlong(ex.isometria)?'🧘 Alongamento':'🔥 Isometria'} · {rotIso(ex.isometria)}{tot?(' · '+tot+'×'):''}</span>;
                   if(ex.metodo) return <span className={cl}>🔺 {ex.metodo.nome}</span>;
                   return ex.series ? <span className={cl}>{ex.series}</span> : null; })()}
-                {ex.filmar && <span className="exfilm"><Ic n="video" r="coach"/> Recomendado Filmar</span>}
+                {ex.filmar && <span className="exfilm">🎥 Recomendado Filmar</span>}
                 {/* dentro de um grupo o descanso é do BLOCO, não do exercício:
                     deixar o botão aqui convidaria exatamente o erro que o método
                     tenta evitar — parar entre A e B. */}
@@ -9188,7 +9095,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                     (🕐 tocável). O chip só existe para quem não tem linhas. */}
                 {!ex.cardio && !bl && !(ex.metodo && (ex.metodo.series||[]).length) && (()=>{ const d=descansoDaSerie(ex, seriesFeitas[ex.id]||0); const f=parseDescanso(d);
                   return f ? <button className="exrest" onClick={()=>timer.start(f, ex.name)}>
-                    <Ic n="timer"/> Descansar <span className="exresth">{String(d).replace('~','–')}</span>
+                    🕐 Descansar <span className="exresth">{String(d).replace('~','–')}</span>
                   </button> : null; })()}
               </div>}
             </div>
@@ -9197,14 +9104,14 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                   disabled={descansandoNoGrupo}
                   onClick={()=>{ if(descansandoNoGrupo) return; if(naRodada) desfazerNoGrupo(bl,ex); else avancarNoGrupo(bl,ex); }}
                   aria-label={descansandoNoGrupo?'Séries deste exercício concluídas':(naRodada?'Desfazer esta série':'Marcar esta série como feita')}>
-                  <span className="gcico">{(naRodada||descansandoNoGrupo)?<Ic n="check"/>:((seriesFeitas[ex.id]||0)+1)+'ª'}</span>
+                  <span className="gcico">{(naRodada||descansandoNoGrupo)?'✓':((seriesFeitas[ex.id]||0)+1)+'ª'}</span>
                   <span className="gclab">{naRodada?'feita':(descansandoNoGrupo?'feito':'marcar')}</span>
                 </button>
               : (!ex.cardio && totalSeries(ex)
                 ? <SerieRing total={totalSeries(ex)} feitas={seriesFeitas[ex.id]||0}
                     onAvancar={()=>avancarSerie(ex)} onZerar={()=>zerarSerie(ex.id)}/>
                 : <button className={'donecheck'+(done?' on':'')} onClick={()=>toggleDone(ex.id)} aria-label={done?'Marcar como não feito':'Marcar como feito'}>
-                    <span className="dcicon">{done?<Ic n="check"/>:''}</span>
+                    <span className="dcicon">{done?'✓':''}</span>
                     <span className="dclabel">Feito</span>
                   </button>)}
           </div>
@@ -9232,7 +9139,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                 const st = i<fe ? ' feita' : (i===fe ? ' atual' : '');
                 return (
                 <div className={'mpserie'+st} key={i}>
-                  <span className="mpnum">{i<fe?<Ic n="check"/>:(i+1)+'ª'}</span>
+                  <span className="mpnum">{i<fe?'✓':(i+1)+'ª'}</span>
                   <div className="mpbody">
                     {(() => { const temBlocos=(sr.blocos||[]).length>0;
                       const extras=(sr.carga||sr.cadencia);
@@ -9262,13 +9169,13 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                       convidaria a parar entre A e B */}
                   {sr.descanso && !bl && (parseDescanso(sr.descanso)
                     ? <button className="mpdesc" onClick={()=>timer.start(parseDescanso(sr.descanso), ex.name)}
-                        aria-label={'Iniciar descanso de '+sr.descanso}><Ic n="timer"/> {String(sr.descanso).replace('~','–')}</button>
-                    : <span className="mpdesc"><Ic n="timer"/> {sr.descanso}</span>)}
+                        aria-label={'Iniciar descanso de '+sr.descanso}>🕐 {String(sr.descanso).replace('~','–')}</button>
+                    : <span className="mpdesc">🕐 {sr.descanso}</span>)}
                 </div>);
               })}
             </div>
           </div>}
-          {ex.observacao && <div className="exobs"><span className="eoico"><Ic n="chat" r="coach" c/></span><span className="eotxt">{ex.observacao}</span></div>}
+          {ex.observacao && <div className="exobs"><span className="eoico">💬</span><span className="eotxt">{ex.observacao}</span></div>}
           {ex.audioUrl && <div className="exaudio">
             <span className="eaico">🎧</span>
             <audio className="audioplayer" controls preload="none" src={ex.audioUrl}/>
@@ -9281,7 +9188,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
               : relatos.filter(r=>r.exercicioId===ex.id).slice(-3).reverse()
            ).map(r=>(
             <div className="exrel" key={r.id}>
-              <span className="erico"><Ic n="note" r="aluno" c/></span>
+              <span className="erico">✍️</span>
               <span className="erbody">
                 <span className="erdata">{ehAluno?'Sua anotação de hoje':(fmtDate(r.data)+' · aluno')}</span>
                 <span className="ertxt">{r.texto}</span>
@@ -9294,20 +9201,20 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
             // automática da própria dor logo antes de executar o movimento
             if(!fixAberto[ex.id]) return (
               <button className="relfix" onClick={()=>setFixAberto(m=>({...m,[ex.id]:true}))}>
-                <Ic n="pin" r="aluno"/> {fx.length===1?'1 anotação sua':fx.length+' anotações suas'}
+                📌 {fx.length===1?'1 anotação sua':fx.length+' anotações suas'}
                 <span className="rfseta">▾ ver</span>
               </button>);
             return (<React.Fragment>
               {fx.slice().reverse().map(r=>(
                 <div className="exrel" key={r.id}>
-                  <span className="erico"><Ic n="pin" r="aluno" c/></span>
+                  <span className="erico">📌</span>
                   <span className="erbody">
                     <span className="erdata">{fmtDate(r.data)} · fixada por você</span>
                     <span className="ertxt">{r.texto}</span>
                   </span>
                 </div>))}
               <button className="relfix" onClick={()=>setFixAberto(m=>({...m,[ex.id]:false}))}>
-                <Ic n="pin" r="aluno"/> esconder <span className="rfseta">▴</span>
+                📌 esconder <span className="rfseta">▴</span>
               </button>
             </React.Fragment>);
           })()}
@@ -9320,26 +9227,26 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
             if(!cs.length || !corrNoTreino) return null;
             if(!corrAberto[ex.id]) return (
               <button className="crchip" onClick={()=>{ setCorrAberto(m=>({...m,[ex.id]:true})); marcarVistas(cs); }}>
-                <Ic n="wrench" r="corr"/> {cs.length===1?'1 correção':cs.length+' correções'}
+                🔧 {cs.length===1?'1 correção':cs.length+' correções'}
                 {cs.some(c=>!c.vistaEm) && <span className="corrdot"></span>}
                 <span className="cseta">▾ ver</span>
               </button>);
             return (<React.Fragment>
               {cs.map(c=>(
                 <div className="crbox" key={c.id}>
-                  <div className="cbico"><Ic n="wrench" r="corr" c/></div>
+                  <div className="cbico">🔧</div>
                   <div className="cbbody">
                     <span className="cbdata">Correção · {fmtCorrData(c.criadoEm)}</span>
                     <div className="cbtxt">{c.texto}</div>
                     {c.audioUrl && <audio className="audioplayer" style={{marginTop:7}}
                       controls preload="none" src={c.audioUrl}/>}
                     {!ehAluno && <div className="crbtns">
-                      <button onClick={()=>setCorrigindo({ex, atual:c})}><Ic n="pencil"/> editar</button>
+                      <button onClick={()=>setCorrigindo({ex, atual:c})}>✎ editar</button>
                     </div>}
                   </div>
                 </div>))}
               <button className="crchip" onClick={()=>setCorrAberto(m=>({...m,[ex.id]:false}))}>
-                <Ic n="wrench" r="corr"/> esconder <span className="cseta">▴</span>
+                🔧 esconder <span className="cseta">▴</span>
               </button>
             </React.Fragment>);
           })()}
@@ -9389,18 +9296,18 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
             <button className="evo" onClick={()=>nav({name:'evolution',studentId,exName:ex.name,exId:ex.exerciseId,back:{name:'treino',studentId,treinoId}})}>Evolução</button>
             {ehAluno && (()=>{ const r=relatoDoEx(ex.id); return (
               <button className={'mini rel'+(r?' on':'')} title="Anotar algo sobre este exercício"
-                onClick={()=>setRelatando({exId:ex.id, exNome:ex.name, atual:r})} aria-label="Anotar"><Ic n="note" r="aluno"/></button>); })()}
+                onClick={()=>setRelatando({exId:ex.id, exNome:ex.name, atual:r})}>✍️</button>); })()}
             {!ehAluno && <button className="mini corr" title="Correção de execução"
-              onClick={()=>setCorrigindo({ex, atual:null})} aria-label="Correção de execução"><Ic n="wrench" r="corr"/></button>}
-            {!ehAluno && <button className="mini" onClick={()=>setEditingEx(ex)} aria-label="Editar exercício"><Ic n="pencil"/></button>}
-            {!ehAluno && <button className="mini" onClick={()=>delEx(ex.id)} aria-label="Apagar exercício"><Ic n="trash" r="danger"/></button>}
+              onClick={()=>setCorrigindo({ex, atual:null})}>🔧</button>}
+            {!ehAluno && <button className="mini" onClick={()=>setEditingEx(ex)}>✎</button>}
+            {!ehAluno && <button className="mini" onClick={()=>delEx(ex.id)}>🗑</button>}
           </div>
           </React.Fragment>}
         </div>);
       };
       const btnAgrupar=(bIdx)=>(!ehAluno && bIdx<nBlocos-1)
         ? <button className="gpagrupar" key={'ag'+bIdx} onClick={()=>agruparComProximo(bIdx)}>
-            <Ic n="link"/> Agrupar com o próximo
+            🔗 Agrupar com o próximo
           </button>
         : null;
       return blocos.map((bl,bIdx)=>{
@@ -9422,7 +9329,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                 <button disabled={bIdx===nBlocos-1} onClick={()=>moveEx(bIdx,1)} aria-label="Descer">▼</button>
               </div>}
               <div className="gphinfo">
-                <div className="gptit"><Ic n="link"/> {rotuloGrupo(n)} · {rodadas} {rodadas===1?'rodada':'rodadas'}</div>
+                <div className="gptit">🔗 {rotuloGrupo(n)} · {rodadas} {rodadas===1?'rodada':'rodadas'}</div>
                 <div className="gpsub">
                   {n===2
                     ? 'A e B sem parar no meio. O descanso vem só depois de B.'
@@ -9430,16 +9337,16 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                 </div>
                 {fDesc
                   ? <button className="gprest" onClick={()=>timer.start(fDesc, rotuloGrupo(n))}>
-                      <Ic n="timer"/> Descansar <b>{String(dDesc).replace('~','–')}</b>
+                      🕐 Descansar <b>{String(dDesc).replace('~','–')}</b>
                     </button>
-                  : <span className="gprest off"><Ic n="timer"/> sem descanso definido</span>}
+                  : <span className="gprest off">🕐 sem descanso definido</span>}
               </div>
               <SerieRing total={rodadas} feitas={feitas} rotulo="Rodada"
                 onAvancar={()=>avancarRodada(bl)} onZerar={()=>zerarBloco(bl)}/>
             </div>
             {bl.itens.map((it,pos)=>renderEx(it.ex,bl,pos,bIdx))}
             {!ehAluno && <div className="gpbtns">
-              <button onClick={()=>desagrupar(bl)}><Ic n="x"/> Desagrupar</button>
+              <button onClick={()=>desagrupar(bl)}>✕ Desagrupar</button>
               {bIdx<nBlocos-1 && <button onClick={()=>agruparComProximo(bIdx)}>+ Somar o próximo</button>}
             </div>}
           </div>
@@ -9449,7 +9356,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
       {ehAluno && (t.exercises||[]).length>0 && (
         treinoConcluidoHoje
           ? <div className="fimbox done">
-              <span className="fimcheck on"><Ic n="check"/></span>
+              <span className="fimcheck on">✓</span>
               <span className="fimlabel">Treino Concluído!</span>
               <button className="fimundo" onClick={desfazerConclusao}>desfazer</button>
             </div>
@@ -9460,14 +9367,14 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
       )}
       {ehAluno && (t.exercises||[]).length>0 && relatosHoje.filter(r=>!r.exercicioId).map(r=>(
         <div className="exrel" key={r.id} style={{margin:'14px 4px 0'}}>
-          <span className="erico"><Ic n="note" r="aluno" c/></span>
+          <span className="erico">✍️</span>
           <span className="erbody">
             <span className="erdata">Hoje · no geral</span>
             <span className="ertxt">{r.texto}</span>
           </span>
         </div>))}
       {!ehAluno && (t.exercises||[]).length>0 && <div className="sesspanel">
-        <div className="sptit"><Ic n="calendar"/> Sessões registradas <span className="spcount">{sessoes.length}</span></div>
+        <div className="sptit">📅 Sessões registradas <span className="spcount">{sessoes.length}</span></div>
         <div className="sprow">
           <input className="spdate" type="date" max={todayISO()} value={dataRetro} onChange={e=>setDataRetro(e.target.value)}/>
           <button className="spadd" onClick={()=>{ if(dataRetro) registrarSessao(dataRetro,'manual'); }}>+ Marcar</button>
@@ -9479,12 +9386,12 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                 <div key={x.id} className="spitem">
                   <span className="spdata">{fmtDate(x.data)}</span>
                   {x.origem!=='manual' && <span className="sporig">{x.origem}</span>}
-                  <button className="spdel" onClick={()=>removerSessao(x.data)} aria-label="Remover"><Ic n="x"/></button>
+                  <button className="spdel" onClick={()=>removerSessao(x.data)} aria-label="Remover">✕</button>
                 </div>
               ))}
               {sessoes.length>12 && <div className="spmais">+{sessoes.length-12} anteriores</div>}
             </div>}
-        <div className="sptit" style={{marginTop:20}}><Ic n="eye"/> Treino acessado
+        <div className="sptit" style={{marginTop:20}}>👀 Treino acessado
           <span className="spcount">{(t.acessos||[]).length}</span></div>
         {(t.acessos||[]).length===0
           ? <div className="spvazio">Nenhum acesso registrado ainda.</div>
@@ -9667,8 +9574,8 @@ function Evolution({db,setDb,nav,studentId,exName,exId,back,flash}){
                     <span className="usdot dor" title={'Dor '+e.dor+'/10'}
                       style={{borderColor:scaleColor(e.dor),color:scaleColor(e.dor)}}>{e.dor}</span>}
                 </span>}
-              <button className="hedit" onClick={()=>setEditing(e)} aria-label="Editar registro"><Ic n="pencil"/></button>
-              <button className="hdel" onClick={()=>delLog(e.id)} aria-label="Apagar registro"><Ic n="trash" r="danger"/></button>
+              <button className="hedit" onClick={()=>setEditing(e)}>✎</button>
+              <button className="hdel" onClick={()=>delLog(e.id)}>🗑</button>
             </div>))}
         </div>))}
       {entries.length===0 && <div className="empty"><p>Nenhum registro desse exercício ainda.</p></div>}
@@ -9736,7 +9643,7 @@ class ErroBoundary extends React.Component{
     const e=this.state.erro, pilha=(this.state.info&&this.state.info.componentStack)||'';
     return (<div style={{padding:'24px 18px',fontFamily:'Sora,system-ui,sans-serif',
         color:'#eef7f8',background:'#0b0f10',minHeight:'100vh'}}>
-      <div style={{fontSize:19,fontWeight:800,marginBottom:6}}><Ic n="warn"/> Algo quebrou nesta tela</div>
+      <div style={{fontSize:19,fontWeight:800,marginBottom:6}}>⚠️ Algo quebrou nesta tela</div>
       <div style={{fontSize:13,color:'#9fb3b8',marginBottom:16}}>
         Seus dados estão salvos. Toque abaixo para voltar.</div>
       <div style={{padding:12,borderRadius:10,background:'#1b2123',border:'1px solid #2c3436',
