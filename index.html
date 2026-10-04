@@ -4403,11 +4403,38 @@ async function fetchMetodos(){
 /* lista completa exibida no seletor: salvos primeiro, depois os embutidos */
 function todosMetodos(){ return loadMetodosSalvos().concat(METODOS_TEMPLATE); }
 
-const CATALOGO_KEY = 'idealis_presencial_catalogo_v1';
-const CATALOGO_META_KEY = 'idealis_presencial_catalogo_meta_v1';
-function loadCatalogo(){ if(!LS_OK) return []; try{const r=window.localStorage.getItem(CATALOGO_KEY);return r?JSON.parse(r):[];}catch(e){return [];} }
-function saveCatalogo(lista){ if(!LS_OK)return; try{window.localStorage.setItem(CATALOGO_KEY,JSON.stringify(lista));window.localStorage.setItem(CATALOGO_META_KEY,JSON.stringify({atualizado:new Date().toISOString(),total:lista.length}));}catch(e){} }
-const CATALOGO_MAX_IDADE_MS = 2*60*60*1000; // revalida o catálogo a cada 2h
+/* O catálogo vem de public.cardapio (antes: Apps Script lendo a planilha WTDN,
+   congelada desde que o Catálogo passou a gravar no Supabase).
+   Formato INTERNO do cache: {id, nome, grupo, video, arquivado}.
+   `grupo` continua TEXTO ("Costas | Lombar"): chips de dor, mapa muscular e
+   autocomplete leem string, então o text[] `grupos` é achatado aqui, num lugar
+   só, em vez de mexer nos três consumidores. */
+const CATALOGO_KEY = 'idealis_cardapio_v2';
+const CATALOGO_META_KEY = 'idealis_cardapio_meta_v2';
+/* cache da época do Apps Script: mesmo formato interno, só sem `arquivado`.
+   Fica de rede de segurança para quem abrir OFFLINE logo após a atualização
+   (sem ele, sumiriam vídeos e grupos). Apagado na 1ª leitura bem-sucedida. */
+const CATALOGO_KEY_V1 = 'idealis_presencial_catalogo_v1';
+const CATALOGO_META_KEY_V1 = 'idealis_presencial_catalogo_meta_v1';
+function loadCatalogo(){
+  if(!LS_OK) return [];
+  try{
+    const r=window.localStorage.getItem(CATALOGO_KEY);
+    if(r) return JSON.parse(r);
+    const v1=window.localStorage.getItem(CATALOGO_KEY_V1);
+    return v1?JSON.parse(v1):[];
+  }catch(e){ return []; }
+}
+function saveCatalogo(lista){
+  if(!LS_OK) return;
+  try{
+    window.localStorage.setItem(CATALOGO_KEY,JSON.stringify(lista));
+    window.localStorage.setItem(CATALOGO_META_KEY,JSON.stringify({atualizado:new Date().toISOString(),total:lista.length}));
+    window.localStorage.removeItem(CATALOGO_KEY_V1);
+    window.localStorage.removeItem(CATALOGO_META_KEY_V1);
+  }catch(e){}
+}
+const CATALOGO_MAX_IDADE_MS = 15*60*1000; // revalida o catálogo a cada 15 min
 function catalogoVencido(){
   const meta=loadCatalogoMeta();
   if(!meta || !meta.atualizado) return true;
@@ -4419,17 +4446,34 @@ function loadCatalogoMeta(){ if(!LS_OK) return null; try{const r=window.localSto
 /* baixa a lista do Cardápio e cacheia. Retorna {ok, total} ou {ok:false, erro} */
 async function fetchCatalogo(){
   if(!navigator.onLine) return {ok:false, offline:true};
+  if(!sb) return {ok:false, erro:'sem cliente'};
   try{
-    const resp=await fetch(CARDAPIO_URL,{method:'GET'});
-    const out=await resp.json();
-    if(out && out.ok && Array.isArray(out.exercicios)){
-      const lista=out.exercicios.map(e=>({id:e.id, nome:e.exercicio, grupo:e.grupo||'', video:e.video_url||''}))
-        .filter(e=>e.id!=null && e.nome);
-      saveCatalogo(lista);
-      return {ok:true, total:lista.length};
+    // PAGINADO (buscarTudo): o PostgREST corta em 1.000 linhas SEM erro.
+    // Ordenar por id deixa as páginas estáveis entre uma chamada e outra.
+    // Arquivados VÊM JUNTO: vídeo e grupo de exercício já prescrito precisam
+    // continuar aparecendo. Quem filtra é só o autocomplete.
+    const r=await buscarTudo('cardapio','id,exercicio,grupos,video_url,arquivado_em','id');
+    if(r.error){
+      console.warn('[cardapio] leitura falhou:', r.error.message);
+      return {ok:false, erro:r.error.message};
     }
-    return {ok:false, erro:'formato_inesperado'};
+    const lista=(r.data||[]).map(e=>({
+        id:e.id, nome:e.exercicio,
+        grupo:Array.isArray(e.grupos) ? e.grupos.filter(Boolean).join(' | ') : String(e.grupos||''),
+        video:e.video_url||'',
+        arquivado:!!e.arquivado_em
+      }))
+      .filter(e=>e.id!=null && e.nome);
+    // RLS que nega devolve LISTA VAZIA, não erro. Gravar o vazio apagaria o
+    // cache bom e levaria junto vídeos e grupos do treino. Então não grava.
+    if(!lista.length){
+      console.warn('[cardapio] leitura voltou vazia — cache mantido');
+      return {ok:false, erro:'catalogo_vazio'};
+    }
+    saveCatalogo(lista);
+    return {ok:true, total:lista.length};
   }catch(err){
+    console.warn('[cardapio] erro:', err);
     return {ok:false, erro:String(err)};
   }
 }
@@ -5471,7 +5515,7 @@ function App({auth}){
   const nav=(v)=>{ if(v && v.name==='students') setVerComoAluno(false); setView(v); };
 
   useEffect(()=>{
-    // baixa o catálogo do Cardápio na 1ª vez e revalida a cada 2h (cache offline)
+    // baixa o catálogo (public.cardapio) na 1ª vez e revalida a cada 15 min (cache offline)
     fetchMetodos(); // templates salvos pelo treinador
     const precisa = loadCatalogo().length===0 || catalogoVencido();
     if(precisa){
@@ -7950,7 +7994,9 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
   const delBloco=(i,k)=>setSerie(i,{blocos:(metodo.series[i].blocos||[]).filter((x,j)=>j!==k)});
   const setBloco=(i,k,patch)=>setSerie(i,{blocos:(metodo.series[i].blocos||[]).map((b,j)=>j===k?{...b,...patch}:b)});
   // busca no catálogo real (cache do Cardápio); fallback pro exemplo se cache vazio
-  const fonte = catalogo.length>0 ? catalogo.map(c=>({id:c.id,nome:c.nome,grupo:c.grupo})) : CATALOGO_EXEMPLO.map(n=>({id:null,nome:n,grupo:''}));
+  // arquivado não é oferecido para prescrição NOVA. O que já está prescrito
+  // segue com vídeo e grupo, porque esses leem a lista inteira por cardapio_id.
+  const fonte = catalogo.length>0 ? catalogo.filter(c=>!c.arquivado).map(c=>({id:c.id,nome:c.nome,grupo:c.grupo})) : CATALOGO_EXEMPLO.map(n=>({id:null,nome:n,grupo:''}));
   // quebra o texto em palavras e casa TODAS elas em qualquer ordem (ignora acento)
   const termos = normAcc(name).split(/\s+/).filter(Boolean);
   const sugestoes = name.trim().length>=2
