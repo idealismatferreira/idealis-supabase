@@ -4367,7 +4367,7 @@ function VideoExercicio({url}){
     </button>);
   }
   return (<div className="vidwrap">
-    <iframe src={'https://www.youtube.com/embed/'+id+'?rel=0&playsinline=1&autoplay=1'}
+    <iframe src={'https://www.youtube.com/embed/'+id+'?mute=1&rel=0&playsinline=1&autoplay=1'}
       title="Vídeo do exercício" frameBorder="0" allowFullScreen
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"></iframe>
     <button className="vidclose" onClick={()=>setTocando(false)} aria-label="Fechar vídeo"><Ic n="x"/></button>
