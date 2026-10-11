@@ -809,22 +809,108 @@
   .treino .meta .desc{font-size:13px;color:var(--muted);margin-top:2px}
   .exrow{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;transition:.15s;box-shadow:0 1px 2px var(--sombra)}
   .exrow.done{background:var(--lime-bg);border-color:rgba(221,255,0,.5)}
-  /* ---- GRUPO (bi-set / tri-set / circuito) ---- */
-  .gpwrap{border:1px solid rgba(255,196,138,.34);border-left:3px solid var(--soft-orange);
-    border-radius:var(--radius);padding:10px 10px 8px;margin-bottom:10px;background:rgba(255,196,138,.045)}
-  .gphead{display:flex;align-items:center;gap:10px;padding:2px 4px 10px}
-  .gphinfo{flex:1;min-width:0}
-  .gptit{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:800;
-    color:var(--soft-orange);letter-spacing:.02em}
-  .gpsub{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+  /* ---- GRUPO (bi-set / tri-set / circuito) ----
+     LOTE_BISET_2A · Split Card Compacto: um card só, uma linha por membro,
+     o anel da rodada à direita. O detalhe de cada exercício abre tocando no nome. */
+  .gpwrap{position:relative;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;
+    box-shadow:0 1px 3px var(--sombra);transition:border-color .15s ease}
+  @media (hover:hover){
+    .gpwrap:hover{border-color:rgba(255,196,138,.4);
+      border-color:color-mix(in srgb,var(--soft-orange) 40%,transparent)}
+  }
+  .gpwrap.done{background:var(--lime-bg);border-color:rgba(221,255,0,.5);
+    border-color:color-mix(in srgb,var(--lime) 50%,transparent)}
+  .gphead-split{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    flex-wrap:wrap;row-gap:8px;
+    padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--hair-2)}
+  .gphead-split .gphl{display:flex;align-items:center;gap:6px;min-width:0}
+  .gphead-split .reorder{flex-direction:row;margin-top:0}
+  .gphead-split .reorder button{width:30px;height:26px}
+  .gpsplit-tag{flex:0 0 auto;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--soft-orange);border-radius:6px;padding:2px 7px;
+    background:rgba(255,196,138,.1);background:color-mix(in srgb,var(--soft-orange) 10%,transparent);
+    border:1px solid rgba(255,196,138,.3);border-color:color-mix(in srgb,var(--soft-orange) 30%,transparent)}
+  /* LOTE_BISET_2A_MAPA · mapa muscular de cada membro no cabeçalho do grupo.
+     Reaproveita o MapaMusc (mesmas regras de vários grupos, +N e selo de
+     modalidade), só que em miniatura; o músculo acende na cor da letra. */
+  .gphead-split .gprest{margin-left:auto}
+  .gpmapas{display:flex;align-items:center;gap:10px;margin:2px 4px 0 0}
+  .gpmapa{position:relative;flex:0 0 auto}
+  .gpmapa .mmapa{flex:0 0 28px;width:28px;height:34px}
+  .gpmapa .mmclip{border-radius:7px}
+  .gpmapa .mmclip>svg{width:25px;height:31px}
+  .gpmapa .mmdupla .mmhalf{width:13px;height:32px}
+  .gpmapa .mmdupla .mmhalf svg{width:13px;height:30px}
+  .gpmapa .mmapa.mmic .mmclip>svg.mmicg{width:15px;height:15px}
+  .gpmapa .mmselo{right:-6px;top:-6px;width:15px;height:15px}
+  .gpmapa .mmselo svg.mmicg{width:8px;height:8px}
+  .gpmapa .mmmais{font-size:8px;right:-7px;bottom:-6px}
+  .gpmapa-l{position:absolute;left:-6px;top:-6px;z-index:1;width:17px;height:17px;border-radius:50%;
+    display:grid;place-items:center;font-size:9px;font-weight:900;line-height:1;
+    color:var(--on-cyan);background:var(--muted);border:2px solid var(--surface)}
+  .gpmapa.gpl-0 .gpmapa-l{background:var(--soft-orange)}
+  .gpmapa.gpl-1 .gpmapa-l{background:var(--cyan)}
+  .gpmapa.gpl-0 .mmapa .mmz.mmon{fill:var(--soft-orange)}
+  .gpmapa.gpl-1 .mmapa .mmz.mmon{fill:var(--cyan)}
+  .gpmapa:not(.gpl-0):not(.gpl-1) .mmapa .mmz.mmon{fill:var(--muted)}
+  .gpmapa.gpl-0 .mmmais{border-color:var(--soft-orange);color:var(--soft-orange)}
+  .gpmapa:not(.gpl-0):not(.gpl-1) .mmmais{border-color:var(--muted);color:var(--muted)}
+  .gphead-split .gprest{flex:0 0 auto;margin-top:0;gap:4px;font-size:11px;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .gpsplit-body{display:flex;align-items:stretch;gap:12px}
+  .gpsplit-linhas{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between}
+  .gpsplit-linha{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:5px 6px;border-radius:10px;transition:background .15s ease}
+  .gpsplit-linha.feita{background:rgba(46,204,113,.06);background:color-mix(in srgb,var(--green) 6%,transparent)}
+  .gpsplit-ex{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+  .gpsplit-mk{flex:0 0 20px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;
+    font-size:10px;font-weight:900;line-height:1;color:var(--on-cyan);background:var(--muted)}
+  .gpsplit-mk.gpl-0{background:var(--soft-orange)}
+  .gpsplit-mk.gpl-1{background:var(--cyan)}
+  .gpsplit-info{flex:1;min-width:0}
+  .gpsplit-nome{display:block;min-width:0;cursor:pointer;
+    font-size:14px;font-weight:700;line-height:1.25;color:var(--text);
+    -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  /* LOTE_BISET_2A_NOME: o nome quebra em até 2 linhas; "…" só a partir da 3ª.
+     A setinha vai junto do texto, logo depois da última palavra. */
+  .gpsplit-nome{overflow:hidden;overflow-wrap:break-word;
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2}
+  .gpsplit-nome .gpsn{display:inline;white-space:normal}
+  .gpsplit-nome .exchev{display:inline-block;margin:0 0 0 5px;font-size:11px;vertical-align:1px}
+  .gpsplit-linha:not(.aberta) .exchev{transform:rotate(-90deg)}
+  .gpsplit-nome:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:6px}
+  .gpsplit-meta{display:flex;align-items:center;gap:8px;min-width:0;margin-top:1px;
+    font-size:12px;line-height:1.3;color:var(--info)}
+  .gpsplit-meta .gpser{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+  .gpcarga{flex:0 0 auto;font-family:inherit;font-size:11px;color:var(--muted);background:none;border:none;
+    text-decoration:underline;text-underline-offset:2px;cursor:pointer;padding:6px 8px;margin:-6px -8px;
+    -webkit-tap-highlight-color:transparent}
+  .gpchip.mini{position:relative;flex-direction:row;justify-content:center;gap:4px;min-width:52px;height:30px;
+    padding:0 9px;border-radius:999px;border-width:1.5px;
+    border-color:rgba(255,196,138,.45);border-color:color-mix(in srgb,var(--soft-orange) 45%,transparent)}
+  .gpchip.mini::after{content:'';position:absolute;inset:-7px -4px}
+  .gpchip.mini .gcico{font-size:13px;height:auto}
+  .gpchip.mini .gclab{font-size:10px}
+  .gpchip.mini.on{background:var(--lime);border-color:var(--lime);color:var(--on-accent)}
+  .gpsplit-divisor{display:flex;align-items:center;gap:8px;margin:3px 0;padding:0 6px;
+    font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;
+    color:rgba(255,196,138,.65);color:color-mix(in srgb,var(--soft-orange) 65%,transparent)}
+  .gpsplit-divisor::before,.gpsplit-divisor::after{content:'';flex:1;border-top:1px dashed var(--line)}
+  .gpsplit-col-anel{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding-left:10px;border-left:1px solid var(--hair-2)}
+  .gpdet{margin-top:10px;padding-top:12px;border-top:1px solid var(--hair-2)}
+  .gpdethead{display:flex;align-items:center;gap:10px}
+  .gpdetnome{flex:1;min-width:0;display:flex;align-items:flex-start;gap:7px;font-weight:600;font-size:16px;
+    line-height:1.3;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  .gpdetnome:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:6px}
+  .gpdetfilm{margin-top:8px}
+  .gpdet .exlast{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
   .gprest{margin-top:7px;display:inline-flex;align-items:center;gap:6px;font-family:inherit;
     font-size:12px;font-weight:700;color:var(--soft-orange);background:var(--ctrl-bg);
     border:1px solid rgba(255,196,138,.35);border-radius:10px;padding:5px 11px;cursor:pointer;
     -webkit-tap-highlight-color:transparent}
   .gprest:active{background:var(--line)}
   .gprest.off{color:var(--muted-2);border-color:var(--line);opacity:.6}
-  .gpwrap .exrow{margin-bottom:8px;border-left:2px solid rgba(255,196,138,.28)}
-  .gpwrap .exrow:last-of-type{margin-bottom:0}
   .gpordem{flex:0 0 22px;height:22px;border-radius:50%;display:grid;place-items:center;
     font-size:11px;font-weight:800;color:var(--soft-orange);
     background:rgba(255,196,138,.14);border:1px solid rgba(255,196,138,.4);margin-top:3px}
@@ -9307,68 +9393,9 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
       {(()=>{
       const blocos=blocosDoTreino(t.exercises);
       const nBlocos=blocos.length;
-      const renderEx=(ex,bl,pos,bIdx)=>{
-        const last=lastLogOfExercise(s,ex.name,ex.exerciseId);
-        const done = ex.doneDate===todayISO();
-        const totSeries = totalSeries(ex);
-        const concluido = totSeries ? ((seriesFeitas[ex.id]||0)>=totSeries) : done;
-        const naRodada = bl ? feitoNaRodada(bl,ex) : false;
-        const fimDoBloco = bl ? (rodadaFeita(bl)>=rodadasDoBloco(bl)) : false;
-        // membro que já fez TODAS as séries dele e não está na rodada em curso:
-        // descansa (grupo desigual) ou o bloco acabou — chip vira "✓ feito", sem ação
-        const descansandoNoGrupo = bl ? (!naRodada && (seriesFeitas[ex.id]||0)>=(totalSeries(ex)||rodadasDoBloco(bl))) : false;
-        const recolhido = !abertos[ex.id];
-        return (<div key={ex.id} id={bl?undefined:('un-e:'+ex.id)}
-          className={'exrow'+(concluido?' done':'')+(recolhido?' recolhido':'')}>
-          <div className="exhead">
-            {!ehAluno && !bl && <div className="reorder">
-              <button disabled={bIdx===0} onClick={()=>moveEx(bIdx,-1)} aria-label="Subir">▲</button>
-              <button disabled={bIdx===nBlocos-1} onClick={()=>moveEx(bIdx,1)} aria-label="Descer">▼</button>
-            </div>}
-            {bl && <div className="gpordem">{'ABCDEFGH'.charAt(pos)||String(pos+1)}</div>}
-            <MapaMusc grupo={ex.exerciseId!=null?(grupoPorId[String(ex.exerciseId)]||''):''} cardio={!!ex.cardio}/>
-            <div className="exinfo">
-              <div className="exname extgl" role="button" tabIndex={0} aria-expanded={!recolhido}
-                onClick={()=>alternarRecolhido(ex.id)}
-                onKeyDown={ev=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); alternarRecolhido(ex.id); } }}>
-                <span>{ex.name}</span><span className="exchev" aria-hidden="true">▾</span>
-              </div>
-              {!recolhido && <div className="exmeta">
-                {(()=>{ const tot=totalSeries(ex); const fe=seriesFeitas[ex.id]||0;
-                  const cl='exseries'+((ex.metodo||ex.cardio||ex.isometria)?' met':'')+((tot&&fe>=tot)?' concl':'');
-                  if(ex.cardio) return <span className={cl}><Ic n="run" r="cardio"/> Cardio · {fmtMin(totalCardioSeg(ex.cardio))}</span>;
-                  if(ex.isometria) return <span className={cl}>{ehAlong(ex.isometria)?<React.Fragment><Ic n="lotus"/> Alongamento</React.Fragment>:<React.Fragment><Ic n="hourglass"/> Isometria</React.Fragment>} · {rotIso(ex.isometria)}{tot?(' · '+tot+'×'):''}</span>;
-                  if(ex.metodo) return <span className={cl}>🔺 {ex.metodo.nome}</span>;
-                  return ex.series ? <span className={cl}>{ex.series}</span> : null; })()}
-                {ex.filmar && <span className="exfilm"><Ic n="video" r="coach"/> Recomendado Filmar</span>}
-                {/* dentro de um grupo o descanso é do BLOCO, não do exercício:
-                    deixar o botão aqui convidaria exatamente o erro que o método
-                    tenta evitar — parar entre A e B. */}
-                {/* com prescrição série a série o descanso mora NA LINHA da série
-                    (🕐 tocável). O chip só existe para quem não tem linhas. */}
-                {!ex.cardio && !bl && !(ex.metodo && (ex.metodo.series||[]).length) && (()=>{ const d=descansoDaSerie(ex, seriesFeitas[ex.id]||0); const f=parseDescanso(d);
-                  return f ? <button className="exrest" onClick={()=>timer.start(f, ex.name)}>
-                    <Ic n="timer"/> Descansar <span className="exresth">{String(d).replace('~','–')}</span>
-                  </button> : null; })()}
-              </div>}
-            </div>
-            {bl
-              ? <button className={'gpchip'+(naRodada?' on':'')+((fimDoBloco||descansandoNoGrupo)?' fim':'')}
-                  disabled={descansandoNoGrupo}
-                  onClick={()=>{ if(descansandoNoGrupo) return; if(naRodada) desfazerNoGrupo(bl,ex); else avancarNoGrupo(bl,ex); }}
-                  aria-label={descansandoNoGrupo?'Séries deste exercício concluídas':(naRodada?'Desfazer esta série':'Marcar esta série como feita')}>
-                  <span className="gcico">{(naRodada||descansandoNoGrupo)?<Ic n="check"/>:((seriesFeitas[ex.id]||0)+1)+'ª'}</span>
-                  <span className="gclab">{naRodada?'feita':(descansandoNoGrupo?'feito':'marcar')}</span>
-                </button>
-              : (!ex.cardio && totalSeries(ex)
-                ? <SerieRing total={totalSeries(ex)} feitas={seriesFeitas[ex.id]||0}
-                    onAvancar={()=>avancarSerie(ex)} onZerar={()=>zerarSerie(ex.id)}/>
-                : <button className={'donecheck'+(done?' on':'')} onClick={()=>toggleDone(ex.id)} aria-label={done?'Marcar como não feito':'Marcar como feito'}>
-                    <span className="dcicon">{done?<Ic n="check"/>:''}</span>
-                    <span className="dclabel">Feito</span>
-                  </button>)}
-          </div>
-          {!recolhido && <React.Fragment>
+      /* LOTE_BISET_2A: corpo do exercício (vídeo, plano, histórico, ações).
+         O mesmo para o card solto e para o detalhe dentro do grupo. */
+      const corpoEx=(ex,bl)=>(<React.Fragment>
           {ex.exerciseId!=null && videoPorId[String(ex.exerciseId)] && <VideoExercicio url={videoPorId[String(ex.exerciseId)]}/>}
           {ex.cardio && (()=>{ const bl=expandirCardio(ex.cardio); return (
             <div className="cdcard">
@@ -9555,7 +9582,69 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
             {!ehAluno && <button className="mini" onClick={()=>setEditingEx(ex)} aria-label="Editar exercício"><Ic n="pencil"/></button>}
             {!ehAluno && <button className="mini" onClick={()=>delEx(ex.id)} aria-label="Apagar exercício"><Ic n="trash" r="danger"/></button>}
           </div>
-          </React.Fragment>}
+          </React.Fragment>);
+      const renderEx=(ex,bl,pos,bIdx)=>{
+        const last=lastLogOfExercise(s,ex.name,ex.exerciseId);
+        const done = ex.doneDate===todayISO();
+        const totSeries = totalSeries(ex);
+        const concluido = totSeries ? ((seriesFeitas[ex.id]||0)>=totSeries) : done;
+        const naRodada = bl ? feitoNaRodada(bl,ex) : false;
+        const fimDoBloco = bl ? (rodadaFeita(bl)>=rodadasDoBloco(bl)) : false;
+        // membro que já fez TODAS as séries dele e não está na rodada em curso:
+        // descansa (grupo desigual) ou o bloco acabou — chip vira "✓ feito", sem ação
+        const descansandoNoGrupo = bl ? (!naRodada && (seriesFeitas[ex.id]||0)>=(totalSeries(ex)||rodadasDoBloco(bl))) : false;
+        const recolhido = !abertos[ex.id];
+        return (<div key={ex.id} id={bl?undefined:('un-e:'+ex.id)}
+          className={'exrow'+(concluido?' done':'')+(recolhido?' recolhido':'')}>
+          <div className="exhead">
+            {!ehAluno && !bl && <div className="reorder">
+              <button disabled={bIdx===0} onClick={()=>moveEx(bIdx,-1)} aria-label="Subir">▲</button>
+              <button disabled={bIdx===nBlocos-1} onClick={()=>moveEx(bIdx,1)} aria-label="Descer">▼</button>
+            </div>}
+            {bl && <div className="gpordem">{'ABCDEFGH'.charAt(pos)||String(pos+1)}</div>}
+            <MapaMusc grupo={ex.exerciseId!=null?(grupoPorId[String(ex.exerciseId)]||''):''} cardio={!!ex.cardio}/>
+            <div className="exinfo">
+              <div className="exname extgl" role="button" tabIndex={0} aria-expanded={!recolhido}
+                onClick={()=>alternarRecolhido(ex.id)}
+                onKeyDown={ev=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); alternarRecolhido(ex.id); } }}>
+                <span>{ex.name}</span><span className="exchev" aria-hidden="true">▾</span>
+              </div>
+              {!recolhido && <div className="exmeta">
+                {(()=>{ const tot=totalSeries(ex); const fe=seriesFeitas[ex.id]||0;
+                  const cl='exseries'+((ex.metodo||ex.cardio||ex.isometria)?' met':'')+((tot&&fe>=tot)?' concl':'');
+                  if(ex.cardio) return <span className={cl}><Ic n="run" r="cardio"/> Cardio · {fmtMin(totalCardioSeg(ex.cardio))}</span>;
+                  if(ex.isometria) return <span className={cl}>{ehAlong(ex.isometria)?<React.Fragment><Ic n="lotus"/> Alongamento</React.Fragment>:<React.Fragment><Ic n="hourglass"/> Isometria</React.Fragment>} · {tot?(tot+' × '):''}{rotIso(ex.isometria)}{/* LOTE_ISO_ORDEM: séries antes do tempo */}</span>;
+                  if(ex.metodo) return <span className={cl}>🔺 {ex.metodo.nome}</span>;
+                  return ex.series ? <span className={cl}>{ex.series}</span> : null; })()}
+                {ex.filmar && <span className="exfilm"><Ic n="video" r="coach"/> Recomendado Filmar</span>}
+                {/* dentro de um grupo o descanso é do BLOCO, não do exercício:
+                    deixar o botão aqui convidaria exatamente o erro que o método
+                    tenta evitar — parar entre A e B. */}
+                {/* com prescrição série a série o descanso mora NA LINHA da série
+                    (🕐 tocável). O chip só existe para quem não tem linhas. */}
+                {!ex.cardio && !bl && !(ex.metodo && (ex.metodo.series||[]).length) && (()=>{ const d=descansoDaSerie(ex, seriesFeitas[ex.id]||0); const f=parseDescanso(d);
+                  return f ? <button className="exrest" onClick={()=>timer.start(f, ex.name)}>
+                    <Ic n="timer"/> Descansar <span className="exresth">{String(d).replace('~','–')}</span>
+                  </button> : null; })()}
+              </div>}
+            </div>
+            {bl
+              ? <button className={'gpchip'+(naRodada?' on':'')+((fimDoBloco||descansandoNoGrupo)?' fim':'')}
+                  disabled={descansandoNoGrupo}
+                  onClick={()=>{ if(descansandoNoGrupo) return; if(naRodada) desfazerNoGrupo(bl,ex); else avancarNoGrupo(bl,ex); }}
+                  aria-label={descansandoNoGrupo?'Séries deste exercício concluídas':(naRodada?'Desfazer esta série':'Marcar esta série como feita')}>
+                  <span className="gcico">{(naRodada||descansandoNoGrupo)?<Ic n="check"/>:((seriesFeitas[ex.id]||0)+1)+'ª'}</span>
+                  <span className="gclab">{naRodada?'feita':(descansandoNoGrupo?'feito':'marcar')}</span>
+                </button>
+              : (!ex.cardio && totalSeries(ex)
+                ? <SerieRing total={totalSeries(ex)} feitas={seriesFeitas[ex.id]||0}
+                    onAvancar={()=>avancarSerie(ex)} onZerar={()=>zerarSerie(ex.id)}/>
+                : <button className={'donecheck'+(done?' on':'')} onClick={()=>toggleDone(ex.id)} aria-label={done?'Marcar como não feito':'Marcar como feito'}>
+                    <span className="dcicon">{done?<Ic n="check"/>:''}</span>
+                    <span className="dclabel">Feito</span>
+                  </button>)}
+          </div>
+          {!recolhido && corpoEx(ex,bl)}
         </div>);
       };
       const btnAgrupar=(bIdx)=>(!ehAluno && bIdx<nBlocos-1)
@@ -9568,36 +9657,111 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
           {renderEx(bl.itens[0].ex,null,0,bIdx)}
           {btnAgrupar(bIdx)}
         </React.Fragment>);
+        /* LOTE_BISET_2A — split card compacto. Toda a lógica é a de antes
+           (rodadaFeita, feitoNaRodada, avancarNoGrupo, desfazerNoGrupo,
+           avancarRodada, zerarBloco); só a apresentação mudou. */
         const n=bl.itens.length;
         const rodadas=rodadasDoBloco(bl);
         const feitas=rodadaFeita(bl);
         const ultimo=ultimoDaRodada(bl, Math.min(feitas, rodadas-1)+1);
         const dDesc=descansoDaSerie(ultimo, Math.min(feitas, rodadas-1))||ultimo.descanso;
         const fDesc=parseDescanso(dDesc);
+        const fimDoBloco=feitas>=rodadas;
+        // "90" vira "90s" e "45~60" vira "45–60s"; "60s" e "2min" ficam como vieram
+        const txtDesc=(()=>{ const d=String(dDesc||'').trim().replace('~','–');
+          return /^\d+(\s*[–-]\s*\d+)?$/.test(d) ? d+'s' : d; })();
+        const letra=(p)=>'ABCDEFGH'.charAt(p)||String(p+1);
+        // a mesma prescrição que o card solto mostra no exmeta
+        const rotuloSer=(ex)=>{ const tot=totalSeries(ex);
+          if(ex.cardio) return <React.Fragment><Ic n="run" r="cardio"/> Cardio · {fmtMin(totalCardioSeg(ex.cardio))}</React.Fragment>;
+          if(ex.isometria) return <React.Fragment>{ehAlong(ex.isometria)?<React.Fragment><Ic n="lotus"/> Alongamento</React.Fragment>:<React.Fragment><Ic n="hourglass"/> Isometria</React.Fragment>} · {tot?(tot+' × '):''}{rotIso(ex.isometria)}{/* LOTE_ISO_ORDEM: séries antes do tempo */}</React.Fragment>;
+          if(ex.metodo) return '🔺 '+ex.metodo.nome;
+          return ex.series||''; };
+        const teclaAlterna=(exId)=>(ev)=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); alternarRecolhido(exId); } };
         return (<React.Fragment key={bl.grupo}>
-          <div className="gpwrap" id={'un-g:'+bl.grupo}>
-            <div className="gphead">
-              {!ehAluno && <div className="reorder">
-                <button disabled={bIdx===0} onClick={()=>moveEx(bIdx,-1)} aria-label="Subir">▲</button>
-                <button disabled={bIdx===nBlocos-1} onClick={()=>moveEx(bIdx,1)} aria-label="Descer">▼</button>
-              </div>}
-              <div className="gphinfo">
-                <div className="gptit"><Ic n="link"/> {rotuloGrupo(n)} · {rodadas} {rodadas===1?'rodada':'rodadas'}</div>
-                <div className="gpsub">
-                  {n===2
-                    ? 'A e B sem parar no meio. O descanso vem só depois de B.'
-                    : 'Um atrás do outro, sem parar. O descanso vem só no fim da rodada.'}
+          <div className={'gpwrap'+(fimDoBloco?' done':'')} id={'un-g:'+bl.grupo}>
+            <div className="gphead-split">
+              <div className="gphl">
+                {!ehAluno && <div className="reorder">
+                  <button disabled={bIdx===0} onClick={()=>moveEx(bIdx,-1)} aria-label="Subir">▲</button>
+                  <button disabled={bIdx===nBlocos-1} onClick={()=>moveEx(bIdx,1)} aria-label="Descer">▼</button>
+                </div>}
+                {/* LOTE_BISET_2A_MAPA: o mapa de cada membro, com a letra dele */}
+                <div className="gpmapas">
+                  {bl.itens.map((it,pos)=>(
+                    <div className={'gpmapa gpl-'+pos} key={'m:'+it.ex.id}>
+                      <span className="gpmapa-l" aria-hidden="true">{letra(pos)}</span>
+                      <MapaMusc grupo={it.ex.exerciseId!=null?(grupoPorId[String(it.ex.exerciseId)]||''):''} cardio={!!it.ex.cardio}/>
+                    </div>))}
                 </div>
-                {fDesc
-                  ? <button className="gprest" onClick={()=>timer.start(fDesc, rotuloGrupo(n))}>
-                      <Ic n="timer"/> Descansar <b>{String(dDesc).replace('~','–')}</b>
-                    </button>
-                  : <span className="gprest off"><Ic n="timer"/> sem descanso definido</span>}
+                <span className="gpsplit-tag">{rotuloGrupo(n)}</span>
               </div>
-              <SerieRing total={rodadas} feitas={feitas} rotulo="Rodada"
-                onAvancar={()=>avancarRodada(bl)} onZerar={()=>zerarBloco(bl)}/>
+              {fDesc
+                ? <button className="gprest" onClick={()=>timer.start(fDesc, rotuloGrupo(n))}
+                    aria-label={'Iniciar descanso de '+txtDesc}>
+                    <Ic n="timer"/> {txtDesc} descanso
+                  </button>
+                : <span className="gprest off"><Ic n="timer"/> sem descanso definido</span>}
             </div>
-            {bl.itens.map((it,pos)=>renderEx(it.ex,bl,pos,bIdx))}
+            <div className="gpsplit-body">
+              <div className="gpsplit-linhas">
+                {bl.itens.map((it,pos)=>{
+                  const ex=it.ex;
+                  const naRodada=feitoNaRodada(bl,ex);
+                  // grupo desigual: quem já fez todas as séries dele descansa nesta rodada
+                  const descansando=!naRodada && (seriesFeitas[ex.id]||0)>=(totalSeries(ex)||rodadas);
+                  const aberto=!!abertos[ex.id];
+                  return (<React.Fragment key={ex.id}>
+                    {pos>0 && <div className="gpsplit-divisor"><span>↓ sem descanso</span></div>}
+                    <div className={'gpsplit-linha'+((naRodada||descansando)?' feita':'')+(aberto?' aberta':'')}>
+                      <div className="gpsplit-ex">
+                        <span className={'gpsplit-mk gpl-'+pos} aria-hidden="true">{letra(pos)}</span>
+                        <div className="gpsplit-info">
+                          <div className="gpsplit-nome" role="button" tabIndex={0} aria-expanded={aberto}
+                            onClick={()=>alternarRecolhido(ex.id)} onKeyDown={teclaAlterna(ex.id)}>
+                            <span className="gpsn">{ex.name}</span><span className="exchev" aria-hidden="true">▾</span>
+                          </div>
+                          <div className="gpsplit-meta">
+                            <span className="gpser">{rotuloSer(ex)}</span>
+                            <button type="button" className="gpcarga" onClick={()=>setRegistering(ex)}
+                              aria-label={'Registrar carga de '+ex.name}>carga</button>
+                          </div>
+                        </div>
+                      </div>
+                      <button className={'gpchip mini'+(naRodada?' on':'')+((fimDoBloco||descansando)?' fim':'')}
+                        disabled={descansando}
+                        onClick={()=>{ if(descansando) return; if(naRodada) desfazerNoGrupo(bl,ex); else avancarNoGrupo(bl,ex); }}
+                        aria-label={descansando?'Séries deste exercício concluídas':(naRodada?'Desfazer esta série':'Marcar esta série como feita')}>
+                        <span className="gcico">{(naRodada||descansando)?<Ic n="check"/>:((seriesFeitas[ex.id]||0)+1)+'ª'}</span>
+                        <span className="gclab">{naRodada?'feita':(descansando?'feito':'marcar')}</span>
+                      </button>
+                    </div>
+                  </React.Fragment>);
+                })}
+              </div>
+              <div className="gpsplit-col-anel">
+                <SerieRing total={rodadas} feitas={feitas} rotulo="Rodada"
+                  onAvancar={()=>avancarRodada(bl)} onZerar={()=>zerarBloco(bl)}/>
+              </div>
+            </div>
+            {/* detalhe do membro aberto (vídeo, plano, histórico, Registrar Carga…):
+                o mesmo corpo do card solto, embaixo do split, sem card dentro de card */}
+            {bl.itens.map((it,pos)=>{
+              const ex=it.ex;
+              if(!abertos[ex.id]) return null;
+              return (<div className="gpdet" key={'det:'+ex.id}>
+                <div className="gpdethead">
+                  <span className={'gpsplit-mk gpl-'+pos} aria-hidden="true">{letra(pos)}</span>
+                  <MapaMusc grupo={ex.exerciseId!=null?(grupoPorId[String(ex.exerciseId)]||''):''} cardio={!!ex.cardio}/>
+                  <div className="gpdetnome" role="button" tabIndex={0} aria-expanded={true}
+                    onClick={()=>alternarRecolhido(ex.id)} onKeyDown={teclaAlterna(ex.id)}>
+                    <span>{ex.name}</span><span className="exchev" aria-hidden="true">▾</span>
+                  </div>
+                </div>
+                {ex.filmar && <div className="gpdetfilm"><span className="exfilm"><Ic n="video" r="coach"/> Recomendado Filmar</span></div>}
+                {corpoEx(ex,bl)}
+              </div>);
+            })}
             {!ehAluno && <div className="gpbtns">
               <button onClick={()=>desagrupar(bl)}><Ic n="x"/> Desagrupar</button>
               {bIdx<nBlocos-1 && <button onClick={()=>agruparComProximo(bIdx)}>+ Somar o próximo</button>}
