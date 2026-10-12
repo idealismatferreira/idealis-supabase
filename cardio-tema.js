@@ -37,12 +37,14 @@ const faixaBpm=z=>({de:Math.round(FCMAX*PCT[z][0]),ate:Math.round(FCMAX*PCT[z][1
 const ALTURA={aquecimento:.30,leve:.46,moderado:.62,forte:.80,maximo:1};
 const VELZ={1:.55,2:.8,3:1.05,4:1.45,5:1.85};
 let BL=[],INI=[],TOTAL=0;
+/* papeis v3: partida só se começar leve; chegada só se o último bloco DESCER de zona */
 function papeis(bl){
   const z=bl.map(b=>NIVEIS[b.nivel].zona),max=Math.max.apply(null,z),iMax=z.lastIndexOf(max);
   return bl.map((b,i)=>{
-    if(i===0)return 'partida';
-    if(i===bl.length-1)return 'chegada';
+    if(i===0&&z[0]<=2)return 'partida';
+    if(i>0&&i===bl.length-1&&z[i]<z[i-1])return 'chegada';
     if(i===iMax&&max>=4)return 'climax';
+    if(i===0)return z[0]>=4?'desafio':'exploracao';
     if(z[i]>z[i-1])return z[i]>=4?'desafio':'exploracao';
     if(z[i]<z[i-1])return 'alivio';
     return z[i]>=4?'desafio':'exploracao';
@@ -332,7 +334,7 @@ for(const c of CENARIOS)for(const p in c.ev)for(const e of c.ev[p]){const v=MOTI
 function cueDe(ev,papel){
   const i=idxAtual;let v=ev.mv;
   if(v&&typeof v==='object'&&!Array.isArray(v)){const fr=(EXERCICIOS[exAtual]||{}).frase;v=v[fr]||v.anda||v.trote||v.incl;}
-  if(Array.isArray(v)){const z=i>0?NIVEIS[BL[i].nivel].zona:0,zp=i>0?NIVEIS[BL[i-1].nivel].zona:0;return z>zp?v[0]:v[1];}
+  if(Array.isArray(v)){const z=i>0?NIVEIS[BL[i].nivel].zona:1,zp=i>0?NIVEIS[BL[i-1].nivel].zona:0;return z>zp?v[0]:v[1];}
   return v||ev.c||((CUE_MOD[modAtual]||{})[papel])||CUE[papel];
 }
 
@@ -1165,7 +1167,7 @@ function criar(host,o){
     nivel:()=>nivel
   };
 }
-window.CardioTema={versao:2,criar,reconhece:n=>!!exercicioDoNome(n),exercicio:n=>exercicioDoNome(n),
+window.CardioTema={versao:3,criar,reconhece:n=>!!exercicioDoNome(n),exercicio:n=>exercicioDoNome(n),
   exercicios:Object.keys(EXERCICIOS).map(id=>({id,nome:EXERCICIOS[id].nome,curto:EXERCICIOS[id].curto})),
   icones:{zonas:I_ZONAS,tema:I_TEMA,dado:DADO,pin:PIN}};
 
