@@ -5117,6 +5117,8 @@ const CD_ICO={
    Lote 3: ligado para todos. ?tema=0 desliga SÓ neste aparelho (teste); ?tema=1 religa. */
 const CARDIO_TEMA_V=2;
 const CARDIO_TEMA_LOTE=3;
+/* versão do formato de logs.extra.tema (a Dashboard lê). Mudou o formato → sobe aqui e avisa a Dashboard. */
+const CARDIO_TEMA_LOG_V=1;
 let _cardioTemaCarregando=null;
 function carregarCardioTema(){
   if(window.CardioTema) return Promise.resolve(window.CardioTema);
@@ -5702,7 +5704,7 @@ function App({auth}){
     const tm=sessao.tema;
     if(tm && tm.modo==='historia'){
       const nm=tm.nomes||{};
-      log.extra.tema={ modo:'tematico',
+      log.extra.tema={ v:CARDIO_TEMA_LOG_V, modo:'tematico',
         cenario:tm.cen||null, cenarioNome:nm.cenario||null,
         clima:tm.clima||null, climaNome:nm.clima||null,
         exercicio:tm.exercicio||null, exercicioNome:nm.exercicio||null,
@@ -5711,7 +5713,7 @@ function App({auth}){
         sorteou:!!tm.reroll,
         curtiu:(extras && typeof extras.curtiu==='boolean') ? extras.curtiu : null };
     } else if(tm && tm.modo==='classico'){
-      log.extra.tema={ modo:'classico', auto:!!tm.auto };
+      log.extra.tema={ v:CARDIO_TEMA_LOG_V, modo:'classico', auto:!!tm.auto };
     }
     setDb(d=>({...d, students:d.students.map(st=>({...st, treinos:(st.treinos||[]).map(tr=>({...tr,
       exercises:(tr.exercises||[]).map(ex=> ex.id===sessao.exId ? {...ex, logs:[...(ex.logs||[]), log]} : ex)
