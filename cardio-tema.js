@@ -1097,6 +1097,41 @@ function destruir(){
   if(HOST){HOST.innerHTML='';HOST.classList.remove('ct-host');}
   HOST=null;plano=null;C.sprites=[];C.camadas=[];C.afunda=[];C.heroi=null;C.evSp=null;
 }
+function tema(){return plano?{seed:plano.seed,cen:plano.cen.id,clima:plano.clima,exercicio:exAtual}:null;}
+function info(){if(!plano)return null;const cl=CLIMAS[plano.clima]||CLIMAS.limpo,ex=EXERCICIOS[exAtual];
+  return {cenario:plano.cen.nome,clima:cl.nome,climaIco:icoClima(cl.ico),exercicio:exAtual,exNome:ex.nome,exCurto:ex.curto,maquina:modAtual};}
+/* texto do evento do bloco i: título + frase-motivo (a direção sobe/mantém é a do bloco i) */
+function evento(i){
+  if(!plano||i<0||i>=BL.length)return null;
+  const ev=plano.eventos[i],p=plano.papeis[i],ant=idxAtual;idxAtual=i;let m;try{m=cueDe(ev,p);}finally{idxAtual=ant;}
+  return {titulo:ev.t,motivo:m,papel:p,icone:ico(p)};
+}
+/* o nome do evento vale enquanto o elemento está na tela */
+function eventoNaTela(desde){
+  const sp=C.evSp;
+  if(!sp||nivel==='C'||!C.raf)return desde<22;
+  if(!C.sprites.includes(sp))return false;
+  return C.eixo==='y'?sp.y<C.chao:sp.x+sp.w>0;
+}
+function trocarPlanoCena(np){
+  const el=$('cena');if(el)el.classList.add('trocando');
+  plano=np;
+  setTimeout(()=>{if(!HOST)return;desligarLoop();montarCena();aplicarPaleta(progressoVisual());
+    const e2=$('cena');if(e2){e2.classList.add('trocando');void e2.offsetWidth;}
+    restaurarEstadoCena();ligarLoop();requestAnimationFrame(()=>{const e3=$('cena');if(e3)e3.classList.remove('trocando');});},320);
+}
+function sortear(){
+  if(!plano)return null;const outros=CENARIOS.filter(c=>c.id!==plano.cen.id&&c.mod===modAtual);if(!outros.length)return tema();
+  const cen=outros[Math.floor(Math.random()*outros.length)];
+  trocarPlanoCena(gerarPlano(Math.floor(Math.random()*999983)+1,cen.id));return tema();
+}
+function trocarExercicio(id){
+  if(!plano||!EXERCICIOS[id]||id===exAtual)return tema();
+  exAtual=id;modAtual=EXERCICIOS[id].maq;
+  trocarPlanoCena(gerarPlano(Math.floor(Math.random()*999983)+1));return tema();
+}
+const I_ZONAS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 19v-5M9.3 19V9M14.6 19v-7M20 19V5"/></svg>';
+const I_TEMA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 19 9 9.5l4 5.5 2.6-3.4L21.5 19Z"/><circle cx="16.5" cy="6" r="2.2"/></svg>';
 function injetarCSS(){
   if(document.getElementById('ct-css'))return;
   const st=document.createElement('style');st.id='ct-css';st.textContent=CSS;document.head.appendChild(st);
@@ -1104,8 +1139,9 @@ function injetarCSS(){
 /* cria o cenário dentro de `host`. Exercício fora do temático → null (o app segue no clássico, sem perguntar). */
 function criar(host,o){
   o=o||{};
-  const ex=exercicioDoNome(o.exercicio);
-  if(!host||!ex||!o.blocos||!o.blocos.length)return null;
+  const presc=exercicioDoNome(o.exercicio),t0=o.tema||{};
+  if(!host||!presc||!o.blocos||!o.blocos.length)return null;
+  const ex=(t0.exercicio&&EXERCICIOS[t0.exercicio])?t0.exercicio:presc;
   if(HOST)destruir();
   injetarCSS();
   HOST=host;host.classList.add('ct-host');
@@ -1123,11 +1159,14 @@ function criar(host,o){
   try{RO=new ResizeObserver(()=>{clearTimeout(rzT);rzT=setTimeout(()=>{if(!HOST)return;C.fix=null;reconstruir();if(fase==='run')medirFaixa();},220);});RO.observe(host);}catch(e){}
   try{if(navigator.getBattery)navigator.getBattery().then(bt=>{if(!HOST)return;BAT=bt;BATFN=()=>{if(nivelModo==='auto'&&bt.level<=.2&&!bt.charging&&nivel!=='C')setNivel('C',true,'bateria em '+Math.round(bt.level*100)+'%');};BATFN();bt.addEventListener('levelchange',BATFN);}).catch(()=>{});}catch(e){}
   return {
-    atualizar,destruir,
-    tema:()=>plano?{seed:plano.seed,cen:plano.cen.id,clima:plano.clima,exercicio:exAtual}:null,
+    atualizar,destruir,tema,info,evento,sortear,trocarExercicio,
+    naTela:desde=>eventoNaTela(desde),
+    prescrito:()=>presc,
     nivel:()=>nivel
   };
 }
-window.CardioTema={versao:1,criar,reconhece:n=>!!exercicioDoNome(n),exercicio:n=>exercicioDoNome(n)};
+window.CardioTema={versao:2,criar,reconhece:n=>!!exercicioDoNome(n),exercicio:n=>exercicioDoNome(n),
+  exercicios:Object.keys(EXERCICIOS).map(id=>({id,nome:EXERCICIOS[id].nome,curto:EXERCICIOS[id].curto})),
+  icones:{zonas:I_ZONAS,tema:I_TEMA,dado:DADO,pin:PIN}};
 
 })();

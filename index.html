@@ -1743,6 +1743,79 @@
   .cdover.temaon .cdpvnome{text-shadow:0 2px 14px rgba(0,0,0,.5)}
   .cdover.temaon .cdcont{text-shadow:0 4px 30px rgba(0,0,0,.4)}
   .cdover.temaon .cdsair{background:rgba(16,21,23,.72);border-color:rgba(255,255,255,.1)}
+  /* Cardio temático (Lote 2): abertura 2C */
+  .ctp{overflow-y:auto;padding-block:8px}
+  .ctp i{display:inline-flex;font-style:normal}
+  .ctp-sub{font-size:17px;font-weight:600;color:#e4ecee;text-shadow:0 1px 8px rgba(0,0,0,.6);transform:translateY(-18px)}
+  .ctp-selo{margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:10px 22px 11px;border-radius:16px;
+    background:var(--lime);color:#0b0f10;transform:translateY(-18px) rotate(-2deg);box-shadow:0 10px 26px rgba(0,0,0,.4);max-width:320px}
+  .ctp-selo em{font-style:normal;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.68}
+  .ctp-selo b{font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1.15;text-wrap:balance}
+  .ctp-selo span{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700}
+  .ctp-selo svg{width:14px;height:14px;display:block}
+  .ctp-q{margin-top:18px;width:100%;max-width:340px;text-align:center}
+  .ctp-t{font-size:18px;font-weight:800;letter-spacing:-.015em;line-height:1.2;color:#f2f7f8;text-shadow:0 2px 12px rgba(0,0,0,.6);text-wrap:balance}
+  .ctp-s{margin-top:6px;font-size:13.5px;line-height:1.42;color:#cfdadc;text-shadow:0 1px 8px rgba(0,0,0,.7)}
+  .ctp-duo{margin-top:16px;width:100%;max-width:340px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .ctp-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:116px;padding:14px 10px;border-radius:18px;
+    background:rgba(20,25,27,.86);border:1px solid rgba(255,255,255,.13);color:#eef7f8;font-family:inherit;font-size:15px;font-weight:800;
+    cursor:pointer;transition:transform .12s;-webkit-tap-highlight-color:transparent}
+  .ctp-tile svg{width:30px;height:30px;display:block}
+  .ctp-tile.pri{background:var(--cyan);color:var(--on-cyan);border-color:transparent}
+  .ctp-tile:active,.ctp-sortear:active{transform:scale(.98)}
+  .ctp-sortear{margin-top:10px;width:100%;max-width:340px;display:flex;align-items:center;justify-content:center;gap:9px;min-height:52px;padding:12px 18px;
+    border-radius:16px;background:rgba(20,25,27,.84);border:1px solid rgba(255,255,255,.13);color:#eef7f8;font-family:inherit;font-size:15px;font-weight:700;
+    cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .ctp-sortear svg{width:18px;height:18px;display:block}
+  .ctp-sortear:disabled{color:var(--muted-2);background:rgba(20,25,27,.6);cursor:default}
+  .ctp-local{margin-top:12px;display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:999px;background:rgba(7,10,11,.66);
+    border:1px solid rgba(255,255,255,.12);color:#dfe9eb;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
+  .ctp-local b{font-weight:800;color:#fff}
+  .ctp-local span{color:var(--muted)}
+  .ctp-local em{font-style:normal;font-size:12px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+  /* card do evento: grande para ler de longe (celular no suporte da máquina) */
+  .cth{display:grid;justify-items:center;width:100%;margin-top:14px}
+  .cth>*{grid-area:1/1;transition:opacity .45s ease,transform .45s cubic-bezier(.2,.9,.3,1);opacity:0;transform:translateY(6px);pointer-events:none}
+  .cth.s-cheio .cth-card,.cth.s-curto .cth-cap,.cth.s-prox .cth-prox{opacity:1;transform:none}
+  .cth-card{display:inline-flex;align-items:center;gap:12px;max-width:100%;padding:8px 22px 8px 8px;border-radius:30px;
+    background:rgba(7,10,11,.76);border:1px solid rgba(255,255,255,.1)}
+  .cth-ico{flex:0 0 46px;width:46px;height:46px;border-radius:50%;display:grid;place-items:center}
+  .cth-ico svg{width:24px;height:24px;display:block}
+  .cth-txt{display:flex;flex-direction:column;align-items:flex-start;min-width:0;text-align:left;gap:2px}
+  .cth-tit{font-size:23px;font-weight:800;letter-spacing:-.015em;color:#fff;line-height:1.1;text-wrap:balance}
+  .cth-cue{font-size:18px;font-weight:700;line-height:1.2;text-wrap:balance}
+  .cth-cap{display:inline-flex;align-items:center;gap:8px;font-size:19px;font-weight:700;color:#eef4f5;text-shadow:0 1px 10px rgba(0,0,0,.8);padding:6px 4px}
+  .cth-cap svg{width:19px;height:19px;opacity:.85;display:block}
+  .cth-prox{display:inline-flex;align-items:center;gap:10px;padding:10px 20px;border-radius:999px;max-width:100%;background:rgba(7,10,11,.8);
+    border:1.5px solid var(--pc,#fff);font-size:19px;font-weight:700;color:#eef4f5;white-space:nowrap}
+  .cth-pnum{font-weight:800;color:#fff;font-variant-numeric:tabular-nums}
+  .cth-pdot{width:11px;height:11px;border-radius:50%;background:var(--pc,#fff);flex:0 0 auto}
+  .cth-ptxt{overflow:hidden;text-overflow:ellipsis}
+  /* troca de bloco com tema: nome do evento + véu mais leve */
+  .cdslamsub{display:block;font-size:23px;line-height:30px;font-weight:700;letter-spacing:-.01em;color:rgba(255,255,255,.92)}
+  .cdveu.leve{animation-name:cdveuL}
+  @keyframes cdveuL{0%{opacity:0}14%{opacity:.72}78%{opacity:.72}100%{opacity:0}}
+  /* folha "Onde você vai fazer hoje?" */
+  .ctf-veu{position:absolute;inset:0;z-index:20;background:rgba(0,0,0,.55)}
+  .ctf{position:absolute;left:0;right:0;bottom:0;z-index:21;padding:20px 18px calc(22px + env(safe-area-inset-bottom));border-radius:22px 22px 0 0;
+    background:var(--surface);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;max-height:86%;overflow-y:auto;
+    animation:ctfsobe .3s cubic-bezier(.2,.9,.3,1) both}
+  @keyframes ctfsobe{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+  .ctf-tit{font-size:18px;font-weight:800;letter-spacing:-.01em;color:var(--text)}
+  .ctf-txt{margin:0 0 4px;font-size:12.5px;line-height:1.5;color:var(--muted)}
+  .ctf-op{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 14px;border-radius:13px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--text);font-family:inherit;text-align:left;cursor:pointer}
+  .ctf-op span{font-size:14.5px;font-weight:700}
+  .ctf-op em{font-style:normal;font-size:11.5px;color:var(--muted-2)}
+  .ctf-op[aria-pressed="true"]{border-color:var(--cyan)}
+  .ctf-op[aria-pressed="true"] em{color:var(--cyan-2)}
+  .ctf-ok{justify-content:center}
+  @media (max-height:700px){
+    .ctp-tile{min-height:96px}
+    .ctp-q{margin-top:12px}
+    .cth-tit{font-size:19px}
+    .cth-cap,.cth-prox{font-size:17px}
+  }
   /* troca de bloco: tela bem escurecida, só o nome da zona aparece */
   .cdveu{position:absolute;inset:0;z-index:6;background:#030405;opacity:0;pointer-events:none;
     animation:cdveu 1.7s ease both}
@@ -4842,6 +4915,14 @@ function useCardioTimer(){
     try{ if(LS_OK) window.localStorage.removeItem(CARDIO_KEY); }catch(e){}
   };
   const comecar=()=>atualizar(sx=> sx.inicio ? sx : {...sx, inicio:Date.now()+CARDIO_PREP_MS});
+  /* cardio temático: escolha (historia|classico) + sorteio. Na abertura não persiste
+     (igual ao resto da abertura); ao começar vai junto, então sobrevive a reload. */
+  const definirTema=(t)=>setSessao(sx=>{
+    if(!sx) return sx;
+    const d={...sx, tema:t};
+    if(d.inicio) persistir(d);
+    return d;
+  });
   const pausar=()=>atualizar(sx=>cardioAlternarPausa(sx,Date.now()));
   const pular=()=>atualizar(sx=>cardioPular(sx,Date.now()));
   const voltar=()=>atualizar(sx=>cardioVoltar(sx,Date.now()));
@@ -4857,7 +4938,7 @@ function useCardioTimer(){
     try{ if(LS_OK) window.localStorage.removeItem(CARDIO_KEY); }catch(e){}
   };
   return {ativo:!!sessao, sessao, iniciar, comecar, parar, responderCheckin,
-          pausar, pular, voltar, minimizado, minimizar:setMinimizado, salvarLog:null};
+          pausar, pular, voltar, minimizado, minimizar:setMinimizado, salvarLog:null, definirTema};
 }
 /* pontos de check-in: 2 amostras no meio do cardio (a 3ª é a tela de fim).
    Mira 5s depois dos blocos mais intensos — a FC ainda está no pico. */
@@ -5016,7 +5097,7 @@ const CD_ICO={
    cardio abre — quem não usa não paga nada. Se não carregar em 8 s, ou o
    exercício não for do temático, o cardio segue clássico sem avisar o aluno.
    Lote 1: só aparece com a flag de teste (abra o app com ?tema=1; ?tema=0 desliga). */
-const CARDIO_TEMA_V=1;
+const CARDIO_TEMA_V=2;
 let _cardioTemaCarregando=null;
 function carregarCardioTema(){
   if(window.CardioTema) return Promise.resolve(window.CardioTema);
@@ -5045,7 +5126,7 @@ function temaLigado(){
 }
 /* camada do cenário: o React só cria o <div>; o motor desenha dentro dele.
    Desmonta ao minimizar (zero quadros) e volta com o mesmo sorteio (temaRef). */
-function CenaTema({sessao,fase,pos,idx,pausado,decorrido,temaRef,onAtivo}){
+function CenaTema({sessao,fase,pos,idx,pausado,decorrido,temaRef,onPronto}){
   const hostRef=React.useRef(null);
   const ctrlRef=React.useRef(null);
   useEffect(()=>{
@@ -5055,16 +5136,71 @@ function CenaTema({sessao,fase,pos,idx,pausado,decorrido,temaRef,onAtivo}){
       let c=null;
       try{ c=CT.criar(hostRef.current,{blocos:sessao.blocos, exercicio:sessao.nome, tema:temaRef.current}); }
       catch(e){ console.warn('[cardio-tema] erro ao montar o cenário',e); c=null; }
-      if(!c){ onAtivo(false); return; }
-      ctrlRef.current=c; temaRef.current=c.tema(); onAtivo(true);
-    }).catch(()=>{ if(vivo) onAtivo(false); });
-    return ()=>{ vivo=false; if(ctrlRef.current){ try{ ctrlRef.current.destruir(); }catch(e){} ctrlRef.current=null; } };
+      if(!c){ onPronto(null); return; }
+      ctrlRef.current=c; temaRef.current=c.tema(); onPronto(c);
+    }).catch(()=>{ if(vivo) onPronto(null); });
+    return ()=>{ vivo=false; if(ctrlRef.current){ try{ ctrlRef.current.destruir(); }catch(e){} ctrlRef.current=null; } onPronto(null); };
   },[]);
   useEffect(()=>{
     const c=ctrlRef.current; if(!c) return;
     try{ c.atualizar({fase,pos,idx,pausado,decorrido}); }catch(e){ console.warn('[cardio-tema] erro ao atualizar',e); }
   });
   return <div className="cdtema" ref={hostRef} aria-hidden="true"></div>;
+}
+/* abertura 2C: o tema sorteado em destaque e a escolha. Clássico continua um botão de verdade. */
+function TemaPergunta({ctrl,total,nBlocos,reroll,onClassico,onTematico,onSortear,onTrocar}){
+  const i=ctrl.info(); const I=(window.CardioTema&&window.CardioTema.icones)||{};
+  if(!i) return null;
+  return (<div className="cdprev ctp">
+    <div className="ctp-sub">{fmtMin(total)} · {nBlocos} {nBlocos===1?'bloco':'blocos'}</div>
+    <div className="ctp-selo"><em>Tema de hoje</em><b>{i.cenario}</b>
+      <span><i dangerouslySetInnerHTML={{__html:i.climaIco}}></i>{i.clima}</span></div>
+    <div className="ctp-q">
+      <div className="ctp-t">Cardio temático ou clássico?</div>
+      <div className="ctp-s">O treino é o mesmo. O tema só insere a paisagem.</div>
+    </div>
+    <div className="ctp-duo">
+      <button className="ctp-tile" onClick={onClassico}><i dangerouslySetInnerHTML={{__html:I.zonas||''}}></i><b>Prefiro clássico</b></button>
+      <button className="ctp-tile pri" onClick={onTematico}><i dangerouslySetInnerHTML={{__html:I.tema||''}}></i><b>Prefiro temático</b></button>
+    </div>
+    <button className="ctp-sortear" disabled={reroll} onClick={onSortear}>
+      <i dangerouslySetInnerHTML={{__html:I.dado||''}}></i><span>{reroll?'Já sorteou hoje':'Sortear outro tema'}</span></button>
+    <button className="ctp-local" onClick={onTrocar}><b>{i.exCurto}</b><span>·</span><em>trocar máquina</em></button>
+  </div>);
+}
+/* card do evento: cheio nos primeiros 12 s, legenda curta enquanto o elemento está na tela,
+   depois some; nos últimos ~10 s avisa o próximo. */
+function TemaEvento({ctrl,idx,blocos,pos,ini,fim}){
+  const ev=ctrl.evento(idx); if(!ev || !blocos[idx]) return null;
+  const desde=Math.max(0,pos-ini), rest=Math.max(0,fim-pos), prox=blocos[idx+1]||null;
+  const janela=Math.min(10,blocos[idx].seg*.6);
+  const est = prox && rest<=janela ? 'prox' : (desde<12 ? 'cheio' : (ctrl.naTela(desde) ? 'curto' : 'vazio'));
+  const n=nivelInfo(blocos[idx].nivel), evP=prox?ctrl.evento(idx+1):null;
+  const I=(window.CardioTema&&window.CardioTema.icones)||{};
+  return (<div className={'cth s-'+est} aria-live="polite">
+    <div className="cth-card">
+      <span className="cth-ico" style={{color:n.cor, background:n.cor+'29'}} dangerouslySetInnerHTML={{__html:ev.icone}}></span>
+      <span className="cth-txt"><span className="cth-tit">{ev.titulo}</span><span className="cth-cue" style={{color:n.cor}}>{ev.motivo}</span></span>
+    </div>
+    <div className="cth-cap"><span dangerouslySetInnerHTML={{__html:I.pin||''}}></span><span>{ev.titulo}</span></div>
+    {evP && <div className="cth-prox" style={{'--pc':nivelInfo(prox.nivel).cor}}>
+      <span className="cth-pnum">Em {Math.max(1,Math.ceil(rest))}s</span><span className="cth-pdot"></span><span className="cth-ptxt">{evP.titulo}</span>
+    </div>}
+  </div>);
+}
+/* "Onde você vai fazer hoje?": máquina ocupada → troca o exercício (o registro continua no prescrito) */
+function TemaFolha({atual,prescrito,onEscolher,onFechar}){
+  const L=(window.CardioTema&&window.CardioTema.exercicios)||[];
+  return (<React.Fragment>
+    <div className="ctf-veu" onClick={onFechar}></div>
+    <div className="ctf" role="dialog" aria-label="Onde você vai fazer hoje?">
+      <div className="ctf-tit">Onde você vai fazer hoje?</div>
+      <p className="ctf-txt">Zona e bpm continuam iguais. Só o cenário muda.</p>
+      {L.map(x=><button key={x.id} className="ctf-op" aria-pressed={x.id===atual} onClick={()=>onEscolher(x.id)}>
+        <span>{x.nome}</span><em>{x.id===prescrito?'prescrito':''}</em></button>)}
+      <button className="ctf-op ctf-ok" onClick={onFechar}><span>Fechar</span></button>
+    </div>
+  </React.Fragment>);
 }
 function CardioOverlay({cardio}){
   const sessao=cardio.sessao;
@@ -5073,8 +5209,14 @@ function CardioOverlay({cardio}){
   const [agora,setAgora]=useState(Date.now());
   const wakeRef=React.useRef(null);
   // cardio temático: sorteio guardado aqui para sobreviver ao minimizar
-  const temaRef=React.useRef(null);
-  const [temaOn,setTemaOn]=useState(false);
+  const temaRef=React.useRef((sessao&&sessao.tema&&sessao.tema.seed)?sessao.tema:null);
+  const [temaCtrl,setTemaCtrl]=useState(null);
+  const temaCtrlRef=React.useRef(null);
+  const onTemaPronto=React.useCallback(c=>{ temaCtrlRef.current=c; setTemaCtrl(c); },[]);
+  const [temaVer,setTemaVer]=useState(0);
+  const [temaReroll,setTemaReroll]=useState(!!(sessao&&sessao.tema&&sessao.tema.reroll));
+  const [folhaEx,setFolhaEx]=useState(false);
+  const temaOn=!!temaCtrl;
   const usarTema=useMemo(()=>temaLigado(),[]);
   useEffect(()=>{
     const id=setInterval(()=>setAgora(Date.now()),250);
@@ -5112,7 +5254,8 @@ function CardioOverlay({cardio}){
       ultIdx.current=idx;
       if(cardio.minimizado || !blocos[idx]) return;
       const n=nivelInfo(blocos[idx].nivel);
-      setSlam(s=>({k:(s?s.k:0)+1, label:n.label, cor:n.cor, t:Date.now()}));
+      const evT=temaCtrlRef.current?temaCtrlRef.current.evento(idx):null;
+      setSlam(s=>({k:(s?s.k:0)+1, label:n.label, cor:n.cor, t:Date.now(), sub:evT?evT.titulo:null}));
     }
   },[fase,idx]);
   if(!sessao) return null;
@@ -5149,13 +5292,14 @@ function CardioOverlay({cardio}){
     ? atual.rotulo : '';
   const slamVivo = slam && (agora-slam.t)<1800;
   return (<div className={'cdover f-'+fase+(pendente!=null?' ckon':'')+(e.pausado?' pausado':'')+(temaOn?' temaon':'')} style={{'--cd':cor}}>
-    {usarTema && <CenaTema sessao={sessao} fase={fase} pos={pos} idx={idx} pausado={e.pausado}
-      decorrido={atual?Math.max(0,pos-bAt.ini):0} temaRef={temaRef} onAtivo={setTemaOn}/>}
+    {usarTema && !(sessao.tema && sessao.tema.modo==='classico') &&
+      <CenaTema sessao={sessao} fase={fase} pos={pos} idx={idx} pausado={e.pausado}
+        decorrido={atual?Math.max(0,pos-bAt.ini):0} temaRef={temaRef} onPronto={onTemaPronto}/>}
     <div className="cdamb" aria-hidden="true"></div>
     {slamVivo && <React.Fragment key={slam.k}>
-      <div className="cdveu" aria-hidden="true"></div>
+      <div className={'cdveu'+(temaOn?' leve':'')} aria-hidden="true"></div>
       <div className="cdslam" style={{color:slam.cor, fontSize:(slam.label.length>=10?44:(slam.label.length>=8?52:62))+'px'}}>
-        {slam.label}</div>
+        {slam.label}{slam.sub && <span className="cdslamsub">{slam.sub}</span>}</div>
     </React.Fragment>}
     <div className="cdtop">
       <button className="cdsair cdminbtn" style={fase==='run'?null:{visibility:'hidden'}}
@@ -5163,10 +5307,19 @@ function CardioOverlay({cardio}){
       <span className="cdnome">{e.nome}</span>
       <button className="cdsair" onClick={cardio.parar} aria-label="Fechar cardio"><Ic n="x"/></button>
     </div>
-    {fase==='prev' && <div className="cdprev">
+    {fase==='prev' && temaCtrl && !(sessao.tema && sessao.tema.modo) &&
+      <TemaPergunta ctrl={temaCtrl} total={total} nBlocos={blocos.length} reroll={temaReroll}
+        onClassico={()=>{ cardio.definirTema && cardio.definirTema({modo:'classico'}); cardio.comecar(); }}
+        onTematico={()=>{ const t=temaCtrl.tema()||{}; cardio.definirTema && cardio.definirTema({...t, modo:'historia', reroll:temaReroll}); cardio.comecar(); }}
+        onSortear={()=>{ if(temaReroll) return; temaRef.current=temaCtrl.sortear(); setTemaReroll(true); setTemaVer(v=>v+1); }}
+        onTrocar={()=>setFolhaEx(true)}/>}
+    {fase==='prev' && !(temaCtrl && !(sessao.tema && sessao.tema.modo)) && <div className="cdprev">
       <div className="cdpvnome">{e.nome}</div>
       <div className="cdpvsub">{fmtMin(total)} · {blocos.length} {blocos.length===1?'bloco':'blocos'}</div>
-      <button className="cdpvbtn" onClick={cardio.comecar}>{CD_ICO.play}Começar</button>
+      <button className="cdpvbtn" onClick={()=>{
+        // com a flag ligada, começar pela tela de sempre (tema ainda carregando) = clássico
+        if(usarTema && !temaCtrl && cardio.definirTema) cardio.definirTema({modo:'classico'});
+        cardio.comecar(); }}>{CD_ICO.play}Começar</button>
     </div>}
     {fase==='count' && <div className="cdprev">
       <div key={Math.ceil(-pos)} className="cdcont">{Math.max(1,Math.ceil(-pos))}</div>
@@ -5186,6 +5339,7 @@ function CardioOverlay({cardio}){
           Bloco {idx+1} de {blocos.length}
           {proximo && <React.Fragment> · a seguir: <b>{proximo.rotulo}</b> ({fmtMin(proximo.seg)})</React.Fragment>}
         </div>
+        {temaCtrl && atual && <TemaEvento ctrl={temaCtrl} idx={idx} blocos={blocos} pos={pos} ini={bAt.ini} fim={bAt.fim}/>}
       </div>
       <div className="cdbase">
         <ArcoZonas zona={nRef.zona} fcMax={cardio.fcMax}/>
@@ -5201,6 +5355,9 @@ function CardioOverlay({cardio}){
     {fase!=='fim' && <div className="cdrodape">
       {fase==='run' ? ('Falta '+fmtMin(e.restanteTotal)+' de '+fmtMin(total)) : ('Total '+fmtMin(total))}
     </div>}
+    {folhaEx && temaCtrl && fase==='prev' && <TemaFolha atual={(temaCtrl.info()||{}).exercicio} prescrito={temaCtrl.prescrito()}
+      onEscolher={(id)=>{ setFolhaEx(false); temaRef.current=temaCtrl.trocarExercicio(id); setTemaVer(v=>v+1); }}
+      onFechar={()=>setFolhaEx(false)}/>}
     {pendente!=null &&
       <CheckinSheet key={pendente} seg={pendente}
         onResponder={(d)=>cardio.responderCheckin(pendente,d)}/>}
