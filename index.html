@@ -1735,6 +1735,14 @@
   @keyframes cdresp{0%,100%{opacity:.08;transform:scale(.94)}50%{opacity:.2;transform:scale(1.06)}}
   .cdover.pausado .cdamb{animation-play-state:paused}
   .cdover.f-fim .cdamb{opacity:.06;animation:none}
+  /* Cardio temático (Lote 1): o cenário fica POR BAIXO de tudo da tela de cardio */
+  .cdtema{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+  .cdover.temaon .cdamb{display:none}
+  .cdover.temaon .cdnum,.cdover.temaon .cdrot,.cdover.temaon .cdfim{text-shadow:0 2px 22px rgba(0,0,0,.45)}
+  .cdover.temaon .cdsub,.cdover.temaon .cdpvsub{color:#cbd8db;text-shadow:0 1px 10px rgba(0,0,0,.6)}
+  .cdover.temaon .cdpvnome{text-shadow:0 2px 14px rgba(0,0,0,.5)}
+  .cdover.temaon .cdcont{text-shadow:0 4px 30px rgba(0,0,0,.4)}
+  .cdover.temaon .cdsair{background:rgba(16,21,23,.72);border-color:rgba(255,255,255,.1)}
   /* troca de bloco: tela bem escurecida, só o nome da zona aparece */
   .cdveu{position:absolute;inset:0;z-index:6;background:#030405;opacity:0;pointer-events:none;
     animation:cdveu 1.7s ease both}
@@ -5003,12 +5011,71 @@ const CD_ICO={
   prox:<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="16.4" y="5" width="2.6" height="14" rx="1"/><path d="M5 6.1v11.8a.9.9 0 0 0 1.4.75l8-5.9a.9.9 0 0 0 0-1.5l-8-5.9A.9.9 0 0 0 5 6.1z"/></svg>,
   sobe:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>,
 };
+/* ===== CARDIO TEMÁTICO (Lote 1) =====
+   O motor do cenário mora em cardio-tema.js (≈160 KB), baixado só quando o
+   cardio abre — quem não usa não paga nada. Se não carregar em 8 s, ou o
+   exercício não for do temático, o cardio segue clássico sem avisar o aluno.
+   Lote 1: só aparece com a flag de teste (abra o app com ?tema=1; ?tema=0 desliga). */
+const CARDIO_TEMA_V=1;
+let _cardioTemaCarregando=null;
+function carregarCardioTema(){
+  if(window.CardioTema) return Promise.resolve(window.CardioTema);
+  if(_cardioTemaCarregando) return _cardioTemaCarregando;
+  _cardioTemaCarregando=new Promise((ok,falha)=>{
+    const el=document.createElement('script');
+    el.src='cardio-tema.js?v='+CARDIO_TEMA_V;
+    const t=setTimeout(()=>{ console.warn('[cardio-tema] tempo esgotado (8s) ao carregar cardio-tema.js'); falha(new Error('timeout')); },8000);
+    el.onload=()=>{ clearTimeout(t);
+      if(window.CardioTema) ok(window.CardioTema);
+      else { console.warn('[cardio-tema] cardio-tema.js carregou sem expor CardioTema'); falha(new Error('sem API')); } };
+    el.onerror=()=>{ clearTimeout(t); console.warn('[cardio-tema] falha ao baixar cardio-tema.js'); falha(new Error('rede')); };
+    document.body.appendChild(el);
+  }).catch(e=>{ _cardioTemaCarregando=null; throw e; });
+  return _cardioTemaCarregando;
+}
+const CARDIO_TEMA_FLAG='idealis_cardio_tema';
+function temaLigado(){
+  try{
+    if(!LS_OK) return false;
+    const q=window.location.search||'';
+    if(/[?&]tema=1(&|$)/.test(q)) window.localStorage.setItem(CARDIO_TEMA_FLAG,'1');
+    if(/[?&]tema=0(&|$)/.test(q)) window.localStorage.removeItem(CARDIO_TEMA_FLAG);
+    return window.localStorage.getItem(CARDIO_TEMA_FLAG)==='1';
+  }catch(e){ return false; }
+}
+/* camada do cenário: o React só cria o <div>; o motor desenha dentro dele.
+   Desmonta ao minimizar (zero quadros) e volta com o mesmo sorteio (temaRef). */
+function CenaTema({sessao,fase,pos,idx,pausado,decorrido,temaRef,onAtivo}){
+  const hostRef=React.useRef(null);
+  const ctrlRef=React.useRef(null);
+  useEffect(()=>{
+    let vivo=true;
+    carregarCardioTema().then(CT=>{
+      if(!vivo || !hostRef.current) return;
+      let c=null;
+      try{ c=CT.criar(hostRef.current,{blocos:sessao.blocos, exercicio:sessao.nome, tema:temaRef.current}); }
+      catch(e){ console.warn('[cardio-tema] erro ao montar o cenário',e); c=null; }
+      if(!c){ onAtivo(false); return; }
+      ctrlRef.current=c; temaRef.current=c.tema(); onAtivo(true);
+    }).catch(()=>{ if(vivo) onAtivo(false); });
+    return ()=>{ vivo=false; if(ctrlRef.current){ try{ ctrlRef.current.destruir(); }catch(e){} ctrlRef.current=null; } };
+  },[]);
+  useEffect(()=>{
+    const c=ctrlRef.current; if(!c) return;
+    try{ c.atualizar({fase,pos,idx,pausado,decorrido}); }catch(e){ console.warn('[cardio-tema] erro ao atualizar',e); }
+  });
+  return <div className="cdtema" ref={hostRef} aria-hidden="true"></div>;
+}
 function CardioOverlay({cardio}){
   const sessao=cardio.sessao;
   // o tick mora AQUI: só o overlay re-renderiza. 250ms deixa o 3-2-1 e o
   // preenchimento do perfil fluidos sem custo para o resto do app.
   const [agora,setAgora]=useState(Date.now());
   const wakeRef=React.useRef(null);
+  // cardio temático: sorteio guardado aqui para sobreviver ao minimizar
+  const temaRef=React.useRef(null);
+  const [temaOn,setTemaOn]=useState(false);
+  const usarTema=useMemo(()=>temaLigado(),[]);
   useEffect(()=>{
     const id=setInterval(()=>setAgora(Date.now()),250);
     const onVis=()=>{ if(document.visibilityState==='visible') setAgora(Date.now()); };
@@ -5081,7 +5148,9 @@ function CardioOverlay({cardio}){
   const rot = atual && atual.rotulo && atual.rotulo!==zonaInfo(nRef.zona).label && atual.rotulo!==nRef.label
     ? atual.rotulo : '';
   const slamVivo = slam && (agora-slam.t)<1800;
-  return (<div className={'cdover f-'+fase+(pendente!=null?' ckon':'')+(e.pausado?' pausado':'')} style={{'--cd':cor}}>
+  return (<div className={'cdover f-'+fase+(pendente!=null?' ckon':'')+(e.pausado?' pausado':'')+(temaOn?' temaon':'')} style={{'--cd':cor}}>
+    {usarTema && <CenaTema sessao={sessao} fase={fase} pos={pos} idx={idx} pausado={e.pausado}
+      decorrido={atual?Math.max(0,pos-bAt.ini):0} temaRef={temaRef} onAtivo={setTemaOn}/>}
     <div className="cdamb" aria-hidden="true"></div>
     {slamVivo && <React.Fragment key={slam.k}>
       <div className="cdveu" aria-hidden="true"></div>
