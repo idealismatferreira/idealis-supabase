@@ -8251,7 +8251,7 @@ function ExerciseSheet({initial,onSave,onClose,flash}){
   const [setsManual,setSetsManual]=useState(false);
   const [repsManual,setRepsManual]=useState(false);
   // descanso: guardado como "45~60" (range) ou "60" (único)
-  const descOpts=['30','30~45','45~60','50~70','60~75','60~90','90~120','120~180'];
+  const descOpts=['30','30~45','45~60','50~70','60~75','60~90','75~90','90~120','120~180'];
   const [descanso,setDescanso]=useState(initial&&initial.descanso?initial.descanso:'');
   const [descManual,setDescManual]=useState(false);
   const [filmar,setFilmar]=useState(initial?!!initial.filmar:false);
@@ -9108,6 +9108,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
   const [registering,setRegistering]=useState(null);
   const [relatando,setRelatando]=useState(null); // {exId|null, exNome|null, atual}
   const [fixAberto,setFixAberto]=useState({});   // exId -> anotações fixadas expandidas
+  const [apagandoRel,setApagandoRel]=useState(null); // anotação aguardando confirmação de exclusão
   const [corrAberto,setCorrAberto]=useState({}); // exId -> correções expandidas
   const [corrigindo,setCorrigindo]=useState(null); // {ex, atual} — só treinador
   /* o aluno decide se quer o 🔧 aqui dentro (padrão: não). Lido uma vez na
@@ -9362,9 +9363,14 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
   const fixadasDoEx = (exId)=>relatos.filter(r=>r.exercicioId===exId && r.fixado && r.data!==todayISO());
   const nomePorEx = (t.exercises||[]).reduce((a,ex)=>{a[ex.id]=ex.name;return a;},{});
   const updRelatos=(lista)=>updTreino({relatos:lista});
-  const salvarRelato=(exId,texto,fixado)=>{
+  const salvarRelato=(exId,texto,fixado,relId)=>{
     const fix=!!fixado;
-    const existente=relatosHoje.find(r=>r.exercicioId===(exId||null));
+    // com relId edita aquela anotação (inclusive fixada de outro dia);
+    // sem relId segue a regra de sempre: a anotação de HOJE deste exercício
+    const existente=relId
+      ? relatos.find(r=>r.id===relId)
+      : relatosHoje.find(r=>r.exercicioId===(exId||null));
+    const msg=(existente && existente.data!==todayISO())?'Anotação atualizada ✓':'Anotado ✓';
     if(existente){
       updRelatos(relatos.map(r=>r.id===existente.id?{...r,texto,fixado:fix}:r));
       enqueueOp({tipo:'update',tabela:'relatos',id:existente.id,dados:{texto,fixado:fix}});
@@ -9379,13 +9385,20 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
       }});
     }
     setRelatando(null);
-    flash('Anotado ✓');
+    flash(msg);
   };
   const apagarRelato=(id)=>{
     updRelatos(relatos.filter(r=>r.id!==id));
     enqueueOp({tipo:'delete',tabela:'relatos',id});
     setRelatando(null);
     flash('Anotação removida');
+  };
+  /* LOTE_FIXADAS_EDITAR: desafixar NÃO apaga. Só tira da tela do aluno
+     (fixado=false); o treinador continua vendo no histórico. */
+  const desafixarRelato=(r)=>{
+    updRelatos(relatos.map(x=>x.id===r.id?{...x,fixado:false}:x));
+    enqueueOp({tipo:'update',tabela:'relatos',id:r.id,dados:{fixado:false}});
+    flash('Saiu da sua tela ✓');
   };
   /* RETROSPECTIVA: pergunta sobre a última sessão CONCLUÍDA, na abertura
      do treino seguinte. Só com dor ativa, só uma vez por sessão de
@@ -9766,6 +9779,11 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                   <span className="erbody">
                     <span className="erdata">{fmtDate(r.data)} · fixada por você</span>
                     <span className="ertxt">{r.texto}</span>
+                    <span className="crbtns">
+                      <button onClick={()=>setRelatando({exId:ex.id, exNome:ex.name, atual:r})}><Ic n="pencil"/> editar</button>
+                      <button onClick={()=>desafixarRelato(r)}><Ic n="pin"/> desafixar</button>
+                      <button className="perigo" onClick={()=>setApagandoRel(r)}><Ic n="trash"/> apagar</button>
+                    </span>
                   </span>
                 </div>))}
               <button className="relfix" onClick={()=>setFixAberto(m=>({...m,[ex.id]:false}))}>
@@ -10106,9 +10124,20 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
     {relatando && <RelatoSheet exNome={relatando.exNome}
       inicial={relatando.atual?relatando.atual.texto:''}
       fixadoInicial={relatando.atual?relatando.atual.fixado:false}
-      onSalvar={(txt,fix)=>salvarRelato(relatando.exId,txt,fix)}
-      onApagar={relatando.atual?()=>apagarRelato(relatando.atual.id):null}
+      onSalvar={(txt,fix)=>salvarRelato(relatando.exId,txt,fix,relatando.atual?relatando.atual.id:null)}
+      onApagar={(relatando.atual && relatando.atual.data===todayISO())?()=>apagarRelato(relatando.atual.id):null}
       onClose={()=>setRelatando(null)}/>}
+    {apagandoRel && <div className="dlgback" onClick={()=>setApagandoRel(null)}>
+      <div className="dlg" onClick={e=>e.stopPropagation()}>
+        <div className="dlgico"><Ic n="trash" r="danger" c/></div>
+        <div className="dlgtit">Apagar anotação?</div>
+        <div className="dlgtxt">Ela some pra você e pro Matheus.<br/>
+          Se só não quer mais ver, use <b>desafixar</b>.</div>
+        <div className="dlgacts">
+          <button className="btn ghost" onClick={()=>setApagandoRel(null)}>Cancelar</button>
+          <button className="btn danger" onClick={()=>{ apagarRelato(apagandoRel.id); setApagandoRel(null); }}>Apagar</button>
+        </div>
+      </div></div>}
     {retroDor && ehAluno && <RetroSheet dores={s.dores||[]} dataRef={retroDor.dataRef}
       onResponder={(esc)=>fecharRetro(true,esc)} onPular={()=>fecharRetro(false)}/>}
     {finalizando && <FimTreinoSheet relatosHoje={relatosHoje} nomePorEx={nomePorEx}
