@@ -83,6 +83,11 @@
     --lime-chip:rgba(221,255,0,.1); --lime-chip-line:rgba(221,255,0,.45);
     --lime-chip-on:rgba(221,255,0,.26); --lime-chip-fg:var(--lime);
     --topbar:rgba(11,31,31,.92); --topbar-line:var(--line);
+    /* LOTE_ANIM — movimento: tempos e cores num lugar só (multitenant: o tema pode trocar) */
+    --mov-passo:25ms; --mov-item:280ms; --mov-abre:280ms; --mov-fecha:200ms; --mov-curva:cubic-bezier(.2,.8,.2,1);
+    --mov-pos-bg:#16331f; --mov-pos-line:rgba(46,204,113,.42);
+    --mov-neg-bg:#3a191d; --mov-neg-line:rgba(255,92,108,.38);
+    --mov-brilho:rgba(221,255,0,.24); --mov-previa:rgba(0,201,204,.20);
   }
   /* toggle deslizante: pílula com dois ícones fixos e um "polegar" que corre.
      Fica só na home do aluno, à esquerda — onde a seta ‹ não existe. */
@@ -687,6 +692,9 @@
     --lime-chip:#eef7c4; --lime-chip-line:#7d9200; --lime-chip-on:#e2f0a0;
     --topbar:rgba(187,239,242,.94); --topbar-line:#93d6db;
     --lime-chip-fg:#5c6b00;   /* texto do chip: mais escuro que o lime geral */
+    --mov-pos-bg:#dcf2e5; --mov-pos-line:rgba(23,115,74,.38);
+    --mov-neg-bg:#fbe2e4; --mov-neg-line:rgba(179,32,47,.32);
+    --mov-brilho:rgba(166,192,0,.24); --mov-previa:rgba(0,133,138,.16);
     background:var(--bg); color:var(--text);
   }
   /* o amarelo de conquista precisa escurecer um pouco: #ddff00 puro
@@ -2123,6 +2131,80 @@
     background:none;border:0;padding:6px;cursor:pointer;text-decoration:underline;
     -webkit-tap-highlight-color:transparent}
 
+  /* ===== LOTE_ANIM — MOVIMENTO =====
+     Regras: (1) só toque do aluno anima — dado chegando do servidor nunca;
+     (2) abrir no lugar = VARREDURA: blocos entram da esquerda, em sequência,
+     no máx. 6 degraus (~0,4 s no total); (3) trocar de tela = só esmaecer
+     (transform aqui viraria referência dos position:fixed de dentro da tela);
+     (4) MOV.ligado=false no JS desliga tudo; "reduzir movimento" do aparelho também. */
+  .mvrev{overflow:hidden}
+  .mvrev.mv-tr{transition:height var(--mov-abre) var(--mov-curva)}
+  .mvrev.mv-trf{transition:height var(--mov-fecha) cubic-bezier(.4,0,.2,1)}
+  .mvrev.mv-sai>.mvin{animation:mvSai .14s ease-in both}
+  .mvrev.mv-entra>.mvin>*,.mvrev.mv-entra>.mvin>.mvgrupo>*{animation:mvVarre var(--mov-item) var(--mov-curva) both}
+  .mvrev.mv-entra>.mvin>.mvgrupo{animation:none}
+  .mvrev.mv-entra>.mvin>:nth-child(2),.mvrev.mv-entra>.mvin>.mvgrupo>:nth-child(2){animation-delay:var(--mov-passo)}
+  .mvrev.mv-entra>.mvin>:nth-child(3),.mvrev.mv-entra>.mvin>.mvgrupo>:nth-child(3){animation-delay:calc(var(--mov-passo)*2)}
+  .mvrev.mv-entra>.mvin>:nth-child(4),.mvrev.mv-entra>.mvin>.mvgrupo>:nth-child(4){animation-delay:calc(var(--mov-passo)*3)}
+  .mvrev.mv-entra>.mvin>:nth-child(5),.mvrev.mv-entra>.mvin>.mvgrupo>:nth-child(5){animation-delay:calc(var(--mov-passo)*4)}
+  .mvrev.mv-entra>.mvin>:nth-child(n+6),.mvrev.mv-entra>.mvin>.mvgrupo>:nth-child(n+6){animation-delay:calc(var(--mov-passo)*5)}
+  /* linhas de série entram uma a uma dentro do plano do exercício */
+  .mvrev.mv-entra .metplano>.mpserie{animation:mvVarre var(--mov-item) var(--mov-curva) both;animation-delay:calc(var(--mov-passo)*2)}
+  .mvrev.mv-entra .metplano>.mpserie:nth-child(2){animation-delay:calc(var(--mov-passo)*3)}
+  .mvrev.mv-entra .metplano>.mpserie:nth-child(3){animation-delay:calc(var(--mov-passo)*4)}
+  .mvrev.mv-entra .metplano>.mpserie:nth-child(n+4){animation-delay:calc(var(--mov-passo)*5)}
+  /* só o 'from': o fim é o estilo do próprio bloco (ex.: aba desabilitada continua esmaecida) */
+  @keyframes mvVarre{from{opacity:0;transform:translateX(-18px)}}
+  @keyframes mvSai{from{opacity:1}to{opacity:0}}
+  .mvrev .pjdet{animation:none}
+  /* troca de tela */
+  .mvtela.mv-tela{animation:mvTela .22s ease-out}
+  @keyframes mvTela{from{opacity:0}}
+  /* brilho no ✓ (exercício ou bloco concluído) */
+  .exrow.mv-brilho{position:relative;overflow:hidden}
+  .gpwrap.mv-brilho{overflow:hidden}
+  .mv-brilho::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;
+    background:linear-gradient(105deg,transparent 32%,var(--mov-brilho) 50%,transparent 68%);
+    animation:mvBrilho .76s cubic-bezier(.3,.6,.3,1) both}
+  .mv-brilho .seriering .srring{animation:mvPop .46s cubic-bezier(.3,1.7,.5,1)}
+  @keyframes mvBrilho{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+  @keyframes mvPop{0%{transform:scale(1)}30%{transform:scale(.82)}100%{transform:scale(1)}}
+  /* prévia do próximo (no card recém-concluído, durante a espera) */
+  .mvprevia{position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;margin-top:12px;padding:9px 10px;
+    border-radius:12px;background:var(--surface-2);border:1px solid var(--cyan)}
+  .mvpvfill{position:absolute;inset:0;background:var(--mov-previa);transform-origin:left;animation:mvEnche 2.5s linear both}
+  .mvprevia>*:not(.mvpvfill){position:relative}
+  .mvprevia .mmapa{flex:0 0 32px;width:32px;height:39px}
+  .mvprevia .mmclip>svg{width:28px;height:35px}
+  .mvpvtxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .mvpvlab{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan-2)}
+  .mvpvtxt b{font-size:13.5px;font-weight:700;line-height:1.25;color:var(--text)}
+  .mvpvpresc{font-size:11.5px;color:var(--muted)}
+  .mvpvbtn{flex:0 0 auto;padding:8px 12px;border-radius:10px;border:1px solid var(--cyan);background:rgba(0,201,204,.12);
+    color:var(--cyan-2);font-size:12.5px;font-weight:800;cursor:pointer}
+  .mvpvbtn:active{transform:scale(.95)}
+  @keyframes mvEnche{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  /* pouso no número (Registrar Carga) — camada fixa por cima da folha */
+  .movcamada{position:fixed;inset:0;pointer-events:none;z-index:45;overflow:hidden}
+  .mvvoo{position:absolute;width:0;height:0;animation:mvVooX .52s cubic-bezier(.45,0,.25,1) forwards}
+  .mvvoo>.mvpill{position:absolute;left:0;top:0;animation:mvVooY .52s cubic-bezier(.15,.85,.35,1) forwards}
+  .mvpill{padding:5px 11px;border-radius:999px;font-size:13px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .mvpill.p{color:var(--soft-green-2);background:var(--mov-pos-bg);border:1px solid var(--mov-pos-line)}
+  .mvpill.n{color:var(--soft-red);background:var(--mov-neg-bg);border:1px solid var(--mov-neg-line)}
+  @keyframes mvVooX{from{transform:translateX(0)}to{transform:translateX(var(--tx))}}
+  @keyframes mvVooY{0%{transform:translate(-50%,-50%) scale(.8);opacity:0}
+    12%{opacity:1;transform:translate(-50%,calc(-50% - 10px)) scale(1.05)}85%{opacity:1}
+    100%{transform:translate(-50%,calc(-50% + var(--ty))) scale(.65);opacity:0}}
+  .mvpt{position:absolute;width:6px;height:6px;border-radius:50%;animation:mvPt .54s cubic-bezier(.15,.7,.3,1) both}
+  @keyframes mvPt{0%{transform:translate(-50%,-50%) scale(1);opacity:0}4%{opacity:1}
+    100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(.2);opacity:0}}
+  input.mv-pousou{animation:mvPouso .4s cubic-bezier(.3,1.6,.5,1)}
+  @keyframes mvPouso{0%{transform:scale(1)}35%{transform:scale(1.03);border-color:var(--cyan)}100%{transform:scale(1)}}
+  @media (prefers-reduced-motion:reduce){
+    .mvrev{transition:none!important}
+    .mvrev>.mvin,.mvrev>.mvin>*,.mvrev .mvgrupo>*,.mvrev .mpserie,.mvtela,.mv-brilho::after,.mv-brilho .srring,
+    .mvvoo,.mvvoo>.mvpill,.mvpt,input.mv-pousou{animation:none!important}
+  }
   /* ===== MAPA MUSCULAR (ao lado do nome do exercício) — lote mapa muscular + lote mapa vários grupos ===== */
   .mmapa{position:relative;flex:0 0 38px;width:38px;height:46px}
   .mmclip{width:100%;height:100%;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);
@@ -2661,7 +2743,7 @@ function PlanoFases({db,nav,studentId}){
                 <PlnIco tipo="cadeado" size={14}/><span>{foco
                   ? <React.Fragment>Desbloqueia: <b>{foco}</b></React.Fragment>
                   : 'Você ainda vai desbloquear essa fase. Continue pegando firme!'}</span></div>}
-              {aberta && st!=='futura' && <div className="pjdet">
+              <Revela aberto={aberta && st!=='futura'}><div className="pjdet mvgrupo">
                 {f.categoria && <div className="plncat"
                   style={f.cor?{color:f.cor,borderColor:f.cor}:null}>{f.categoria}</div>}
                 {obj.length>0 && <div className="plnsec">
@@ -2673,7 +2755,7 @@ function PlanoFases({db,nav,studentId}){
                   {met.map((l,k)=><div key={k} className="plnli">{l}</div>)}
                 </div>}
                 {f.observacao && <div className="plnobs">{f.observacao}</div>}
-              </div>}
+              </div></Revela>
               {temDet && st!=='futura' && <button className="pjver" aria-expanded={aberta}
                 onClick={()=>setAbertas(m=>({...m,[chave]:!m[chave]}))}>
                 {aberta?'Ocultar detalhes':'Ver detalhes'}<span className="pjchev">›</span></button>}
@@ -4502,6 +4584,143 @@ function numSeries(series){
   return null;
 }
 /* Anel de progresso das séries (só na sessão, não persiste) */
+/* ===== LOTE_ANIM — MOVIMENTO =====
+   INTERRUPTOR GERAL: MOV.ligado=false desliga TODAS as animações deste lote de
+   uma vez (abrir/fechar volta a ser seco, sem faísca, sem brilho, sem
+   transição de tela). MOV.previa=false devolve o "fecha sozinho e abre o
+   próximo" ao comportamento antigo (1,5 s, sem a prévia e sem "Ficar aqui").
+   Multitenant: estes valores são candidatos a configuração por tenant. */
+const MOV={ligado:true, previa:true, espera:2500, fecha:200, abre:280};
+function movAtivo(){
+  if(!MOV.ligado) return false;
+  try{ return !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  catch(e){ return true; }
+}
+/* Revela: abre/fecha uma área NO LUGAR com varredura. Mantém o conteúdo
+   montado durante o fechar (para animar a saída) e NÃO anima na 1ª montagem
+   — só quando `aberto` muda (toque do aluno). Sem movimento: abre/fecha seco. */
+function Revela({aberto,children,animarMontagem}){
+  const ref=React.useRef(null);
+  const [mostrar,setMostrar]=React.useState(!!aberto);
+  if(aberto && !mostrar) setMostrar(true);
+  const primeira=React.useRef(true);
+  const gen=React.useRef(0);
+  React.useLayoutEffect(()=>{
+    const inicio=primeira.current; primeira.current=false;
+    if(inicio && !(aberto && animarMontagem)) return;
+    const el=ref.current;
+    const g=++gen.current;
+    if(aberto){
+      if(!el || !movAtivo()) return;
+      const de=el.classList.contains('mv-fechando') ? el.getBoundingClientRect().height : 0;
+      el.classList.remove('mv-fechando','mv-trf','mv-sai');
+      el.style.height=de+'px';
+      const ate=el.scrollHeight;
+      void el.offsetHeight;
+      el.classList.add('mv-tr','mv-entra');
+      el.style.height=ate+'px';
+      setTimeout(()=>{ if(gen.current!==g) return; el.style.height=''; el.classList.remove('mv-tr'); }, MOV.abre+40);
+      setTimeout(()=>{ if(gen.current===g) el.classList.remove('mv-entra'); }, 900);
+    }else{
+      if(!el || !movAtivo()){ setMostrar(false); return; }
+      el.classList.remove('mv-tr','mv-entra');
+      el.style.height=el.getBoundingClientRect().height+'px';
+      void el.offsetHeight;
+      el.classList.add('mv-fechando','mv-trf','mv-sai');
+      el.style.height='0px';
+      setTimeout(()=>{ if(gen.current===g) setMostrar(false); }, MOV.fecha+20);
+    }
+  },[aberto]);
+  if(!mostrar) return null;
+  return <div className="mvrev" ref={ref}><div className="mvin">{children}</div></div>;
+}
+/* prévia do próximo: mini card que vai enchendo durante MOV.espera.
+   Guarda o último conteúdo para animar a saída sem piscar vazio. */
+function PreviaProx({info,onFicar}){
+  const ult=React.useRef(info);
+  if(info) ult.current=info;
+  const d=ult.current;
+  return (<Revela aberto={!!info}>
+    {d && <div className="mvprevia" role="status">
+      <span className="mvpvfill" style={{animationDuration:MOV.espera+'ms'}}></span>
+      <MapaMusc grupo={d.grupo} cardio={d.cardio}/>
+      <span className="mvpvtxt">
+        <span className="mvpvlab">A seguir</span>
+        <b>{d.nomes}</b>
+        {d.presc ? <span className="mvpvpresc">{d.presc}</span> : null}
+      </span>
+      <button type="button" className="mvpvbtn" onClick={onFicar}>Ficar aqui</button>
+    </div>}
+  </Revela>);
+}
+/* pouso no número: o selo do ajuste voa do botão até o valor do campo,
+   que dá um pulinho e solta faíscas (mais faíscas quanto maior o salto;
+   no "−" saem menos e vermelhas — tirar carga não é festa). Só visual. */
+let movCanvas=null;
+function movPontoTexto(input){
+  const r=input.getBoundingClientRect();
+  let x=r.left+r.width*0.2;
+  try{
+    const cs=getComputedStyle(input);
+    if(!movCanvas) movCanvas=document.createElement('canvas');
+    const ctx=movCanvas.getContext('2d');
+    ctx.font=cs.fontWeight+' '+cs.fontSize+' '+cs.fontFamily;
+    const w=ctx.measureText(String(input.value||'')).width;
+    x=r.left+(parseFloat(cs.paddingLeft)||0)+Math.min(Math.max(w,12)/2, r.width/2);
+  }catch(e){}
+  return {x, y:r.top+r.height/2};
+}
+function movFaiscas(cam,x,y,delta){
+  const pos=delta>=0, a=Math.abs(delta)||1;
+  let n=Math.max(6, Math.min(12, Math.round(6+Math.log2(a+1)*2)));
+  if(!pos) n=Math.max(4, Math.round(n*0.6));
+  const cores=pos?['var(--lime)','var(--cyan)','var(--soft-green-2)']:['var(--soft-red)','var(--danger)'];
+  const base=Math.random()*360;
+  for(let i=0;i<n;i++){
+    const ang=(base+i*(360/n)+(Math.random()*20-10))*Math.PI/180;
+    const dist=(22+Math.random()*14)*(pos?1.1:0.85);
+    const p=document.createElement('span');
+    p.className='mvpt';
+    p.style.left=x+'px'; p.style.top=y+'px'; p.style.background=cores[i%cores.length];
+    p.style.setProperty('--tx', Math.round(Math.cos(ang)*dist)+'px');
+    p.style.setProperty('--ty', Math.round(Math.sin(ang)*dist)+'px');
+    cam.appendChild(p);
+    setTimeout(()=>p.remove(), 900);
+  }
+}
+function movPouso(btn,alvo,delta,unidade){
+  if(!delta || !btn || !alvo || !movAtivo()) return;
+  const cam=document.getElementById('movcamada'); if(!cam) return;
+  const rb=btn.getBoundingClientRect();
+  const x0=rb.left+rb.width/2, y0=rb.top+rb.height/2;
+  const p1=movPontoTexto(alvo);
+  const pos=delta>0, ab=Math.abs(delta);
+  const num=String(Math.round(ab*10)/10).replace('.',',');
+  const txt=(pos?'+':'−')+(unidade==='rep' ? num+(ab===1?' rep':' reps') : num+' '+(unidade||'kg'));
+  const voo=document.createElement('span');
+  voo.className='mvvoo';
+  voo.style.left=x0+'px'; voo.style.top=y0+'px';
+  voo.style.setProperty('--tx', Math.round(p1.x-x0)+'px');
+  const pill=document.createElement('span');
+  pill.className='mvpill '+(pos?'p':'n'); pill.textContent=txt;
+  pill.style.setProperty('--ty', Math.round(p1.y-y0)+'px');
+  voo.appendChild(pill); cam.appendChild(voo);
+  setTimeout(()=>voo.remove(), 1200);
+  setTimeout(()=>{
+    if(!alvo.isConnected) return;               // folha fechou no meio do voo
+    const p=movPontoTexto(alvo);
+    alvo.classList.remove('mv-pousou'); void alvo.offsetWidth; alvo.classList.add('mv-pousou');
+    setTimeout(()=>alvo.classList.remove('mv-pousou'), 450);
+    movFaiscas(cam, p.x, p.y, delta);
+  }, 470);
+}
+/* brilho no ✓: um reflexo lime atravessa o card concluído e o anel dá um pulinho */
+function movBrilho(chave){
+  if(!movAtivo()) return;
+  const el=document.getElementById('un-'+chave); if(!el) return;
+  el.classList.remove('mv-brilho'); void el.offsetWidth; el.classList.add('mv-brilho');
+  setTimeout(()=>el.classList.remove('mv-brilho'), 900);
+}
 function SerieRing({total,feitas,onAvancar,onZerar,rotulo}){
   const completo = feitas>=total;
   const R=17, C=2*Math.PI*R;
@@ -5683,6 +5902,19 @@ function App({auth}){
   const timer=useRestTimer();
   const cardio=useCardioTimer();
   const iso=useIsoTimer();
+  /* LOTE_ANIM: troca de tela esmaece de leve. Só opacidade: transform aqui
+     viraria referência dos position:fixed que moram dentro das telas. */
+  const telaMovRef=React.useRef(null);
+  const telaMovChave=[view.name,view.studentId||'',view.treinoId||'',view.faseId||'',view.exName||''].join('|');
+  const telaMovPrimeira=React.useRef(true);
+  React.useLayoutEffect(()=>{
+    if(telaMovPrimeira.current){ telaMovPrimeira.current=false; return; }
+    const el=telaMovRef.current;
+    if(!el || !movAtivo()) return;
+    el.classList.remove('mv-tela'); void el.offsetWidth; el.classList.add('mv-tela');
+    const id=setTimeout(()=>el.classList.remove('mv-tela'), 260);
+    return ()=>clearTimeout(id);
+  },[telaMovChave]);
   /* log de cardio: auto-log (tempo e blocos) + campos opcionais da tela de fim.
      Guardado na própria tabela `logs`, em `extra` (jsonb). */
   cardio.salvarLog=(sessao, estado, extras)=>{
@@ -5960,15 +6192,18 @@ function App({auth}){
         strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20.5 14.5A8.6 8.6 0 0 1 9.5 3.5a8.6 8.6 0 1 0 11 11z"/></svg></span>
     </button>}
+    <div className="mvtela" ref={telaMovRef}>
     {screen || <div className="screen"><div className="empty"><div className="big">🧭</div>
       <p>Não encontrei essa tela.</p>
       <button className="btn" style={{marginTop:14}}
         onClick={()=>nav(ehAluno?{name:'student',studentId:meuAlunoId}:{name:'students'})}>
         Voltar ao início</button></div></div>}
+    </div>
     <NuvemBadge carga={carga} fila={fila} ehAluno={ehAluno} onRetry={()=>{flushOps(true);recarregar();}}/>
     <RestTimerOverlay timer={timer} voltar={voltarDaTela}/>
     {cardio.ativo && <CardioOverlay cardio={{...cardio, fcMax:fcMaxDoAlunoEmFoco}}/>}
     {iso.ativo && <IsoOverlay iso={iso}/>}
+    <div id="movcamada" className="movcamada" aria-hidden="true"></div>
     {toast && <div className="toast">{toast}</div>}
   </div>);
 }
@@ -7676,7 +7911,7 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
             c.abrirTreino();
             if(cardio && cardio.iniciar) cardio.iniciar(expandirCardio(exs[0].cardio), exs[0].name, exs[0].id);
           };
-          return (<div className="trabas">
+          return (<div className="trabas mvgrupo">
             <button className="trab principal" onClick={soCardio?iniciar:c.abrirTreino}>
               <span className="tabtxt">{soCardio
                 ? '▶ Iniciar cardio · '+fmtMin(totalCardioSeg(exs[0].cardio))
@@ -7728,7 +7963,7 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
           if(!ehAluno) return card;
           return (<div key={t.id} className={'trwrap'+(c.aberto?' aberto':'')}>
             {card}
-            {c.aberto && aba(t,c)}
+            <Revela aberto={c.aberto}>{aba(t,c)}</Revela>
           </div>);
         };
         const linhaCardio=(t)=>{
@@ -7747,7 +7982,7 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
               </div>
               <div className="chev" style={{color:'var(--muted)',fontSize:20}}>{c.aberto?'⌄':'›'}</div>
             </div>
-            {c.aberto && aba(t,c)}
+            <Revela aberto={c.aberto}>{aba(t,c)}</Revela>
           </div>);
         };
         if(!segmentar) return treinosVisiveis.map(cardTreino);
@@ -8840,6 +9075,28 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
     const cur=parseInt(series[i].reps,10);
     setSerie(i,{reps:String(Math.max(0,(isNaN(cur)?0:cur)+d))}); setErro('');
   };
+  /* LOTE_ANIM: pouso no número — o selo do ajuste voa do botão até o valor.
+     Só visual: o valor continua mudando na hora, como antes. */
+  const cargaInRef=React.useRef(null), repsInRef=React.useRef(null);
+  const bumpC=(e,d)=>{
+    const cur=parseCarga((series[ativa]||at).carga), antes=cur.num!=null?cur.num:0;
+    movPouso(e.currentTarget, cargaInRef.current, Math.round((Math.max(0,antes+d)-antes)*10)/10, cur.suf||'kg');
+    bumpSerie(ativa,d);
+  };
+  const bumpR=(e,d)=>{
+    const cur=parseInt((series[ativa]||at).reps,10), antes=isNaN(cur)?0:cur;
+    movPouso(e.currentTarget, repsInRef.current, Math.max(0,antes+d)-antes, 'rep');
+    bumpRepsSerie(ativa,d);
+  };
+  // atalhos (10, 20, 40…): só voa quando já havia um valor — "+40 kg" saindo do vazio confundiria
+  const presetC=(e,v)=>{
+    const cur=parseCarga(at.carga);
+    if(cur.num!=null) movPouso(e.currentTarget, cargaInRef.current, Math.round((v-cur.num)*10)/10, cur.suf||'kg');
+  };
+  const presetR=(e,v)=>{
+    const cur=parseInt(at.reps,10);
+    if(!isNaN(cur)) movPouso(e.currentTarget, repsInRef.current, v-cur, 'rep');
+  };
   const save=(marcarSerie)=>{
     // registro independente: salva SÓ as séries completas (carga + reps).
     // As demais ficam de fora sem bloquear — a carga pré-preenchida sozinha não conta como iniciada.
@@ -8951,7 +9208,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
           </span>))}
       </div>}
       <div className="field"><label className="reglab">Carga{!isEdit && series.length>1?' · '+(ativa+1)+'ª série':''}</label>
-        <input value={at.carga} inputMode="decimal"
+        <input ref={cargaInRef} value={at.carga} inputMode="decimal"
           onChange={e=>{setAt({carga:e.target.value});setErro('');}}
           onBlur={e=>{
             // número puro digitado no teclado vira "12kg". Sem isto convivem
@@ -8964,31 +9221,31 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
         <div className="reprow">
           {[10,20,40,50,80,100].map(v=>(
             <button type="button" key={v} className={'rpreset'+(parseCarga(at.carga).num===v?' sel':'')}
-              onClick={()=>setAt({carga:fmtNum(v)+(parseCarga(at.carga).suf||'kg')})}>{v}</button>
+              onClick={e=>{ presetC(e,v); setAt({carga:fmtNum(v)+(parseCarga(at.carga).suf||'kg')}); }}>{v}</button>
           ))}
         </div>
         <div className="bumpgrid">
-          <button type="button" className="bump minus" onClick={()=>bumpSerie(ativa,-10)}>−10</button>
-          <button type="button" className="bump minus" onClick={()=>bumpSerie(ativa,-2.5)}>−2,5</button>
-          <button type="button" className="bump minus" onClick={()=>bumpSerie(ativa,-1)}>−1</button>
-          <button type="button" className="bump plus" onClick={()=>bumpSerie(ativa,1)}>+1</button>
-          <button type="button" className="bump plus" onClick={()=>bumpSerie(ativa,2.5)}>+2,5</button>
-          <button type="button" className="bump plus" onClick={()=>bumpSerie(ativa,10)}>+10</button>
+          <button type="button" className="bump minus" onClick={e=>bumpC(e,-10)}>−10</button>
+          <button type="button" className="bump minus" onClick={e=>bumpC(e,-2.5)}>−2,5</button>
+          <button type="button" className="bump minus" onClick={e=>bumpC(e,-1)}>−1</button>
+          <button type="button" className="bump plus" onClick={e=>bumpC(e,1)}>+1</button>
+          <button type="button" className="bump plus" onClick={e=>bumpC(e,2.5)}>+2,5</button>
+          <button type="button" className="bump plus" onClick={e=>bumpC(e,10)}>+10</button>
         </div>
         {!isEdit && series.length>1 &&
           <button type="button" className="sfcopiar" onClick={aplicarCargaTodas}>⇩ Usar esta carga em todas as séries</button>}
       </div>
       <div className="field"><label className="reglab">Repetições feitas <span className="reghint">(só o número)</span></label>
-        <input type="number" inputMode="numeric" value={at.reps} onChange={e=>{setAt({reps:e.target.value});setErro('');}} placeholder="Ex: 10"/>
+        <input ref={repsInRef} type="number" inputMode="numeric" value={at.reps} onChange={e=>{setAt({reps:e.target.value});setErro('');}} placeholder="Ex: 10"/>
         <div className="reprow">
           {[6,8,10,12,15,20].map(v=>(
             <button type="button" key={v} className={'rpreset'+(String(v)===String(at.reps)?' sel':'')}
-              onClick={()=>setAt({reps:String(v)})}>{v}</button>
+              onClick={e=>{ presetR(e,v); setAt({reps:String(v)}); }}>{v}</button>
           ))}
         </div>
         <div className="repbump">
-          <button type="button" className="bump minus" onClick={()=>bumpRepsSerie(ativa,-1)}>−1</button>
-          <button type="button" className="bump plus" onClick={()=>bumpRepsSerie(ativa,1)}>+1</button>
+          <button type="button" className="bump minus" onClick={e=>bumpR(e,-1)}>−1</button>
+          <button type="button" className="bump plus" onClick={e=>bumpR(e,1)}>+1</button>
         </div>
         {!isEdit && <div className="prefill">Pré-preenchido com a última sessão neste equipamento.</div>}
       </div>
@@ -9116,6 +9373,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
      na tela de correções já vale ao voltar pro treino. */
   const [corrNoTreino]=useState(()=>ehAluno?corrNoTreinoLigado(studentId):true);
   const [finalizando,setFinalizando]=useState(false);
+  const [previa,setPrevia]=useState(null);   // LOTE_ANIM: {chave} da unidade concluída com a prévia do próximo na tela
   const [retroDor,setRetroDor]=useState(null);   // {dataRef} da retrospectiva pendente
   // --- conclusão de treino: só confirmação MANUAL do aluno ---
   const abertoEmRef = React.useRef(marcarAberto(treinoId));
@@ -9141,7 +9399,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
      - abre a próxima pendente SÓ se a concluída estava aberta; concluir pelo anel
        com tudo fechado é o modo rápido e a tela não mexe sozinha */
   const vivoRef=React.useRef({});
-  vivoRef.current={t, seriesFeitas, registering, abertos};
+  vivoRef.current={t, seriesFeitas, registering, abertos, previa};
   const conclRef=React.useRef(null);
   const timersRef=React.useRef({});
   const esperaRef=React.useRef([]);
@@ -9151,19 +9409,32 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
       if(!esperaRef.current.some(x=>x.chave===chave)) esperaRef.current.push({chave,abrirProx});
       return;
     }
+    setPrevia(p=>(p && p.chave===chave) ? null : p);   // LOTE_ANIM
     const un=unidadesDoTreino(v.t, v.seriesFeitas, todayISO());
     const i=un.findIndex(u=>u.chave===chave);
     if(i<0 || !un[i].concl) return;               // desfez no meio tempo
     const alvo = abrirProx ? proximaUnidadePendente(un,i) : null;
+    /* LOTE_ANIM: com movimento, FECHA primeiro e ABRE o próximo quando o
+       fechar terminou — senão a rolagem mira um card que ainda está andando */
+    const anim=movAtivo();
     mexerAbertos(m=>{
       un[i].ids.forEach(id=>{ delete m[id]; });
-      if(alvo) alvo.ids.forEach(id=>{ m[id]=1; });
+      if(alvo && !anim) alvo.ids.forEach(id=>{ m[id]=1; });
       return m;
     });
-    if(alvo) setTimeout(()=>{
+    if(!alvo) return;
+    const rolar=()=>setTimeout(()=>{
       const el=document.getElementById('un-'+alvo.chave);
       if(el && el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'start'});
     }, 90);
+    if(anim) setTimeout(()=>{ mexerAbertos(m=>{ alvo.ids.forEach(id=>{ m[id]=1; }); return m; }); rolar(); }, MOV.fecha+40);
+    else rolar();
+  };
+  /* LOTE_ANIM: "Ficar aqui" na prévia — cancela o fechar sozinho deste card */
+  const ficarAqui=(chave)=>{
+    clearTimeout(timersRef.current[chave]);
+    esperaRef.current=esperaRef.current.filter(x=>x.chave!==chave);
+    setPrevia(p=>(p && p.chave===chave) ? null : p);
   };
   useEffect(()=>{
     if(!t) return;
@@ -9172,11 +9443,19 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
     const agora={}; un.forEach(u=>{ agora[u.chave]=u.concl; });
     conclRef.current=agora;
     if(!antes) return;                              // 1ª passada: só fotografa
-    un.forEach(u=>{
+    // LOTE_ANIM: desfez a concluída durante a prévia → a prévia some e o fechar sozinho para
+    const pv=vivoRef.current.previa;
+    if(pv && agora[pv.chave]===false){ clearTimeout(timersRef.current[pv.chave]); setPrevia(null); }
+    un.forEach((u,idx)=>{
       if(!u.concl || antes[u.chave]!==false) return;
       const estavaAberta=u.ids.some(id=>vivoRef.current.abertos[id]);
       clearTimeout(timersRef.current[u.chave]);
-      timersRef.current[u.chave]=setTimeout(()=>executarRecolher(u.chave, estavaAberta), 1500);
+      movBrilho(u.chave);                           // LOTE_ANIM: brilho no ✓
+      /* LOTE_ANIM: card aberto + próximo pendente → prévia do próximo e
+         espera MOV.espera (2,5 s): dá tempo de ler e tocar "Ficar aqui" */
+      const comPrevia = MOV.previa && estavaAberta && !!proximaUnidadePendente(un,idx);
+      if(comPrevia) setPrevia({chave:u.chave});
+      timersRef.current[u.chave]=setTimeout(()=>executarRecolher(u.chave, estavaAberta), comPrevia?MOV.espera:1500);
     });
   },[seriesFeitas, t]);
   useEffect(()=>{
@@ -9683,6 +9962,25 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
       const nBlocos=blocos.length;
       /* LOTE_BISET_2A: corpo do exercício (vídeo, plano, histórico, ações).
          O mesmo para o card solto e para o detalhe dentro do grupo. */
+      /* LOTE_ANIM: prévia do próximo, no card que acabou de ser concluído.
+         O próximo é calculado AO VIVO — é o mesmo que executarRecolher vai abrir. */
+      const previaEl=(chave)=>{
+        let info=null;
+        if(previa && previa.chave===chave){
+          const un=unidadesDoTreino(t, seriesFeitas, todayISO());
+          const i=un.findIndex(u=>u.chave===chave);
+          const alvo=i>=0 ? proximaUnidadePendente(un,i) : null;
+          const exs=alvo ? alvo.ids.map(id=>(t.exercises||[]).find(e=>e.id===id)).filter(Boolean) : [];
+          if(exs.length){
+            const e0=exs[0];
+            info={ nomes:exs.map(e=>e.name).join(' + '),
+              grupo:e0.exerciseId!=null?(grupoPorId[String(e0.exerciseId)]||''):'', cardio:!!e0.cardio,
+              presc: exs.length>1 ? rotuloGrupo(exs.length)
+                : (e0.cardio ? 'Cardio · '+fmtMin(totalCardioSeg(e0.cardio)) : (e0.metodo ? e0.metodo.nome : (e0.series||''))) };
+          }
+        }
+        return <PreviaProx info={info} onFicar={()=>ficarAqui(chave)}/>;
+      };
       const corpoEx=(ex,bl)=>(<React.Fragment>
           {ex.exerciseId!=null && videoPorId[String(ex.exerciseId)] && <VideoExercicio url={videoPorId[String(ex.exerciseId)]}/>}
           {ex.cardio && (()=>{ const bl=expandirCardio(ex.cardio); return (
@@ -9772,7 +10070,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                 <Ic n="pin" r="aluno"/> {fx.length===1?'1 anotação sua':fx.length+' anotações suas'}
                 <span className="rfseta">▾ ver</span>
               </button>);
-            return (<React.Fragment>
+            return (<Revela aberto animarMontagem><React.Fragment>
               {fx.slice().reverse().map(r=>(
                 <div className="exrel" key={r.id}>
                   <span className="erico"><Ic n="pin" r="aluno" c/></span>
@@ -9789,7 +10087,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
               <button className="relfix" onClick={()=>setFixAberto(m=>({...m,[ex.id]:false}))}>
                 <Ic n="pin" r="aluno"/> esconder <span className="rfseta">▴</span>
               </button>
-            </React.Fragment>);
+            </React.Fragment></Revela>);
           })()}
           {/* 🔧 CORREÇÃO — colapsada. Para o aluno só aparece se ele tiver ligado
               o switch na tela de correções; o portão principal continua sendo o
@@ -9804,7 +10102,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                 {cs.some(c=>!c.vistaEm) && <span className="corrdot"></span>}
                 <span className="cseta">▾ ver</span>
               </button>);
-            return (<React.Fragment>
+            return (<Revela aberto animarMontagem><React.Fragment>
               {cs.map(c=>(
                 <div className="crbox" key={c.id}>
                   <div className="cbico"><Ic n="wrench" r="corr" c/></div>
@@ -9821,7 +10119,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
               <button className="crchip" onClick={()=>setCorrAberto(m=>({...m,[ex.id]:false}))}>
                 <Ic n="wrench" r="corr"/> esconder <span className="cseta">▴</span>
               </button>
-            </React.Fragment>);
+            </React.Fragment></Revela>);
           })()}
           {(()=>{
             const todos=allLogsOfExercise(s,ex.name,ex.exerciseId);
@@ -9902,7 +10200,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                 onKeyDown={ev=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); alternarRecolhido(ex.id); } }}>
                 <span>{ex.name}</span><span className="exchev" aria-hidden="true">▾</span>
               </div>
-              {!recolhido && <div className="exmeta">
+              <Revela aberto={!recolhido}><div className="exmeta">
                 {(()=>{ const tot=totalSeries(ex); const fe=seriesFeitas[ex.id]||0;
                   const cl='exseries'+((ex.metodo||ex.cardio||ex.isometria)?' met':'')+((tot&&fe>=tot)?' concl':'');
                   if(ex.cardio) return <span className={cl}><Ic n="run" r="cardio"/> Cardio · {fmtMin(totalCardioSeg(ex.cardio))}</span>;
@@ -9919,7 +10217,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                   return f ? <button className="exrest" onClick={()=>timer.start(f, ex.name)}>
                     <Ic n="timer"/> Descansar <span className="exresth">{String(d).replace('~','–')}</span>
                   </button> : null; })()}
-              </div>}
+              </div></Revela>
             </div>
             {bl
               ? <button className={'gpchip'+(naRodada?' on':'')+((fimDoBloco||descansandoNoGrupo)?' fim':'')}
@@ -9937,7 +10235,8 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                     <span className="dclabel">Feito</span>
                   </button>)}
           </div>
-          {!recolhido && corpoEx(ex,bl)}
+          {previaEl('e:'+ex.id)}
+          <Revela aberto={!recolhido}>{corpoEx(ex,bl)}</Revela>
         </div>);
       };
       const btnAgrupar=(bIdx)=>(!ehAluno && bIdx<nBlocos-1)
@@ -10037,12 +10336,12 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                   onAvancar={()=>avancarRodada(bl)} onZerar={()=>zerarBloco(bl)}/>
               </div>
             </div>
+            {previaEl('g:'+bl.grupo)}
             {/* detalhe do membro aberto (vídeo, plano, histórico, Registrar Carga…):
                 o mesmo corpo do card solto, embaixo do split, sem card dentro de card */}
             {bl.itens.map((it,pos)=>{
               const ex=it.ex;
-              if(!abertos[ex.id]) return null;
-              return (<div className="gpdet" key={'det:'+ex.id}>
+              return (<Revela key={'det:'+ex.id} aberto={!!abertos[ex.id]}><div className="gpdet mvgrupo">
                 <div className="gpdethead">
                   <span className={'gpsplit-mk gpl-'+pos} aria-hidden="true">{letra(pos)}</span>
                   <MapaMusc grupo={ex.exerciseId!=null?(grupoPorId[String(ex.exerciseId)]||''):''} cardio={!!ex.cardio}/>
@@ -10053,7 +10352,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                 </div>
                 {ex.filmar && <div className="gpdetfilm"><span className="exfilm"><Ic n="video" r="coach"/> Recomendado Filmar</span></div>}
                 {corpoEx(ex,bl)}
-              </div>);
+              </div></Revela>);
             })}
             {!ehAluno && <div className="gpbtns">
               <button onClick={()=>desagrupar(bl)}><Ic n="x"/> Desagrupar</button>
