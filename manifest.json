@@ -1,7 +1,8 @@
 {
+  "id": "/",
   "name": "Idealis Presencial",
   "short_name": "Idealis",
-  "description": "Seus treinos, cargas e evolução — Idealis",
+  "description": "Seus treinos, cargas e evolução no Idealis",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
