@@ -5084,19 +5084,47 @@ function saveMetodosSalvos(lista){
   if(!LS_OK) return;
   try{ window.localStorage.setItem(METODOS_KEY, JSON.stringify(lista||[])); }catch(e){}
 }
+/* PATCH metodos-base */
+/* A tabela `metodos` tem a biblioteca base (treinador_id null, custom:false)
+   e os métodos do treinador (treinador_id preenchido, custom:true).
+   Plano B: se as colunas novas não existirem, lê no formato antigo, tudo custom. */
 async function fetchMetodos(){
   if(!sb || !navigator.onLine) return {ok:false};
   try{
-    const {data,error}=await sb.from('metodos').select('id,nome,familia,tipo,series').order('nome');
-    if(error) return {ok:false, erro:error.message};
+    let {data,error}=await sb.from('metodos')
+      .select('id,nome,familia,tipo,series,treinador_id,ordem')
+      .order('ordem',{ascending:true}).order('nome');
+    let formatoNovo=true;
+    if(error){
+      console.warn('[metodos] leitura nova falhou, usando formato antigo:', error.message);
+      formatoNovo=false;
+      ({data,error}=await sb.from('metodos').select('id,nome,familia,tipo,series').order('nome'));
+      if(error) return {ok:false, erro:error.message};
+    }
     const lista=(data||[]).map(m=>({id:m.id, nome:m.nome, fam:m.familia||FAM_MEUS,
-      tipo:m.tipo||'porSerie', series:m.series||[], custom:true}));
+      tipo:m.tipo||'porSerie', series:m.series||[],
+      custom: formatoNovo ? m.treinador_id!=null : true,
+      ordem: (formatoNovo && m.ordem!=null) ? m.ordem : null}));
     saveMetodosSalvos(lista);
     return {ok:true, lista};
   }catch(e){ return {ok:false, erro:String(e)}; }
 }
-/* lista completa exibida no seletor: salvos primeiro, depois os embutidos */
-function todosMetodos(){ return loadMetodosSalvos().concat(METODOS_TEMPLATE); }
+/* lista completa exibida no seletor:
+   1) métodos do treinador, por nome;
+   2) base do banco, por `ordem` (some se o treinador tem um seu com o mesmo nome);
+   3) METODOS_TEMPLATE só como reserva (entra se o banco não tem o mesmo nome).
+   O agrupamento por família preserva essa ordem dentro de cada família. */
+function todosMetodos(){
+  const salvos=loadMetodosSalvos();
+  const meus=salvos.filter(m=>m.custom);
+  const nomesMeus=new Set(meus.map(m=>normAcc(m.nome)));
+  const base=salvos.filter(m=>!m.custom && !nomesMeus.has(normAcc(m.nome)));
+  const nomesBanco=new Set(salvos.map(m=>normAcc(m.nome)));
+  const reserva=METODOS_TEMPLATE.filter(t=>!nomesBanco.has(normAcc(t.nome)));
+  meus.sort((a,b)=>String(a.nome).localeCompare(String(b.nome),'pt',{sensitivity:'base'}));
+  base.sort((a,b)=>(a.ordem==null?1e9:a.ordem)-(b.ordem==null?1e9:b.ordem));
+  return meus.concat(base, reserva);
+}
 
 /* O catálogo vem de public.cardapio (antes: Apps Script lendo a planilha WTDN,
    congelada desde que o Catálogo passou a gravar no Supabase).
@@ -9104,11 +9132,12 @@ function ExerciseSheet({initial,onSave,onClose,flash,hist}){
     if(!nome || !metodo) return;
     const fam=famSalvar||FAM_MEUS;
     const antigos=loadMetodosSalvos();
-    // salvar com o mesmo nome substitui o anterior (inclusive movendo de família)
-    const substituido=antigos.find(x=>x.nome===nome);
+    // salvar com o mesmo nome substitui o SEU anterior (inclusive movendo de família).
+    // Um método da base nunca é apagado: a sua cópia só esconde ele.
+    const substituido=antigos.find(x=>x.custom && x.nome===nome);
     const novo={id:uid(), nome, fam, tipo:metodo.tipo,
-      series:JSON.parse(JSON.stringify(metodo.series)), custom:true};
-    saveMetodosSalvos([novo].concat(antigos.filter(x=>x.nome!==nome)));
+      series:JSON.parse(JSON.stringify(metodo.series)), custom:true, ordem:100};
+    saveMetodosSalvos([novo].concat(antigos.filter(x=>!(x.custom && x.nome===nome))));
     if(substituido) enqueueOp({tipo:'delete',tabela:'metodos',id:substituido.id});
     enqueueOp({tipo:'insert',tabela:'metodos',dados:{
       id:novo.id, nome:novo.nome, familia:fam, tipo:novo.tipo, series:novo.series
@@ -9117,6 +9146,7 @@ function ExerciseSheet({initial,onSave,onClose,flash,hist}){
     setMetodo(m=>({...m,nome}));
   };
   const apagarTemplate=(t)=>{
+    if(!t || !t.custom) return; // a biblioteca base não se apaga pelo App
     saveMetodosSalvos(loadMetodosSalvos().filter(x=>x.id!==t.id));
     enqueueOp({tipo:'delete',tabela:'metodos',id:t.id});
     setMetVer(v=>v+1);
