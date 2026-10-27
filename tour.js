@@ -595,7 +595,7 @@ function balao(st){
     return '<div class="stv-wel">'+avatar('stv-mfoto')+
       '<div class="stv-wbal"><b>'+st.tit+'</b> '+st.tx+'</div>'+
       '<div class="stv-wtx">'+st.sub.replace('{min}', MIN_TOTAL)+'</div>'+
-      (REG.adiamentos>=1 ? '<div class="stv-ultima">Essa é a última vez que o tour aparece sozinho. Depois, é só tocar no <span class="stv-q">?</span> lá em cima.</div>' : '')+
+      (REG.adiamentos>=1 && !T.rever ? '<div class="stv-ultima">Essa é a última vez que o tour aparece sozinho. Depois, é só tocar no <span class="stv-q">?</span> lá em cima.</div>' : '')+
       '<button class="stv-go stv-big" data-t="next">'+st.btn+'</button>'+
       '<button class="stv-pular" data-t="sairja">Agora não</button></div>';
   }
@@ -827,6 +827,8 @@ tip.addEventListener('click', function(e){
 });
 /* "Agora não" na boas-vindas: conta o adiamento e diz o que vai acontecer */
 function adiar(){
+  /* veio pelo "?": não é oferta, então só fecha, sem contar nem avisar */
+  if(T.rever){ fim('fechou'); return; }
   var n=REG.adiamentos+1;
   gravar({situacao:'adiado', adiamentos:n});
   var txt, ajuda=null;
@@ -880,11 +882,11 @@ window.TourIdealis={
     vai(0);
     return true;
   },
-  /* botão "?": revê o tour começando direto na Ana, sem mexer na contagem */
+  /* botão "?": abre a mesma pergunta inicial; não mexe na contagem de ofertas */
   rever:function(ctx){
     if(T.on) return;
     CTX=ctx; T.rever=true;
-    vai(1);
+    vai(0);
   },
   ativo:function(){ return !!T.on; },
   /* diagnóstico (console): TourIdealis._estado() */
