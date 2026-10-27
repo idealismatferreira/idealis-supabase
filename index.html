@@ -777,6 +777,12 @@
   .tbsair{padding:7px 14px;border-radius:10px;border:1px solid var(--line);background:transparent;
     color:var(--muted);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
   .tbsair:active{background:var(--surface-2);color:var(--text)}
+  /* LOTE_TOUR: "?" redondo, separado do Sair (que desloga direto) */
+  .tbmarca .tbright{gap:12px}
+  .tbtour{width:34px;height:34px;flex:none;border-radius:50%;padding:0;display:grid;place-items:center;
+    border:1px solid var(--line);background:transparent;color:var(--cyan);font-family:inherit;
+    font-size:16px;font-weight:800;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .tbtour:active{background:var(--surface-2)}
   .perfilrow{display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px 2px 6px}
   .saudacao{text-align:center;font-size:19px;font-weight:400;color:var(--muted);line-height:1.3;letter-spacing:-.01em}
   .saudacao strong{display:block;font-weight:700;color:var(--cyan-2);font-size:28px;letter-spacing:-.02em;margin-top:2px}
@@ -2674,7 +2680,7 @@ function getRC(){ return (window.Recharts && window.Recharts.LineChart) ? window
 /* ===== SUPABASE (login + banco multi-usuário) ===== */
 const SB_URL = 'https://lbnemzhwibcarhkaifoy.supabase.co';
 const SB_KEY = 'sb_publishable_AH0V90ZsYBYpm8M_H0zQPg_zg9po7uo';
-const sb = (window.supabase && window.supabase.createClient)
+const _sbReal = (window.supabase && window.supabase.createClient)
   ? window.supabase.createClient(SB_URL, SB_KEY, {
       auth:{
         persistSession:true,
@@ -2683,6 +2689,12 @@ const sb = (window.supabase && window.supabase.createClient)
       }
     })
   : null;
+/* LOTE_TOUR: enquanto o tour mostra o app da aluna fictícia, `sb` aponta pro
+   banco de demonstração em memória (tour.js). Fora do tour é sempre o real. */
+let _sbAtual = _sbReal;
+window.__idealisTrocarBanco = (c)=>{ _sbAtual = c || _sbReal; };
+const sb = _sbReal ? new Proxy({}, { get:(_, k)=>{
+  const a=_sbAtual; const v=a[k]; return (typeof v==='function') ? v.bind(a) : v; } }) : null;
 /* o refresh automático dorme junto com a aba; ao voltar, força a renovação */
 if(sb){
   const acordar=()=>{
@@ -5241,6 +5253,7 @@ function enqueueLog({log, alunoNome, treinoNome, exNome}){
 }
 /* envia a fila inteira; só remove o que confirmou. Retorna {ok, enviados, erro?} */
 async function flushQueue(estruturaSnapshot){
+  if(window.__idealisDemo) return {ok:true, enviados:0, vazia:true};   // LOTE_TOUR
   const q=loadQueue();
   const estruturaSuja = window.localStorage.getItem(ESTRUTURA_DIRTY_KEY)==='1';
   if(!q.length && !estruturaSuja) return {ok:true, enviados:0, vazia:true};
@@ -5680,6 +5693,46 @@ function carregarCardioTema(){
     document.body.appendChild(el);
   }).catch(e=>{ _cardioTemaCarregando=null; throw e; });
   return _cardioTemaCarregando;
+}
+/* ===== TOUR GUIADO (LOTE_TOUR) =====
+   O motor mora em tour.js, baixado só quando o tour vai abrir (oferta ou "?").
+   Estado em public.aluno_tours. Regra: abre sozinho até 2 vezes; para quando o
+   aluno conclui, sai no meio ou diz "Agora não" duas vezes. Depois, só pelo "?".
+   Sem a tabela (ou sem rede), simplesmente não oferece. */
+const TOUR_V=1;
+let _tourCarregando=null, _tourChecado=false;
+function carregarTour(){
+  if(window.TourIdealis) return Promise.resolve(window.TourIdealis);
+  if(_tourCarregando) return _tourCarregando;
+  _tourCarregando=new Promise((ok,falha)=>{
+    const el=document.createElement('script');
+    el.src='tour.js?v='+TOUR_V;
+    const t=setTimeout(()=>{ console.warn('[tour] tempo esgotado (10s) ao carregar tour.js'); falha(new Error('timeout')); },10000);
+    el.onload=()=>{ clearTimeout(t);
+      if(window.TourIdealis) ok(window.TourIdealis);
+      else { console.warn('[tour] tour.js carregou sem expor TourIdealis'); falha(new Error('sem API')); } };
+    el.onerror=()=>{ clearTimeout(t); console.warn('[tour] falha ao baixar tour.js'); falha(new Error('rede')); };
+    document.body.appendChild(el);
+  }).catch(e=>{ _tourCarregando=null; throw e; });
+  return _tourCarregando;
+}
+function ctxTour(alunoId, nome){ return {alunoId, nome:primeiroNome(nome), treinador:TREINADOR, sb:_sbReal}; }
+async function verificarTour(alunoId, nome){
+  if(_tourChecado || window.__idealisDemo || !_sbReal || !navigator.onLine) return;
+  _tourChecado=true;
+  try{
+    const {data,error}=await _sbReal.from('aluno_tours').select('situacao,adiamentos,passo')
+      .eq('aluno_id',alunoId).eq('tour','inicial').maybeSingle();
+    if(error){ console.warn('[tour] não li aluno_tours:', error.message); return; }
+    if(data && (data.situacao==='concluido' || data.situacao==='pulado' || (data.adiamentos||0)>=2)) return;
+    const Tour=await carregarTour();
+    Tour.oferecer({...ctxTour(alunoId,nome), registro:data||null});
+  }catch(e){ console.warn('[tour] verificação falhou', e); }
+}
+function reverTour(alunoId, nome){
+  if(window.__idealisDemo) return;
+  carregarTour().then(Tour=>Tour.rever(ctxTour(alunoId,nome)))
+    .catch(()=>{ if(window.__idealisFlash) window.__idealisFlash('Sem conexão pra abrir o tour'); });
 }
 const CARDIO_TEMA_FLAG='idealis_cardio_tema';
 function temaLigado(){
@@ -6433,6 +6486,7 @@ function App({auth}){
   /* sair do aluno = sair do acompanhamento. Todo caminho de volta (o < da
      topbar, "Voltar ao inicio", a barra de descanso) passa por aqui. */
   const nav=(v)=>{ if(v && v.name==='students') setVerComoAluno(false); setView(v); };
+  window.__idealisNav=nav; window.__idealisFlash=flash;   // LOTE_TOUR
 
   useEffect(()=>{
     // baixa o catálogo (public.cardapio) na 1ª vez e revalida a cada 15 min (cache offline)
@@ -7171,11 +7225,12 @@ function CronoBadge({inicio,onZerar}){
       </div></div>}
   </React.Fragment>);
 }
-function TopBar({title,sub,onBack,logo,onSair,right}){
+function TopBar({title,sub,onBack,logo,onSair,onTour,right}){
   if(logo) return (<div className="topbar tbmarca">
     <span className="tbside"></span>
     <LogoIdealis size={34}/>
     <span className="tbside tbright">
+      {onTour && <button className="tbtour" onClick={onTour} aria-label="Rever o tour do app">?</button>}
       {onSair && <button className="tbsair" onClick={onSair}>Sair</button>}
     </span>
   </div>);
@@ -8046,6 +8101,8 @@ function InstalarCard({flash}){
 }
 function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,acompanhando,onSair,cardio}){
   const s=db.students.find(x=>x.id===studentId);
+  /* LOTE_TOUR: só o próprio aluno (nunca o "ver como aluno" do treinador) */
+  React.useEffect(()=>{ if(souAluno && !faseId && s) verificarTour(studentId, s.name); },[souAluno,faseId,studentId,!!s]);
   const [adding,setAdding]=useState(false);
   const [nome,setNome]=useState('');
   const [menu,setMenu]=useState(null); // treino em edição
@@ -8218,7 +8275,8 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
       sub={ehAluno?(faseId?primeiroNome(s.name):'Presencial'):'Treinos fixos'}
       onBack={faseId?()=>nav({name:'student',studentId})
                     :(souAluno?null:()=>nav({name:'students'}))}
-      logo={ehAluno && !faseId} onSair={souAluno?onSair:null}/>
+      logo={ehAluno && !faseId} onSair={souAluno?onSair:null}
+      onTour={souAluno?()=>reverTour(studentId, s.name):null}/>
     <div className="screen">
       {/* na home do aluno a topbar vira a marca e some o <; sem esta faixa o
           treinador ficaria sem saida (e o botao "Sair" ali e LOGOUT). */}
@@ -11330,7 +11388,11 @@ class ErroBoundary extends React.Component{
     </div>);
   }
 }
-ReactDOM.createRoot(document.getElementById('root')).render(<ErroBoundary><Root/></ErroBoundary>);
+let _raiz=ReactDOM.createRoot(document.getElementById('root'));
+_raiz.render(<ErroBoundary><Root/></ErroBoundary>);
+/* LOTE_TOUR: o tour entra e sai do app de exemplo religando o app (login, cache, telas) */
+window.__idealisRemontar=()=>{ _raiz.unmount(); _raiz=ReactDOM.createRoot(document.getElementById('root'));
+  _raiz.render(<ErroBoundary><Root/></ErroBoundary>); };
 /* tira o splash só depois que o React pintou de verdade (2 frames),
    senão a tela pisca preta entre o splash sumir e o app aparecer */
 requestAnimationFrame(()=>requestAnimationFrame(()=>{
