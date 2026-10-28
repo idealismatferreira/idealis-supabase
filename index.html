@@ -3404,6 +3404,10 @@ function nomeDor(d){ return d.apelido || NOME_REGIAO_DOR[d.regiao] || d.regiao; 
    inseparáveis do fluxo de treino). A avaliação completa (6-10 min) é
    carregada SOB DEMANDA: ela custaria ~2,4s no boot de todos os 87
    alunos por causa de uma tela aberta 3x a cada 8 semanas. */
+/* nome de quem acompanha o aluno, exibido nos textos da avaliação.
+   Multitenant: hoje é fixo; quando existir treinador por aluno no banco,
+   esta constante vira uma leitura do perfil e mais nada muda. */
+const NOME_TREINADOR='Matheus';
 const AVALIACAO_SRC='avaliacao.js';
 let _avalCarregando=null;
 function carregarAvaliacao(){
@@ -3411,7 +3415,7 @@ function carregarAvaliacao(){
   if(_avalCarregando) return _avalCarregando;
   _avalCarregando=new Promise((ok,falha)=>{
     const el=document.createElement('script');
-    el.src=AVALIACAO_SRC+'?v=4';
+    el.src=AVALIACAO_SRC+'?v=6';
     el.onload=()=>{ if(window.AvaliacaoDor) ok(window.AvaliacaoDor);
                     else falha(new Error('avaliacao.js carregou sem expor AvaliacaoDor')); };
     el.onerror=()=>{ _avalCarregando=null; falha(new Error('falha ao baixar avaliacao.js')); };
@@ -6514,6 +6518,11 @@ function App({auth}){
   else if(view.name==='avaliacao') screen=(window.AvaliacaoDor
     ? React.createElement(window.AvaliacaoDor.Componente,{
         studentId:view.studentId, momento:view.momento||momentoAvulso(db.ciclo), flash:flash,
+        nomeTreinador:NOME_TREINADOR,
+        /* quem está logado como treinador preenche PELO aluno: o RPC recebe
+           aluno_id e grava respondida_por = 'treinador' */
+        peloTreinador:!ehAluno,
+        nomeAluno:((db.students.find(x=>x.id===view.studentId)||{}).name||''),
         /* o mapa destaca o que o aluno JÁ acompanha, para ele tocar na
            MESMA região de novo em vez de criar uma dor "nova" ao lado.
            É isso que mantém a série de checkins_semanais inteira, já que

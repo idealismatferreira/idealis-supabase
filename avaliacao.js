@@ -390,7 +390,17 @@ function Passo(p){
    --------------------------------------------------------------------- */
 function Avaliacao(props){
   var studentId = props.studentId;
-  var momento = props.momento || "extra";
+  /* avaliacoes_momento_check só aceita ^D[0-9]{1,3}$. Sem momento válido o
+     envio falharia SEMPRE, depois de 8 minutos de respostas: recusa na entrada. */
+  var momento = props.momento || null;
+  var momentoOk = /^D[0-9]{1,3}$/.test(String(momento||""));
+  /* nome de quem acompanha o aluno. Vem do index.html; sem ele o texto fica
+     neutro ("seu treinador") em vez de cravar um nome. Multitenant. */
+  var treinador = String(props.nomeTreinador||"").trim();
+  /* treinador preenchendo PELO aluno. Aqui é só texto e payload: quem
+     decide se ele pode é o servidor (posso_gerenciar_aluno). */
+  var peloTreinador = !!props.peloTreinador;
+  var nomeAluno = String(props.nomeAluno||"").trim();
   var onSair = props.onSair;
   // concluir tem destino próprio: a jornada acabou, volta ao início do app
   var onConcluir = props.onConcluir || props.onSair;
@@ -402,7 +412,23 @@ function Avaliacao(props){
     return (typeof d === "string") ? d : (d && d.regiao);
   }).filter(Boolean);
 
-  var rasc = lerRascunho(studentId, momento) || {};
+  var rasc = (momentoOk && lerRascunho(studentId, momento)) || {};
+  /* rascunho da versão anterior que já tinha sido ENVIADO: ela regravava o
+     rascunho com a etapa da tela final. Sem avalId e com etapa >= total
+     (total antigo = índices + 5), é avaliação concluída: descarta. */
+  if(!rasc.avalId && rasc.etapa!=null
+     && rasc.etapa >= ((rasc.indices||[]).length + 5)){
+    console.warn("[avaliacao] rascunho de avaliação já enviada descartado");
+    rasc = {};
+  }
+  /* rascunho velho também não volta: a chave é aluno+momento e "D0" se
+     repete a cada ciclo. O id guardado faria a avaliação do ciclo novo
+     voltar como "repetida" e nada seria gravado. */
+  if(rasc.criado && (Date.parse(todayISO()) - Date.parse(rasc.criado))/864e5 > 21){
+    console.warn("[avaliacao] rascunho de "+rasc.criado+" descartado (velho demais)");
+    rasc = {};
+  }
+  var criado = rasc.criado || todayISO();
   var st = useState(rasc.etapa || 0); var etapa=st[0], setEtapa=st[1];
   var sv = useState(rasc.vista || "frente"); var vista=sv[0], setVista=sv[1];
   var sn = useState(rasc.notas || {}); var notas=sn[0], setNotas=sn[1];
@@ -413,18 +439,32 @@ function Avaliacao(props){
   var sp = useState(rasc.psfs || [{nome:"",nota:null}]); var psfs=sp[0], setPsfs=sp[1];
   var sf = useState(rasc.flags || []); var flags=sf[0], setFlags=sf[1];
   var se = useState(false); var enviando=se[0], setEnviando=se[1];
+  /* id da avaliação nasce UMA vez e mora no rascunho: todo "tentar de novo"
+     reenvia o MESMO id, e a RPC devolve "repetida" em vez de duplicar. */
+  var sid = useState(rasc.avalId || uid()); var avalId=sid[0];
+  var sok = useState(false); var enviadoOk=sok[0], setEnviadoOk=sok[1];
   var ser = useState(""); var erro=ser[0], setErro=ser[1];
 
   /* rascunho a cada mudança: 8 minutos de trabalho não podem morrer
      porque o app foi para segundo plano */
   useEffect(function(){
+    // depois de enviada NÃO regrava: era isto que deixava um rascunho parado
+    // na tela final e travava a avaliação seguinte do mesmo momento
+    if(enviadoOk || !momentoOk) return;
     salvarRascunho(studentId, momento, {
       etapa:etapa, vista:vista, notas:notas, vistas:vistas,
-      indices:indices, detalhes:detalhes, psfs:psfs, flags:flags
+      indices:indices, detalhes:detalhes, psfs:psfs, flags:flags,
+      avalId:avalId, criado:criado
     });
-  },[etapa,vista,notas,vistas,indices,detalhes,psfs,flags]);
+  },[etapa,vista,notas,vistas,indices,detalhes,psfs,flags,enviadoOk]);
 
   var marcadas = Object.keys(notas).filter(function(k){ return notas[k]>0; });
+  /* sem dor nenhuma no mapa, índice e detalhes não têm o que perguntar:
+     vai direto ao PSFS. É o dado de sucesso (o D56 de quem melhorou). */
+  var semDor = marcadas.length===0;
+  /* índice só vale se a região continua marcada: desmarcar no mapa depois
+     de escolher deixava uma dor "fantasma" nos detalhes e no envio */
+  var indicesOk = indices.filter(function(id){ return notas[id]>0; });
 
   function pick(id, v){
     setAtiva(id);
@@ -437,6 +477,7 @@ function Avaliacao(props){
   }
   function toggleIndice(id){
     setIndices(function(a){
+      a = a.filter(function(x){ return notas[x]>0; });   // limpa região desmarcada
       if(a.indexOf(id)>=0) return a.filter(function(x){ return x!==id; });
       if(a.length>=2) return a;          // máximo 2 dores índice
       return a.concat([id]);
@@ -464,17 +505,21 @@ function Avaliacao(props){
   /* etapas: 0 mapa · 1 escolha das índice · 2..n detalhe de cada · PSFS · flags · revisão */
   var ETAPA_MAPA=0, ETAPA_INDICE=1;
   var ETAPA_DET_INI=2;
-  var nDet = indices.length;
+  var nDet = indicesOk.length;
   var ETAPA_PSFS = ETAPA_DET_INI + nDet;
   var ETAPA_FLAGS = ETAPA_PSFS + 1;
   var ETAPA_FIM = ETAPA_FLAGS + 1;
   var total = ETAPA_FIM + 1;
+  /* rascunho pode trazer etapa que não existe mais (fluxo encolheu porque
+     uma dor foi desmarcada): cai na revisão em vez de tela vazia */
+  if(etapa>ETAPA_FIM) etapa = ETAPA_FIM;
+  if(semDor && etapa===ETAPA_INDICE) etapa = ETAPA_MAPA;
 
   function podeAvancar(){
-    if(etapa===ETAPA_MAPA) return marcadas.length>0;
-    if(etapa===ETAPA_INDICE) return indices.length>0;
+    if(etapa===ETAPA_MAPA) return true;          // sem dor também avança (vai ao PSFS)
+    if(etapa===ETAPA_INDICE) return indicesOk.length>0;
     if(etapa>=ETAPA_DET_INI && etapa<ETAPA_PSFS){
-      var id=indices[etapa-ETAPA_DET_INI]; var d=detalhes[id]||{};
+      var id=indicesOk[etapa-ETAPA_DET_INI]; var d=detalhes[id]||{};
       return d.temporalidade && d.dor_agora!=null && d.sofrimento!=null && d.limitacao!=null;
     }
     if(etapa===ETAPA_PSFS) return psfs.some(function(a){ return a.nome.trim() && a.nota!=null; });
@@ -484,13 +529,13 @@ function Avaliacao(props){
   async function enviar(){
     setEnviando(true); setErro("");
     var payload={
-      id: uid(),
+      id: avalId,
       momento: momento,
       data: todayISO(),
       regioes: marcadas.map(function(id){
         return {regiao:id, vista:(vistas[id]||"frente"), intensidade:notas[id]};
       }),
-      dores: indices.map(function(id){
+      dores: indicesOk.map(function(id){
         var d=detalhes[id]||{};
         return {regiao:id, vista:(vistas[id]||"frente"),
           temporalidade:d.temporalidade, dor_agora:d.dor_agora,
@@ -501,24 +546,48 @@ function Avaliacao(props){
       psfs: psfs.filter(function(a){ return a.nome.trim() && a.nota!=null; })
                 .map(function(a){ return {nome:a.nome.trim(), nota:a.nota, dores:[]}; })
     };
+    // só o treinador manda aluno_id; para o aluno o servidor usa a própria conta
+    if(peloTreinador) payload.aluno_id = studentId;
     var r = await enviarAvaliacao(payload);
     setEnviando(false);
     if(r && r.ok){
       limparRascunho(studentId, momento);
-      setEtapa(total);           // tela de confirmação
+      setEnviadoOk(true);        // tela de confirmação
     } else {
-      setErro((r&&r.erro) ? String(r.erro) : "Não consegui enviar. Tente de novo.");
+      // o erro técnico vai pro console; o aluno recebe o que fazer
+      console.warn("[avaliacao] envio falhou:", r && r.erro);
+      setErro(
+        (r && (r.erro==="sem_permissao" || (peloTreinador && r.erro==="sem_aluno")))
+          ? "Não consegui confirmar seu acesso a este aluno. Saia e entre de novo; se continuar, me chame."
+        : (r && r.erro==="sem_aluno")
+          ? "Esta avaliação só pode ser enviada pela conta do aluno."
+        : (navigator.onLine===false)
+          ? "Você está sem internet. Suas respostas continuam salvas aqui: tente de novo quando a conexão voltar."
+          : "Não consegui enviar agora. Suas respostas continuam salvas aqui: tente de novo em instantes.");
     }
   }
 
   /* ----- tela final ----- */
-  if(etapa>=total){
+  /* sem momento válido nem começa: aviso explícito em vez de deixar o
+     aluno responder tudo e falhar no fim */
+  if(!momentoOk){
+    console.warn("[avaliacao] momento inválido:", momento);
+    return e("div",{className:"screen"},
+      e("div",{className:"avfim"},
+        e("div",{className:"avfimico"},"⚠️"),
+        e("div",{className:"avfimtit"},"Não consegui abrir a avaliação"),
+        e("div",{className:"avfimtxt"},"Volte e toque em Começar de novo."),
+        e("button",{className:"btn", onClick:onSair},"Voltar")));
+  }
+  if(enviadoOk){
     return e("div",{className:"screen"},
       e("div",{className:"avfim"},
         e("div",{className:"avfimico"},"✅"),
         e("div",{className:"avfimtit"},"Avaliação enviada"),
         e("div",{className:"avfimtxt"},
-          "Obrigado por responder com calma. O Matheus vai olhar isso antes do próximo ajuste."),
+          peloTreinador
+            ? "Avaliação "+(nomeAluno ? "de "+nomeAluno+" " : "")+"registrada como preenchida por você."
+            : "Obrigado por responder com calma. "+(treinador||"Seu treinador")+" vai olhar isso antes do próximo ajuste."),
         e("button",{className:"btn", onClick:onConcluir},"Voltar ao início")));
   }
 
@@ -553,7 +622,7 @@ function Avaliacao(props){
       e("div",{className:"avlista"},
         marcadas.map(function(id){
           var on=indices.indexOf(id)>=0;
-          var cheio = indices.length>=2 && !on;
+          var cheio = indicesOk.length>=2 && !on;
           return e("button",{key:id, type:"button",
             className:"avopt"+(on?" on":"")+(cheio?" off":""),
             onClick:function(){ if(!cheio) toggleIndice(id); }},
@@ -564,7 +633,7 @@ function Avaliacao(props){
   }
 
   else if(etapa>=ETAPA_DET_INI && etapa<ETAPA_PSFS){
-    var id = indices[etapa-ETAPA_DET_INI];
+    var id = indicesOk[etapa-ETAPA_DET_INI];
     var d = detalhes[id]||{mecanismo:{}};
     conteudo = e(Passo,{titulo:NOME[id], sub:"Algumas perguntas sobre essa dor."},
       e("div",{className:"avbloco"},
@@ -621,7 +690,7 @@ function Avaliacao(props){
     /* red flags SILENCIOSAS: o aluno marca e não recebe alerta nenhum.
        Nem policy de SELECT ele tem nessa tabela. */
     conteudo = e(Passo,{titulo:"Mais algumas informações",
-      sub:"Marque o que se aplica. Serve para o Matheus te acompanhar melhor."},
+      sub:"Marque o que se aplica. Isso ajuda "+(treinador||"seu treinador")+" a te acompanhar melhor."},
       e("div",{className:"avlista"},
         RED_FLAGS.map(function(f){
           var on=flags.indexOf(f.id)>=0;
@@ -639,13 +708,14 @@ function Avaliacao(props){
     conteudo = e(Passo,{titulo:"Tudo certo?",
       sub:"Confira o que você registrou antes de enviar."},
       e("div",{className:"avrev"},
-        e("div",{className:"avrevlin"},
+        semDor ? e("div",{className:"avrevlin"},"Nenhuma dor marcada 🎉") : null,
+        semDor ? null : e("div",{className:"avrevlin"},
           e("b",null,marcadas.length),
           " ",(marcadas.length===1?"região marcada":"regiões marcadas")),
-        e("div",{className:"avrevlin"},
-          e("b",null,indices.length),
-          " ",(indices.length===1?"dor acompanhada":"dores acompanhadas"),": ",
-          indices.map(function(x){ return NOME[x]; }).join(" · ")),
+        semDor ? null : e("div",{className:"avrevlin"},
+          e("b",null,indicesOk.length),
+          " ",(indicesOk.length===1?"dor acompanhada":"dores acompanhadas"),": ",
+          indicesOk.map(function(x){ return NOME[x]; }).join(" · ")),
         e("div",{className:"avrevlin"},
           e("b",null,psfs.filter(function(a){ return a.nome.trim(); }).length),
           " atividades registradas")),
@@ -658,17 +728,24 @@ function Avaliacao(props){
   return e(React.Fragment,null,
     e("div",{className:"avtopo"},
       e("button",{className:"iconbtn", onClick:function(){
-        if(etapa===0){ onSair(); } else { setEtapa(etapa-1); }
+        if(etapa===0){ onSair(); }
+        // sem dor, o PSFS veio direto do mapa: volta pra lá, não pras etapas puladas
+        else if(semDor && etapa===ETAPA_PSFS){ setEtapa(ETAPA_MAPA); }
+        else { setEtapa(etapa-1); }
       }},"‹"),
       e("div",{className:"avprog"},
         e("div",{className:"avprogbar", style:{width:Math.round((etapa/total)*100)+"%"}})),
       e("button",{className:"avsair", onClick:onSair},"Sair")),
     e("div",{className:"screen avscreen"},
+      peloTreinador ? e("div",{style:{fontSize:13, fontWeight:700, color:"var(--cyan)",
+        margin:"0 0 10px"}}, "Preenchendo por "+(nomeAluno||"este aluno")) : null,
       conteudo,
       etapa<ETAPA_FIM ? e("div",{className:"avnav"},
         e("button",{className:"btn", disabled:!podeAvancar(),
-          onClick:function(){ setEtapa(etapa+1); window.scrollTo(0,0); }},
-          "Continuar")) : null,
+          onClick:function(){
+            setEtapa((etapa===ETAPA_MAPA && semDor) ? ETAPA_PSFS : etapa+1);
+            window.scrollTo(0,0); }},
+          (etapa===ETAPA_MAPA && semDor) ? "Não sinto dor · continuar" : "Continuar")) : null,
       e("div",{className:"avsalvo"},"Suas respostas ficam salvas neste aparelho.")
     ));
 }
