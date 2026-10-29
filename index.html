@@ -1100,11 +1100,11 @@
   .bump.minus:active{background:rgba(255,92,108,.2)}
   /* labels dos campos do Registrar hoje: maiores e em ciano */
   /* labels do Registrar Carga como chip destacado */
-  .reglab{display:inline-block !important;font-size:15px !important;font-weight:700;
+  .reglab{display:table !important;margin-left:auto !important;margin-right:auto !important;text-align:center;font-size:17px !important;font-weight:700; /* LOTE_TRILHA1: maior e centralizado */
     color:var(--info) !important;letter-spacing:-.01em;margin-bottom:10px !important;line-height:1.2;
     background:rgba(0,201,204,.12);border:1px solid rgba(0,201,204,.4);
     border-radius:999px;padding:6px 14px !important}
-  .reglab .reghint{display:inline;font-size:11.5px;font-weight:500;color:var(--muted);
+  .reglab .reghint{display:inline;font-size:12.5px;font-weight:500;color:var(--muted);
     letter-spacing:0;margin-left:5px}
   .reprow{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-top:10px}
   .rpreset{font-family:inherit;font-weight:700;font-size:16px;padding:16px 0;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:.1s}
@@ -1143,6 +1143,8 @@
   .scalelabel{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px}
   .sheetactions{display:flex;gap:10px;margin-top:8px}
   .sheetactions .btn{flex:1}
+  .sheetactions .btnprox2{background:rgba(0,201,204,.1);color:var(--cyan-2);border:1px solid var(--cyan);
+    font-size:14.5px;padding:15px 8px;font-family:inherit;font-weight:700} /* LOTE_TRILHA2 */
   .chartwrap{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 8px 8px;margin-bottom:14px}
   .chartwrap h3{margin:0 0 4px 8px;font-size:15px;font-weight:600}
   .legend{display:flex;gap:14px;padding:4px 8px 10px;flex-wrap:wrap}
@@ -1679,8 +1681,8 @@
   .isoover{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;
     background:var(--bg);padding:14px 16px calc(14px + env(safe-area-inset-bottom));
     transition:background .4s ease}
-  .isoover.f-dentro{background:radial-gradient(circle at 50% 42%,rgba(110,232,154,.13),var(--bg) 62%)}
-  .isoover.f-passou{background:radial-gradient(circle at 50% 42%,rgba(224,185,60,.13),var(--bg) 62%)}
+  .isoover.f-dentro{background:radial-gradient(circle at 50% 42%,rgba(110,232,154,.13),transparent 62%),var(--bg)} /* LOTE_TRILHA4: degradê sobre fundo sólido */
+  .isoover.f-passou{background:radial-gradient(circle at 50% 42%,rgba(224,185,60,.13),transparent 62%),var(--bg)}
   .isomeio{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
   .isoprep{font-size:96px;font-weight:800;line-height:1;color:var(--cd);letter-spacing:-.05em}
   .isoprepsub{font-size:14px;color:var(--muted)}
@@ -2123,6 +2125,93 @@
     background:var(--lime);color:var(--on-accent);font-family:inherit;font-size:15.5px;font-weight:800;
     letter-spacing:-.01em;cursor:pointer;-webkit-tap-highlight-color:transparent}
   .btnfeita:active{filter:brightness(.9)}
+  /* LOTE_TRILHA1: séries do exercício numa trilha (feitas e próximas em 1 linha) */
+  .tlwrap{margin-top:12px}
+  .tltrilha{margin-top:8px;padding:12px 12px 2px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line)}
+  .tlmini{position:relative;display:flex;align-items:center;gap:12px;width:100%;padding:0 0 12px 6px;margin:0;
+    background:none;border:none;font-family:inherit;color:inherit;text-align:left}
+  button.tlmini{cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .tlmini::before{content:'';position:absolute;left:18px;top:26px;bottom:0;width:2px;background:var(--line)}
+  .tlmini.feita::before{background:var(--lime)}
+  .tlmn{position:relative;z-index:1;flex:0 0 26px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+    font-size:11px;font-weight:800;background:var(--bg);border:2px solid var(--ctrl-line);color:var(--muted)}
+  .tlmini.feita .tlmn{background:var(--lime);border-color:var(--lime);color:var(--on-accent);font-size:13px}
+  .tlmt{flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tlmt b{color:var(--text);font-weight:700}
+  .tlmini.feita .tlmt b{color:var(--lime)}
+  .tlsem{font-weight:500;color:var(--muted-2)}
+  .tlflag{flex:0 0 auto;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;color:var(--soft-orange);
+    background:rgba(255,196,138,.1);border:1px solid rgba(255,196,138,.35)}
+  .tlflag.cl{color:var(--cyan-2);background:rgba(0,201,204,.1);border-color:rgba(0,201,204,.3)}
+  .tltempo{flex:0 0 auto;font-size:10.5px;font-weight:700;color:var(--muted-2)}
+  .tlpasso{position:relative;display:flex;gap:12px;padding-bottom:14px}
+  .tlpasso::before{content:'';position:absolute;left:18px;top:38px;bottom:0;width:2px;background:var(--line)}
+  .tltrilha>:last-child::before{display:none}
+  .tlno{position:relative;z-index:1;flex:0 0 38px;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;
+    font-family:inherit;font-size:13.5px;font-weight:800;padding:0;background:var(--bg);border:2px solid var(--cyan);
+    color:var(--cyan-2);box-shadow:0 0 0 5px rgba(0,201,204,.16);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .tlcorpo{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;padding-top:6px}
+  .tlcorpo .tllinha .mpreps{font-size:17px;font-weight:700}
+  .tllinha{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .tlult{font-size:11px;color:var(--muted-2);display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .tlult .usdot{width:15px;height:15px;font-size:9px}
+  .tldesc{font-size:10.5px;font-weight:700;color:var(--muted-2);display:inline-flex;align-items:center;gap:4px;margin-top:2px}
+  .tlbtn{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-family:inherit;font-size:13px;
+    font-weight:800;padding:10px 16px;border-radius:999px;border:none;background:linear-gradient(135deg,var(--cyan),var(--cyan-2));
+    color:var(--on-cyan);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .tlbtn:active{transform:scale(.96)}
+  .tllink{align-self:flex-start;margin-top:2px;font-family:inherit;font-size:11.5px;font-weight:700;color:var(--muted);
+    background:none;border:none;padding:6px 0;text-decoration:underline;cursor:pointer}
+  .tlsub{display:flex;flex-direction:column;margin-top:6px}
+  .tlsubp{position:relative;display:flex;align-items:center;gap:9px;padding:3px 0 9px}
+  .tlsubp::before{content:'';position:absolute;left:9px;top:22px;bottom:0;width:2px;background:var(--line)}
+  .tlsubp:last-child::before{display:none}
+  .tlsubp.ok::before{background:var(--lime)}
+  .tlsn{position:relative;z-index:1;flex:0 0 20px;width:20px;height:20px;border-radius:50%;border:2px solid var(--ctrl-line);
+    background:var(--bg);font-size:10px;display:grid;place-items:center;color:var(--on-accent);padding:0;font-family:inherit}
+  .tlsn:not(:disabled){cursor:pointer}
+  .tlsubp.ok .tlsn{background:var(--lime);border-color:var(--lime)}
+  .tlsubp.vez .tlsn{border-color:var(--cyan);box-shadow:0 0 0 4px rgba(0,201,204,.16)}
+  .tlst{font-size:12.5px;font-weight:700;color:var(--text)}
+  .tlsubp.ok .tlst{color:var(--muted)}
+  .tlsubp.ext .tlst{color:var(--soft-orange)}
+  .tlsp{font-size:12.5px;font-weight:800;color:var(--lime);white-space:nowrap} /* LOTE_TRILHA2 */
+  /* LOTE_TRILHA3 */
+  .tlacao{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}
+  .tlacao .tlbtn{margin-top:0}
+  .tlresto{display:inline-flex;align-items:center;gap:5px;font-size:14px;font-weight:800;color:var(--muted);
+    font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tlresto .ic{font-size:15px}
+  .mpreps .rp{font-size:.7em;font-weight:600;color:var(--muted);margin-left:5px;letter-spacing:0}
+  .isocardtxt.isonovo{font-size:17px;font-weight:700;color:var(--info);margin-bottom:12px;letter-spacing:-.01em}
+  /* LOTE_TRILHA4 */
+  .tldots{flex:0 0 auto;display:inline-flex;align-items:center;gap:3px}
+  .tldots .usdot{width:16px;height:16px;font-size:9.5px}
+  .tlwrap .uslegenda{margin-top:8px}
+  .btiniciar{display:flex;align-items:center;justify-content:center;gap:10px;min-width:72%;margin:4px auto 14px;
+    padding:15px 28px;border-radius:999px;border:none;background:var(--lime);color:var(--on-accent);
+    font-family:inherit;font-size:17px;font-weight:800;letter-spacing:-.01em;cursor:pointer;
+    box-shadow:0 6px 22px rgba(221,255,0,.18);-webkit-tap-highlight-color:transparent}
+  .btiniciar:active{transform:scale(.97)}
+  .btfogo{display:inline-block;font-size:22px;line-height:1;animation:fogoPulsa 1.1s ease-in-out infinite}
+  @keyframes fogoPulsa{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.22) rotate(-6deg)}}
+  /* LOTE_TRILHA5: o fogo sai do botão, sobe crescendo de leve e some; o botão encolhe e fecha o espaço */
+  .btiniciar{max-height:80px;overflow:hidden}
+  .btiniciar.sai{pointer-events:none;animation:btSai .42s cubic-bezier(.4,0,.2,1) .14s forwards}
+  .btiniciar.sai .btfogo{visibility:hidden;animation:none}
+  @keyframes btSai{
+    0%{opacity:1;transform:scale(1);max-height:80px;margin-top:4px;margin-bottom:14px;padding-top:15px;padding-bottom:15px}
+    100%{opacity:0;transform:scale(.9);max-height:0;margin-top:0;margin-bottom:0;padding-top:0;padding-bottom:0}}
+  .fogovoo{position:fixed;z-index:300;font-size:22px;line-height:1;pointer-events:none;
+    transform:translate(-50%,-50%);filter:drop-shadow(0 0 8px rgba(255,160,60,.6));
+    animation:fogoVoa .95s cubic-bezier(.22,.9,.3,1) forwards}
+  @keyframes fogoVoa{
+    0%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0)}
+    18%{opacity:1;transform:translate(-50%,-70%) scale(1.45) rotate(-8deg)}
+    55%{opacity:1;transform:translate(-50%,-230%) scale(2.3) rotate(7deg)}
+    100%{opacity:0;transform:translate(-50%,-360%) scale(3) rotate(0)}}
+  @media (prefers-reduced-motion: reduce){
+    .btfogo,.fogovoo,.btiniciar.sai{animation:none} .fogovoo{display:none} .btiniciar.sai{display:none} }
   .btnprox{width:100%;margin:2px 0 14px;padding:13px;border-radius:12px;border:1px solid var(--cyan);
     background:rgba(0,201,204,.1);color:var(--cyan-2);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
   .serieform{display:flex;flex-direction:column;gap:7px}
@@ -6365,6 +6454,21 @@ function App({auth}){
       intensidade:log.intensidade, dor:null, extra:log.extra
     }});
     flash(estado.segurados+'s registrados ✓');
+    // LOTE_TRILHA2: salvar a série de isometria/alongamento marca a série e conta
+    // o descanso, com a regra do Registrar Carga: série já marcada não reinicia.
+    // Em bi-set o descanso é do grupo, então ali segue manual.
+    let exIso=null;
+    (db.students||[]).forEach(st=>(st.treinos||[]).forEach(tr=>(tr.exercises||[]).forEach(e=>{
+      if(e.id===sessao.exId) exIso=e; })));
+    if(exIso && !grupoIdDe(exIso) && sessao.serie!=null){
+      const totIso=totalSeries(exIso)||sessao.serie;
+      const antesIso=seriesFeitas[sessao.exId]||0;
+      if(sessao.serie>antesIso){
+        setSeriesFeitas(m=>({...m,[sessao.exId]:Math.min(totIso, sessao.serie)}));
+        const fIso=parseDescanso(descansoDaSerie(exIso, sessao.serie-1));
+        if(fIso && timer) timer.start(fIso, exIso.name);
+      }
+    }
   };
   // progresso de séries da sessão — persiste no localStorage:
   // o Android/iOS mata a aba em segundo plano e o estado React some junto
@@ -9940,8 +10044,16 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
           </div>);
         })()}
       </div>
+      {erro && <div style={{color:'var(--danger)',fontSize:13,marginBottom:12}}>{erro}</div>}
+      {!isEdit && <button className="btnfeita" onClick={()=>save(true)}>
+        <Ic n="timer"/> Registrar e contar descanso
+      </button>}
+      <div className="sheetactions">
+        <button className="btn ghost" onClick={onClose}>Cancelar</button>
+        {isEdit && <button className="btn" onClick={()=>save(false)}>Salvar alterações</button>}
+      {/* LOTE_TRILHA2: "Salvar e ir" marca a série e conta o descanso como o lime */}
       {!isEdit && series.length>1 && ativa<series.length-1 &&
-        <button type="button" className="btnprox" onClick={()=>{
+        <button type="button" className="btn btnprox2" onClick={()=>{
           // avançar TAMBÉM salva: antes, quem preenchia 3 séries e depois tocava
           // em Cancelar perdia tudo. saveLog é idempotente (atualiza a série do
           // dia em vez de duplicar), então salvar a cada avanço é seguro.
@@ -9951,6 +10063,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
           if(feitas.length) onSave({
             variante:(variante===base?'':variante),
             manterAberto: true,
+            marcarSerie: feitas.some(sr=>sr.i===ativa) ? ativa+1 : null,
             series: feitas.map(sr=>({serie:sr.i+1, carga:sr.carga.trim(), reps:sr.reps.trim(),
               intensidade:(sr.intensidade!=null?sr.intensidade:null),
               dor:(sr.dor!=null?sr.dor:null),
@@ -9962,13 +10075,7 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
         }}>
           Salvar e ir para a {ativa+2}ª →
         </button>}
-      {erro && <div style={{color:'var(--danger)',fontSize:13,marginBottom:12}}>{erro}</div>}
-      <div className="sheetactions">
-        <button className="btn ghost" onClick={onClose}>Cancelar</button>
-        <button className="btn" onClick={()=>save(false)}>{isEdit?'Salvar alterações':'Salvar'}</button></div>
-      {!isEdit && <button className="btnfeita" onClick={()=>save(true)}>
-        <Ic n="check"/> Salvar e marcar série como feita
-      </button>}
+      </div>
     </div></div>);
 }
 /* ===== PRÉ-TREINO =====
@@ -10018,6 +10125,160 @@ function PreTreino({aluno,treino,onFechar}){
     </ul>
   </section>);
 }
+/* ===== LOTE_TRILHA1: séries do exercício numa trilha =====
+   Feitas e próximas em 1 linha; só a série da vez abre. "Terminei" usa a mesma
+   função do anel (marca + descanso) e NÃO grava carga. Tocar numa feita desfaz
+   a marcação; o registro de carga continua salvo. */
+function etapasDaSerie(sr){
+  if(!sr) return [];
+  const bl=sr.blocos||[];
+  if(bl.length>1) return bl.map((b,k)=>({
+    lab:String(b.reps||'')+(/^\d+$/.test(String(b.reps||''))?' reps':''),
+    pausa:(k<bl.length-1 && b.pausa)?b.pausa:'', ext:false,
+    btn:k<bl.length-1?('Fiz o bloco '+(k+1)):('Fiz o bloco '+(k+1)+' · fecha a série')}));
+  const ext=sr.extensao||[];
+  if(!ext.length) return [];
+  const out=[{lab:String(sr.reps||'')+(sr.carga?' · '+sr.carga:''), pausa:(ext[0]&&ext[0].pausa)||'', ext:false,
+    btn:'Fiz a série principal'}];
+  ext.forEach((x,k)=>{
+    const nome=EXT_LABEL[x.tipo]||x.tipo||'Extensão';
+    out.push({lab:nome+(x.reducao?' · reduz '+x.reducao:'')+(x.reps?' · '+x.reps:''),
+      pausa:(ext[k+1]&&ext[k+1].pausa)||'', ext:true,
+      btn:'Fiz: '+nome+(k<ext.length-1?'':' · fecha a série')});
+  });
+  return out;
+}
+function modeloTrilha(ex, ses, feitas, etapaSt, hoje){
+  const tot=totalSeries(ex)||0;
+  const met=(ex.metodo && ex.metodo.series && ex.metodo.series.length)?ex.metodo.series:null;
+  const repsBase=String(ex.series||'').replace(/^\s*\d+\s*[x×]\s*/i,'').trim();
+  const plano=[];
+  for(let i=0;i<tot;i++) plano.push(met?(met[Math.min(i,met.length-1)]||{}):{reps:repsBase});
+  const sesHoje=(ses||[]).filter(x=>x.date===hoje);
+  const anteriores=(ses||[]).filter(x=>x.date!==hoje);
+  const ant=anteriores.length?anteriores[anteriores.length-1]:null;
+  const hojeSr=(n)=>{ for(const x of sesHoje){ const a=x.series.find(y=>y.serieN===n); if(a) return a; } return null; };
+  const antSr=(n)=>ant?(ant.series.find(y=>y.serieN===n)||null):null;
+  const txt=(l)=>{
+    if(!l) return '';
+    if(l.carga) return l.carga+(l.reps?' × '+l.reps:'');
+    return l.reps?(l.reps+' reps'):'';
+  };
+  const rows=plano.map((sr,i)=>{
+    const n=i+1, h=hojeSr(n), a=antSr(n);
+    const base={i, n, reps:sr.reps||repsBase||'',
+      tags:[sr.carga?'⚖ '+sr.carga:'', sr.cadencia?'↕ '+sr.cadencia:''].filter(Boolean),
+      desc:String(descansoDaSerie(ex,i)||'').replace('~','–'),
+      hoje:txt(h), ult:txt(a), antSr:a, hojeSr:h};
+    if(i<feitas) return {...base, estado:'feita'};
+    if(i===feitas){
+      const et=etapasDaSerie(sr);
+      const k=(etapaSt && etapaSt.s===i && et.length)?Math.min(etapaSt.k, et.length-1):0;
+      return {...base, estado:'atual', etapas:et, k};
+    }
+    let flag='', flagCl=false;
+    if((sr.blocos||[]).length>1){ flag=sr.blocos.length+' blocos'; flagCl=true; }
+    else if((sr.extensao||[]).length) flag='+ '+sr.extensao.map(x=>(EXT_LABEL[x.tipo]||x.tipo)).join(' + ').toLowerCase();
+    return {...base, estado:'prox', flag, flagCl};
+  });
+  return {rows, ant, tot};
+}
+/* LOTE_TRILHA4: bolinhas de esforço (cheia) e dor (vazia) de uma série */
+const temPonto=(l)=>!!l && (l.intensidade!=null || (l.dor!=null && l.dor>0));
+function PontosSerie({l}){
+  if(!temPonto(l)) return null;
+  return (<span className="tldots">
+    {l.intensidade!=null &&
+      <span className="usdot" title={'Esforço '+l.intensidade+'/10'} style={{background:scaleColor(l.intensidade)}}>{l.intensidade}</span>}
+    {l.dor!=null && l.dor>0 &&
+      <span className="usdot dor" title={'Dor '+l.dor+'/10'} style={{borderColor:scaleColor(l.dor),color:scaleColor(l.dor)}}>{l.dor}</span>}
+  </span>);
+}
+/* LOTE_TRILHA3: "reps" só quando a prescrição é número; descanso sempre com "s" */
+function rotuloReps(txt){
+  const t=String(txt||'').trim();
+  if(/^\d+(\s*(a|-|–)\s*\d+)?$/i.test(t)) return <React.Fragment>{t}<span className="rp">reps</span></React.Fragment>;
+  const m=t.match(/^(\d+)\s*\(([\d\s+]+)\)$/);
+  if(m) return <React.Fragment>{m[1]}<span className="rp">reps · {m[2].replace(/\s+/g,'')}</span></React.Fragment>;
+  return t;
+}
+function tempoTxt(d){ const t=String(d||'').trim(); return /\d$/.test(t)?(t+'s'):t; }
+function TrilhaSeries({ex,aluno,feitas,etapaSt,onAvancar,onEtapa,onDesfazer}){
+  const ses=agruparSessoes(allLogsOfExercise(aluno,ex.name,ex.exerciseId), varPadrao(aluno.academia));
+  const m=modeloTrilha(ex, ses, feitas, etapaSt, todayISO());
+  const ant=m.ant;
+  return (<div className="tlwrap">
+    {ant
+      ? <span className="lastnote">Última sessão · {fmtDate(ant.date)}
+          {ant.dorLocal && <span className="dortag">
+            🔴 {regiaoLabel(ant.dorLocal)}{ant.dorLado?' '+(ant.dorLado==='ambos'?'(ambos)':(ant.dorLado==='d'?'(dir.)':'(esq.)')):''}
+            {ant.dor!=null?' · '+ant.dor+'/10':''}
+          </span>}
+        </span>
+      : <span className="lastnote">Ainda sem registro. Depois da série, toque em “Registrar Carga”.</span>}
+    <div className="tltrilha">
+      {m.rows.map(r=>{
+        if(r.estado==='feita') return (
+          <button type="button" key={r.i} className="tlmini feita" onClick={()=>onDesfazer(r.i)}
+            aria-label={'Desmarcar a '+r.n+'ª série'}>
+            <span className="tlmn"><Ic n="check"/></span>
+            <span className="tlmt">{r.n}ª · <b>{r.hoje||'feita'}</b>{!r.hoje && <span className="tlsem"> · sem carga registrada</span>}</span>
+            <PontosSerie l={r.hojeSr}/>
+            <span className="tltempo">desfazer</span>
+          </button>);
+        if(r.estado==='prox') return (
+          <div key={r.i} className="tlmini">
+            <span className="tlmn">{r.n}ª</span>
+            <span className="tlmt"><b>{r.reps}</b>{r.ult?' · '+r.ult:''}</span>
+            <PontosSerie l={r.antSr}/>
+            {r.flag
+              ? <span className={'tlflag'+(r.flagCl?' cl':'')}>{r.flag}</span>
+              : (r.desc ? <span className="tltempo">{r.desc}</span> : null)}
+          </div>);
+        const et=r.etapas, temEt=et.length>0, k=r.k;
+        const tocar=()=>{ if(temEt) onEtapa(r.i,k,et); else onAvancar(); };
+        const a=r.antSr;
+        return (<div key={r.i} className="tlpasso">
+          <button type="button" className="tlno" onClick={tocar}
+            aria-label={temEt?('Concluir: '+et[k].lab):('Concluir a '+r.n+'ª série e contar descanso')}>{r.n}ª</button>
+          <div className="tlcorpo">
+            <div className="tllinha"><span className="mpreps">{rotuloReps(r.reps||ex.series||"série "+r.n)}</span>
+              {r.tags.map(tg=><span key={tg} className="mptag">{tg}</span>)}</div>
+            <span className="tlult">
+              {r.hoje?('registrada hoje · '+r.hoje):(r.ult?('última · '+r.ult):'sem registro anterior')}
+              <PontosSerie l={r.hoje?r.hojeSr:a}/>
+            </span>
+            {temEt && <div className="tlsub">
+              {et.map((e,j)=>(
+                <div key={j} className={'tlsubp'+(j<k?' ok':(j===k?' vez':''))+(e.ext?' ext':'')}>
+                  <button type="button" className="tlsn" disabled={j!==k} onClick={tocar}
+                    aria-label={'Concluir: '+e.lab}>{j<k?<Ic n="check"/>:null}</button>
+                  <span className="tlst">{e.lab}</span>
+                  {j<et.length-1 && <span className="tlsp">{e.pausa?('descansa '+String(e.pausa).replace('~','–')+' ↺'):'sem pausa'}</span>}
+                </div>))}
+            </div>}
+            {/* LOTE_TRILHA3: o relógio à direita só aparece quando o toque fecha a série;
+                pausa entre blocos, drop e back-off fica só na linha da etapa */}
+            <div className="tlacao">
+              <button type="button" className="tlbtn" onClick={tocar}>
+                <Ic n="check"/> {temEt?et[k].btn:('Terminei a '+r.n+'ª')}</button>
+              {r.desc && (!temEt || k===et.length-1) &&
+                <span className="tlresto" aria-label={'depois, descanso de '+tempoTxt(r.desc)}><Ic n="timer"/> {tempoTxt(r.desc)}</span>}
+            </div>
+            {temEt && k<et.length-1 &&
+              <button type="button" className="tllink" onClick={onAvancar}>Fiz tudo de uma vez · concluir a {r.n}ª</button>}
+          </div>
+        </div>);
+      })}
+    </div>
+    {/* LOTE_TRILHA4: legenda só quando alguma bolinha aparece na trilha */}
+    {m.rows.some(r=>temPonto(r.estado==='feita'?r.hojeSr:(r.estado==='atual'&&r.hoje?r.hojeSr:r.antSr))) &&
+      <div className="uslegenda">
+        <span className="usdot" style={{background:'var(--muted-2)'}}></span> esforço
+        <span className="usdot dor" style={{borderColor:'var(--muted-2)',color:'var(--muted-2)'}}></span> dor
+      </div>}
+  </div>);
+}
 function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompanhando,onEditarTreino,timer,seriesFeitas,setSeriesFeitas,catalogoVer,cardio,iso}){
   const s=db.students.find(x=>x.id===studentId);
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
@@ -10028,6 +10289,24 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
   const [apagandoRel,setApagandoRel]=useState(null); // anotação aguardando confirmação de exclusão
   const [corrAberto,setCorrAberto]=useState({}); // exId -> correções expandidas
   const [corrigindo,setCorrigindo]=useState(null); // {ex, atual} — só treinador
+  /* LOTE_TRILHA1: etapa da série da vez (bloco do cluster, drop, back-off).
+     Fica no localStorage do dia, como o progresso das séries: o celular mata a
+     aba em segundo plano e o estado React some junto. */
+  const ETAPAS_KEY='idealis_etapas_v1';
+  const [etapasT,setEtapasT]=useState(()=>{
+    try{
+      if(!LS_OK) return {};
+      const r=window.localStorage.getItem(ETAPAS_KEY);
+      if(!r) return {};
+      const d=JSON.parse(r);
+      return (d && d.date===todayISO() && d.m) ? d.m : {};
+    }catch(e){ return {}; }
+  });
+  useEffect(()=>{
+    try{ if(LS_OK) window.localStorage.setItem(ETAPAS_KEY, JSON.stringify({date:todayISO(), m:etapasT})); }catch(e){}
+  },[etapasT]);
+  const [fogoVoando,setFogoVoando]=useState(null);   // LOTE_TRILHA5: {x,y} de onde o fogo sai
+  const [saindoIni,setSaindoIni]=useState(false);     // botão "Iniciar treino" saindo
   const [avisando,setAvisando]=useState(null);     // LOTE_AVISO: {exId, exNome, atual} — só treinador
   /* LOTE_HISTORICO: só o treinador lê (1 consulta, cache de 5 min). A fase
      alvo é a do treino; a fase anterior vem das datas das fases do aluno. */
@@ -10525,12 +10804,20 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
     // e dispara o descanso correspondente, como se ela tivesse tocado no anel
     if(data.marcarSerie){
       const tot=totalSeries(ex);
-      const alvo=Math.min(tot, Math.max(seriesFeitas[ex.id]||0, data.marcarSerie));
+      const antes=seriesFeitas[ex.id]||0;
+      const alvo=Math.min(tot, Math.max(antes, data.marcarSerie));
       setSeriesFeitas(m=>({...m,[ex.id]:alvo}));
       if(inicio==null) setInicio(marcarInicio(treinoId)); // 1ª série liga o cronômetro
-      const f=parseDescanso(descansoDaSerie(ex, alvo-1));
-      if(f && timer) timer.start(f, ex.name);
-      flash(n>1?(n+' séries registradas · '+alvo+'ª feita ✓'):(alvo+'ª série feita ✓'));
+      // LOTE_TRILHA1: série que já estava marcada (pela trilha ou pelo anel) não
+      // reinicia o descanso que já foi contado
+      const jaMarcada = data.marcarSerie<=antes;
+      if(!jaMarcada){
+        const f=parseDescanso(descansoDaSerie(ex, alvo-1));
+        if(f && timer) timer.start(f, ex.name);
+      }
+      flash(jaMarcada
+        ? (n>1?(n+' séries registradas ✓ · já estavam marcadas'):'Carga registrada ✓ · série já estava marcada')
+        : (n>1?(n+' séries registradas · '+alvo+'ª feita ✓'):(alvo+'ª série feita ✓')));
     }else{
       flash(n>1?(n+' séries registradas ✓'):'Carga registrada ✓');
     }
@@ -10552,6 +10839,41 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
     if(f && timer) timer.start(f, ex.name);
   };
   const zerarSerie=(exId)=>setSeriesFeitas(m=>({...m,[exId]:0}));
+  /* LOTE_TRILHA1: trilha só no exercício solto com 2+ séries (bi-set, cardio e
+     isometria seguem como estão) */
+  const trilhaOn=(ex,bl)=>!bl && !ex.cardio && !ex.isometria && (totalSeries(ex)||0)>=2;
+  const concluirTrilha=(ex)=>{ setEtapasT(m=>({...m,[ex.id]:null})); avancarSerie(ex); };
+  const etapaTrilha=(ex,i,k,et)=>{
+    if(k>=et.length-1){ concluirTrilha(ex); return; }
+    setEtapasT(m=>({...m,[ex.id]:{s:i,k:k+1}}));
+    if(inicio==null){ setInicio(marcarInicio(treinoId)); }
+    const f=parseDescanso(et[k].pausa);
+    if(f && timer) timer.start(f, ex.name+' · pausa');
+  };
+  // toque errado: desfaz a marcação daquela série em diante. Logs de carga ficam.
+  const desfazerTrilha=(ex,i)=>{
+    const antes=seriesFeitas[ex.id]||0;
+    if(i>=antes) return;
+    setSeriesFeitas(m=>({...m,[ex.id]:i}));
+    setEtapasT(m=>({...m,[ex.id]:null}));
+    if(timer && timer.running && String(timer.exNome||'').indexOf(ex.name)===0) timer.cancel();
+    const hoje=todayISO();
+    const temLog=(ex.logs||[]).some(l=>l.date===hoje && (l.serie||0)>i);
+    flash((antes-i>1?((i+1)+'ª em diante desmarcadas'):((i+1)+'ª desmarcada'))+(temLog?' · a carga registrada continua salva':''));
+  };
+  // LOTE_TRILHA4: "Iniciar treino" liga o relógio da sessão; a 1ª série continua ligando também
+  const iniciarTreino=(ev)=>{
+    if(saindoIni) return;
+    let pos=null;
+    try{
+      const el=ev && ev.currentTarget && ev.currentTarget.querySelector('.btfogo');
+      if(el){ const r=el.getBoundingClientRect(); pos={x:r.left+r.width/2, y:r.top+r.height/2}; }
+    }catch(e){}
+    if(inicio==null) setInicio(marcarInicio(treinoId));
+    setSaindoIni(true);
+    setFogoVoando(pos||{x:window.innerWidth/2, y:window.innerHeight*0.3});
+    setTimeout(()=>{ setFogoVoando(null); setSaindoIni(false); }, 1000);
+  };
   /* ---- execução em grupo ----
      A rodada do bloco é o MENOR nº de séries feitas entre os membros: só fecha
      quando todo mundo passou. É isso que garante que o descanso dispare uma
@@ -10622,6 +10944,12 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
         <Ic n="pencil"/> Editar treino</button>}
       {mostrarBrief && inicio==null && !treinoConcluidoHoje &&
         <PreTreino aluno={s} treino={t} onFechar={()=>setMostrarBrief(false)}/>}
+      {/* LOTE_TRILHA4 */}
+      {(inicio==null || saindoIni) && !treinoConcluidoHoje && (t.exercises||[]).length>0 &&
+        <button type="button" className={'btiniciar'+(saindoIni?' sai':'')} onClick={iniciarTreino}>
+          <span className="btfogo" aria-hidden="true">🔥</span> Iniciar treino</button>}
+      {fogoVoando && <span className="fogovoo" aria-hidden="true"
+        style={{left:fogoVoando.x+'px', top:fogoVoando.y+'px'}}>🔥</span>}
       {(t.exercises||[]).length>0 && (()=>{
         const te=tempoEstimado(t.exercises); if(!te) return null;
         return <div className="tempoest">
@@ -10630,8 +10958,6 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
             <b>{te.faixa[0]}–{te.faixa[1]} min</b></span>
         </div>;
       })()}
-      {inicio==null && (t.exercises||[]).length>0 &&
-        <div className="cronohint">O relógio conta quando você registra a primeira série 👇</div>}
       {(t.exercises||[]).length===0 && <div className="empty"><div className="big">＋</div>
         <p>{ehAluno?'Este treino ainda não tem exercícios. Fale com seu treinador.':'Treino vazio. Toque em “+ Exercício” para montar. Depois, a cada aula, você só registra a carga.'}</p></div>}
       {(()=>{
@@ -10667,15 +10993,16 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
               <button className="cdiniciar" onClick={()=>cardio.iniciar(bl, ex.name, ex.id)}>▶ Iniciar cardio · {fmtMin(totalCardioSeg(ex.cardio))}</button>
             </div>); })()}
           {ex.isometria && <div className="isocard">
-            <div className="isocardtxt">
-              Segure entre <b>{ex.isometria.min}s</b> e <b>{ex.isometria.max}s</b>
-              {totalSeries(ex) ? <React.Fragment> · {totalSeries(ex)} séries</React.Fragment> : null}
+            <div className="isocardtxt isonovo">
+              {/* LOTE_TRILHA3: "3 séries de 15 a 20s", maior e em azul claro */}
+              {totalSeries(ex) ? (totalSeries(ex)+' séries de ') : ''}
+              {ex.isometria.min===ex.isometria.max ? (ex.isometria.max+'s') : (ex.isometria.min+' a '+ex.isometria.max+'s')}
             </div>
             <button className="isoiniciar"
               onClick={()=>iso.iniciar(ex.isometria, ex.name, ex.id, (seriesFeitas[ex.id]||0)+1)}>
               ▶ Iniciar {ehAlong(ex.isometria)?'alongamento':'isometria'} · {rotIso(ex.isometria)}</button>
           </div>}
-          {ex.metodo && <div className="metplanowrap">
+          {ex.metodo && !trilhaOn(ex,bl) && <div className="metplanowrap">
             <div className="metplano">
               {ex.metodo.series.map((sr,i)=>{
                 const fe=seriesFeitas[ex.id]||0;
@@ -10798,7 +11125,12 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
               </button>
             </React.Fragment></Revela>);
           })()}
-          {(()=>{
+          {/* LOTE_TRILHA1 */ trilhaOn(ex,bl) && <TrilhaSeries ex={ex} aluno={s}
+            feitas={seriesFeitas[ex.id]||0} etapaSt={etapasT[ex.id]||null}
+            onAvancar={()=>concluirTrilha(ex)}
+            onEtapa={(i,k,et)=>etapaTrilha(ex,i,k,et)}
+            onDesfazer={(i)=>desfazerTrilha(ex,i)}/>}
+          {!trilhaOn(ex,bl) && (()=>{
             const todos=allLogsOfExercise(s,ex.name,ex.exerciseId);
             const ses=agruparSessoes(todos, varPadrao(s.academia));
             const ult=ses.length?ses[ses.length-1]:null;
@@ -10882,7 +11214,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                 {(()=>{ const tot=totalSeries(ex); const fe=seriesFeitas[ex.id]||0;
                   const cl='exseries'+((ex.metodo||ex.cardio||ex.isometria)?' met':'')+((tot&&fe>=tot)?' concl':'');
                   if(ex.cardio) return <span className={cl}><Ic n="run" r="cardio"/> Cardio · {fmtMin(totalCardioSeg(ex.cardio))}</span>;
-                  if(ex.isometria) return <span className={cl}>{ehAlong(ex.isometria)?<React.Fragment><Ic n="lotus"/> Alongamento</React.Fragment>:<React.Fragment><Ic n="hourglass"/> Isometria</React.Fragment>} · {tot?(tot+' × '):''}{rotIso(ex.isometria)}{/* LOTE_ISO_ORDEM: séries antes do tempo */}</span>;
+                  if(ex.isometria) return <span className={cl}>{ehAlong(ex.isometria)?<React.Fragment>Alongamento</React.Fragment>:<React.Fragment><Ic n="hourglass"/> Isometria</React.Fragment>}{/* LOTE_TRILHA3: só o tipo; a prescrição fica no card */}</span>;
                   if(ex.metodo) return <span className={cl}>🔺 {ex.metodo.nome}</span>;
                   return ex.series ? <span className={cl}>{ex.series}</span> : null; })()}
                 {ex.filmar && <span className="exfilm"><Ic n="video" r="coach"/> Recomendado Filmar</span>}
@@ -10892,8 +11224,8 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
                 {/* com prescrição série a série o descanso mora NA LINHA da série
                     (🕐 tocável). O chip só existe para quem não tem linhas. */}
                 {!ex.cardio && !bl && !(ex.metodo && (ex.metodo.series||[]).length) && (()=>{ const d=descansoDaSerie(ex, seriesFeitas[ex.id]||0); const f=parseDescanso(d);
-                  return f ? <button className="exrest" onClick={()=>timer.start(f, ex.name)}>
-                    <Ic n="timer"/> Descansar <span className="exresth">{String(d).replace('~','–')}</span>
+                  return f ? <button className="exrest" onClick={()=>timer.start(f, ex.name)} aria-label={'Contar descanso de '+String(d).replace('~','–')}>
+                    <Ic n="timer"/> <span className="exresth">{String(d).replace('~','–')}</span>
                   </button> : null; })()}
               </div></Revela>
             </div>
@@ -10971,7 +11303,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
         // a mesma prescrição que o card solto mostra no exmeta
         const rotuloSer=(ex)=>{ const tot=totalSeries(ex);
           if(ex.cardio) return <React.Fragment><Ic n="run" r="cardio"/> Cardio · {fmtMin(totalCardioSeg(ex.cardio))}</React.Fragment>;
-          if(ex.isometria) return <React.Fragment>{ehAlong(ex.isometria)?<React.Fragment><Ic n="lotus"/> Alongamento</React.Fragment>:<React.Fragment><Ic n="hourglass"/> Isometria</React.Fragment>} · {tot?(tot+' × '):''}{rotIso(ex.isometria)}{/* LOTE_ISO_ORDEM: séries antes do tempo */}</React.Fragment>;
+          if(ex.isometria) return <React.Fragment>{ehAlong(ex.isometria)?<React.Fragment>Alongamento</React.Fragment>:<React.Fragment><Ic n="hourglass"/> Isometria</React.Fragment>} · {tot?(tot+' × '):''}{rotIso(ex.isometria)}{/* LOTE_ISO_ORDEM: séries antes do tempo */}</React.Fragment>;
           if(ex.metodo) return '🔺 '+ex.metodo.nome;
           return ex.series||''; };
         const teclaAlterna=(exId)=>(ev)=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); alternarRecolhido(exId); } };
