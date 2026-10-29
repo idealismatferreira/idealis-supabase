@@ -5792,7 +5792,7 @@ function carregarCardioTema(){
    Estado em public.aluno_tours. Regra: abre sozinho até 2 vezes; para quando o
    aluno conclui, sai no meio ou diz "Agora não" duas vezes. Depois, só pelo "?".
    Sem a tabela (ou sem rede), simplesmente não oferece. */
-const TOUR_V=2;   // sobe sempre que o tour.js mudar (o app guarda o arquivo em cache)
+const TOUR_V=3;   // sobe sempre que o tour.js mudar (o app guarda o arquivo em cache) · LOTE_TOUR_TRILHA
 let _tourCarregando=null, _tourChecado=false;
 function carregarTour(){
   if(window.TourIdealis) return Promise.resolve(window.TourIdealis);
