@@ -4517,7 +4517,7 @@ function loadOpQueue(){ if(!LS_OK) return []; try{const r=window.localStorage.ge
 function saveOpQueue(q){ if(!LS_OK)return; try{window.localStorage.setItem(OPQ_KEY,JSON.stringify(q));}catch(e){} }
 function enqueueOp(op){
   const q=loadOpQueue();
-  q.push({...op, _ts:Date.now()});
+  q.push({...op, _id:uid(), _ts:Date.now()});   // LOTE_FILA: identidade do item
   saveOpQueue(q);
   if(window.__flushOps) window.__flushOps();
 }
@@ -4613,38 +4613,69 @@ function saveOpMortas(q){ if(!LS_OK)return; try{window.localStorage.setItem(OPQ_
    - erro de REDE  -> para e preserva tudo (a ordem importa, o dado está ok)
    - erro de DADOS -> conta tentativas; na 3ª manda pra quarentena e SEGUE em frente,
                       pra que um registro problemático não segure os outros 73 */
-async function flushOpQueue(){
-  const q=loadOpQueue();
+/* LOTE_FILA · uma passada pela fila.
+   `pular` = itens que já falharam NESTA rodada da trava: ficam onde estão, sem
+   nova tentativa agora (o retry de 30s cuida deles). Assim um item recusado não
+   queima as 3 tentativas em segundos só porque chegou coisa nova na fila. */
+async function flushOpQueueUmaVez(pular){
+  let q=loadOpQueue();
   if(!q.length) return {ok:true, enviados:0, vazia:true};
   if(!navigator.onLine) return {ok:false, offline:true, pend:q.length};
-  const restantes=[];
+  // itens gravados antes deste lote não têm _id: ganham um agora
+  if(q.some(o=>!o._id)){ q=q.map(o=>o._id?o:{...o,_id:uid()}); saveOpQueue(q); }
+  const voltam={};   // _id -> item que continua na fila (com _erros atualizado)
   let enviados=0, mortas=0, ultimoErro=null, caiuRede=false;
   for(let i=0;i<q.length;i++){
     const op=q[i];
-    if(caiuRede){ restantes.push(op); continue; }
+    if(caiuRede || (pular && pular.has(op._id))){ voltam[op._id]=op; continue; }
     try{
       await execOp(op);
       enviados++;
     }catch(err){
       ultimoErro=String(err.message||err);
-      if(erroDeRede(err)){ caiuRede=true; restantes.push(op); continue; }
+      if(erroDeRede(err)){ caiuRede=true; voltam[op._id]=op; continue; }
       op._erros=(op._erros||0)+1;
+      if(pular) pular.add(op._id);
       if(op._erros>=3){
         const m=loadOpMortas();
         m.push({op, erro:ultimoErro, em:new Date().toISOString()});
         saveOpMortas(m);
         mortas++;
       }else{
-        restantes.push(op);
+        voltam[op._id]=op;
       }
     }
   }
-  // o que foi enfileirado DURANTE o flush entrou no fim: preserva
-  const agora=loadOpQueue();
-  saveOpQueue(restantes.concat(agora.slice(q.length)));
+  /* regrava pela IDENTIDADE, não pela posição: sai da fila só o que esta
+     passada enviou (ou mandou pra quarentena). O que entrou durante o envio
+     continua lá, na ordem em que entrou. */
+  const vistos={}; q.forEach(o=>{ vistos[o._id]=true; });
+  saveOpQueue(loadOpQueue().filter(o=>!vistos[o._id] || voltam[o._id]).map(o=>voltam[o._id]||o));
   const pend=loadOpQueue().length;
   return {ok:pend===0, enviados, mortas, pend,
           erro:ultimoErro, offline:caiuRede, totalMortas:loadOpMortas().length};
+}
+/* LOTE_FILA · trava: um envio por vez.
+   Antes, cada enqueueOp disparava um envio novo com outro ainda rodando: numa
+   importação de 48 itens, o 1º ia 48 vezes, e um envio regravava a fila por
+   cima do outro (itens sumiam sem aviso). Agora, pedido que chega no meio de um
+   envio só marca "tem mais", e a mesma trava faz outra passada no fim. Quem
+   chama recebe a mesma promessa, com o resultado da última passada. */
+let _filaEmCurso=null, _filaTemMais=false;
+function flushOpQueue(){
+  if(_filaEmCurso){ _filaTemMais=true; return _filaEmCurso; }
+  _filaEmCurso=(async()=>{
+    const falharam=new Set();
+    let r;
+    try{
+      do{
+        _filaTemMais=false;
+        r=await flushOpQueueUmaVez(falharam);
+      }while(_filaTemMais && r && !r.offline);
+    }finally{ _filaEmCurso=null; }
+    return r;
+  })();
+  return _filaEmCurso;
 }
 
 /* ===== CAMADA 2: LEITURA DO SUPABASE =====
@@ -5389,7 +5420,8 @@ function parseDescanso(txt){
   const m=s.match(/^(\d+)\s*[~\-–a]\s*(\d+)$/);
   if(m) return {min:parseInt(m[1],10), max:parseInt(m[2],10)};
   const u=s.match(/^(\d+)$/);
-  if(u) return {min:parseInt(u[1],10), max:parseInt(u[1],10)};
+  // LOTE_STEPPER: "0" = sem descanso: não abre o relógio nem mostra o chip
+  if(u) return parseInt(u[1],10)>0 ? {min:parseInt(u[1],10), max:parseInt(u[1],10)} : null;
   return null;
 }
 const REST_KEY='idealis_descanso_v1';
@@ -5763,11 +5795,11 @@ const CD_ICO={
   sobe:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>,
 };
 /* ===== CARDIO TEMÁTICO (Lote 1) =====
-   O motor do cenário mora em cardio-tema.js (≈160 KB), baixado só quando o
+   O motor do cenário mora em cardio-tema.js (≈240 KB; v5 = visão de costas), baixado só quando o
    cardio abre — quem não usa não paga nada. Se não carregar em 8 s, ou o
    exercício não for do temático, o cardio segue clássico sem avisar o aluno.
    Lote 3: ligado para todos. ?tema=0 desliga SÓ neste aparelho (teste); ?tema=1 religa. */
-const CARDIO_TEMA_V=4;
+const CARDIO_TEMA_V=5;   // v5: visão de costas (motor novo, mesma API e mesmo log v1)
 const CARDIO_TEMA_LOTE=3;
 /* versão do formato de logs.extra.tema (a Dashboard lê). Mudou o formato → sobe aqui e avisa a Dashboard. */
 const CARDIO_TEMA_LOG_V=1;
@@ -7856,6 +7888,14 @@ function copiarTreinos(opts){
   const novos=[];
   treinosOrigem.forEach((t,i)=>{
     const tid=uid();
+    // LOTE_FILA: a sessão entra na fila ANTES dos exercícios dela
+    // (exercicios.treino_id tem FK para treinos; na ordem antiga o banco
+    // recusava, o exercício ia pra quarentena e sumia da importação).
+    // a cópia leva o toggle de cardio (só escreve a coluna se ela existe)
+    enqueueOp({tipo:'insert',tabela:'treinos',dados:{
+      id:tid, aluno_id:alunoDestinoId, nome:t.nome,
+      ordem:ordemInicial+i, fase_id:faseDestinoId,
+      ...((EH_CARDIO_OK && t.ehCardio) ? {eh_cardio:true} : {})}});
     const mapaGrupo={};
     const exs=(t.exercises||[]).map((ex,j)=>{
       const eid=uid();
@@ -7877,13 +7917,775 @@ function copiarTreinos(opts){
     });
     novos.push({id:tid, nome:t.nome, faseId:faseDestinoId, exercises:exs, ehCardio:!!t.ehCardio,
                 sessoes:[], relatos:[], acessos:[], concluidoData:null});
-    // a cópia leva o toggle de cardio (só escreve a coluna se ela existe)
-    enqueueOp({tipo:'insert',tabela:'treinos',dados:{
-      id:tid, aluno_id:alunoDestinoId, nome:t.nome,
-      ordem:ordemInicial+i, fase_id:faseDestinoId,
-      ...((EH_CARDIO_OK && t.ehCardio) ? {eh_cardio:true} : {})}});
   });
   return novos;
+}
+
+/* ===== GEM_IMPORT · colar o treino montado na Gem =====
+   v5 (LOTE_ISO_GEM): Isometria e Alongamento na edição de séries, iguais aos da
+   montagem tradicional (mesmos botões, mesmas faixas ISO_FAIXAS, mesmo jsonb
+   `isometria`; com método escolhido não valem, como lá).
+   v4 (LOTE_STEPPER): séries, repetições e descanso com os MESMOS steppers da
+   montagem tradicional (listas REP_OPTS e DESC_OPTS, usadas pelos dois), descanso
+   gravado no formato dela ("60~75", "60", "0" = sem descanso).
+   v3 (LOTE_METODO): a técnica vira MÉTODO do App (o mesmo objeto que o
+   seletor de método do exercício grava), séries e repetições no formato do App
+   ("3 × 8 a 12"), descanso padronizado ("75s", "75-90s"), observação opcional
+   e editável, séries e repetições editáveis com um toque.
+   Lê o bloco #IDEALIS_INICIO ... #IDEALIS_FIM, mostra a prévia e entrega pro
+   MESMO motor da importação de sessões (copiarTreinos). Nada novo no banco.
+   Vínculo automático: cardapio_id do bloco se existir no catálogo; senão o nome
+   exato (normAcc). O casamento aproximado só SUGERE: quem liga é o treinador,
+   porque vínculo errado leva histórico, carga e correções pro exercício errado.
+   Aceita o bloco antigo (versao 1: "series":"3x 8-10" e "tecnica" em texto). */
+function lerBlocoGem(txt){
+  let s=String(txt||'');
+  const i=s.indexOf('#IDEALIS_INICIO'), f=s.indexOf('#IDEALIS_FIM');
+  if(i>=0) s=s.slice(i+'#IDEALIS_INICIO'.length, f>i?f:undefined);
+  s=s.replace(/```[a-zA-Z]*/g,'');
+  const a=s.indexOf('{'), b=s.lastIndexOf('}');
+  if(a<0||b<a) throw new Error('Não achei o bloco do treino. Copie desde #IDEALIS_INICIO até #IDEALIS_FIM.');
+  s=s.slice(a,b+1).replace(/,\s*([}\]])/g,'$1');
+  let j=null;
+  try{ j=JSON.parse(s); }
+  catch(e1){
+    try{ j=JSON.parse(s.replace(/[“”]/g,'"').replace(/[‘’]/g,"'")); }
+    catch(e2){ throw new Error('O bloco veio com erro de formato. Peça pra Gem gerar o bloco de novo.'); }
+  }
+  if(!j || !Array.isArray(j.treinos) || !j.treinos.length) throw new Error('O bloco não tem nenhum treino.');
+  return j;
+}
+/* ---- casamento aproximado: só SUGESTÃO, nunca liga sozinho ---- */
+const GEM_STOP=new Set(['de','da','do','das','dos','com','no','na','nos','nas','em','e','a','o','os','as',
+  'para','pra','por','ao','sem','um','uma']);
+function tokensGem(t){
+  // o que vem entre parênteses costuma ser técnica ("(excêntrica lenta)"), não nome
+  return normAcc(String(t||'').replace(/\([^)]*\)/g,' ')).replace(/[^a-z0-9]+/g,' ').split(' ')
+    .filter(w=>w.length>1 && !GEM_STOP.has(w))
+    .map(w=>(w.length>4 && w.charAt(w.length-1)==='s') ? w.slice(0,-1) : w);
+}
+function tokBate(a,b){
+  if(a===b) return true;
+  let i=0; while(i<a.length && i<b.length && a[i]===b[i]) i++;
+  return i>=5 || (i>=4 && (a.length===i || b.length===i));   // puxador ~ puxada, haltere ~ halteres
+}
+/* palavra de equipamento ou posição não basta sozinha: "Puxador Barra" não é "Stiff com Barra" */
+const GEM_FRACO=new Set(['barra','haltere','halter','maquina','cabo','polia','cros','cross','corda','banco','smith',
+  'unilateral','bilateral','sentado','deitado','livre','articulada','articulado','inclinado','inclinada',
+  'declinado','declinada','reto','reta','pegada','aberta','fechada','neutra','pronada','supinada','anatomica','anatomico']);
+function pontuarGem(q, ct){
+  if(!q.length || !ct.length) return 0;
+  const usado=ct.map(()=>false); let m=0, forte=0;
+  q.forEach(w=>{ for(let i=0;i<ct.length;i++){ if(!usado[i] && tokBate(w,ct[i])){ usado[i]=true; m++; if(!GEM_FRACO.has(w)) forte++; break; } } });
+  if(!forte) return 0;
+  return 2*m/(q.length+ct.length) + (tokBate(q[0],ct[0]) ? 0.1 : 0);
+}
+function indiceCatalogoGem(catalogo){
+  return (catalogo||[]).filter(c=>c && c.id!=null && c.nome && !c.arquivado)
+    .map(c=>({c, tk:tokensGem(c.nome)}));
+}
+function sugerirCatalogo(nome, indice, n, corte){
+  const q=tokensGem(nome); if(!q.length) return [];
+  return indice.map(x=>({c:x.c, s:pontuarGem(q,x.tk)})).filter(x=>x.s>=(corte||0.4))
+    .sort((a,b)=>(b.s-a.s) || (String(a.c.nome).length-String(b.c.nome).length))
+    .slice(0,n||3).map(x=>x.c);
+}
+function buscarCatalogoGem(txt, indice, n){
+  const q=normAcc(txt).replace(/[^a-z0-9]+/g,' ').split(' ').filter(w=>w.length>0);
+  if(!q.length) return [];
+  return indice.filter(x=>{ const nm=normAcc(x.c.nome); return q.every(w=>nm.indexOf(w)>=0); })
+    .sort((a,b)=>String(a.c.nome).length-String(b.c.nome).length)
+    .slice(0,n||25).map(x=>x.c);
+}
+
+/* ---- opções dos steppers: as MESMAS da montagem tradicional (ExerciseSheet usa estas listas) ---- */
+const REP_OPTS=['4 a 6','6 a 8','6 a 10','8 a 10','8 a 12','10 a 12','10 a 15','12 a 15','15 a 20'];
+// descanso guardado como "45~60" (faixa) ou "60" (único). "0" = sem descanso
+const DESC_OPTS=['0','30','30~45','45~60','50~70','60~75','60~90','75~90','90~120','120~180'];
+
+/* ---- formatos: a Gem escreve "75s" / "75-90s"; o App guarda "75" / "75~90" ---- */
+function normDescansoGem(t){
+  const raw=String(t==null?'':t).trim(); if(!raw) return '';
+  let s=normAcc(raw).replace(/,/g,'.').replace(/[\u2013\u2014]/g,'-');
+  const seg=(v)=>String(Math.round(parseFloat(v)*60));
+  s=s.replace(/(\d+(?:\.\d+)?)\s*(?:a|-|ate|\/)\s*(\d+(?:\.\d+)?)\s*min(?:utos?)?/g,(m,a,b)=>seg(a)+'-'+seg(b)+'s');
+  s=s.replace(/(\d+(?:\.\d+)?)\s*min(?:utos?)?\s*(?:e\s*)?(\d+)\s*(?:s\b|seg)/g,(m,a,b)=>String(Math.round(parseFloat(a)*60)+parseInt(b,10))+'s');
+  s=s.replace(/(\d+(?:\.\d+)?)\s*min(?:utos?)?/g,(m,a)=>seg(a)+'s');
+  const nums=(s.match(/\d+(?:\.\d+)?/g)||[]).map(x=>Math.round(parseFloat(x)));
+  if(!nums.length) return raw;
+  return (nums.length>=2 && nums[0]!==nums[1]) ? (nums[0]+'~'+nums[1]) : String(nums[0]);
+}
+/* "60~75" -> "60–75s" na tela (igual aos rótulos do App) */
+function rotDescansoGem(d){
+  const t=String(d||'').trim().replace('~','\u2013');
+  return /^\d+(\s*\u2013\s*\d+)?$/.test(t) ? t+'s' : t;
+}
+/* dentro do método, no formato dos modelos: "75s" / "60 a 75s" */
+function descMetodoGem(d){
+  const m=String(d||'').trim().match(/^(\d+)(?:~(\d+))?$/);
+  if(!m) return String(d||'').trim();
+  return m[2] ? (m[1]+' a '+m[2]+'s') : (m[1]+'s');
+}
+function normRepsGem(t){
+  const raw=String(t==null?'':t).trim(); if(!raw) return '';
+  const s=normAcc(raw);
+  let m=s.match(/^\D*?(\d+)\s*(?:a|-|\u2013|\u2014|ate|\/|~)\s*(\d+)(?!\d)/);
+  if(m) return m[1]+' a '+m[2];
+  m=s.match(/^\D*?(\d+)\s*(?:reps?|repeticoes|repeticao)?\s*$/);
+  if(m) return m[1];
+  return raw;   // "até a falha", "30s", "12 (6+6)": fica como veio
+}
+/* séries: número. Aceita o formato antigo "3x 8-10" (versao 1) */
+function seriesGem(e){
+  let n=e.series, reps=(e.repeticoes!=null) ? e.repeticoes : e.reps;
+  if(typeof n==='string'){
+    const m=n.match(/^\s*(\d+)\s*(?:x|×|series?|séries?)?\s*(.*)$/i);
+    if(m){ n=m[1]; if((reps==null || reps==='') && m[2]) reps=m[2]; }
+  }
+  n=parseInt(n,10);
+  return {n:(n>0 && n<=20) ? n : null, reps:normRepsGem(reps)};
+}
+
+/* ---- método do App (o mesmo objeto que o seletor do exercício grava) ---- */
+function bibliotecaMetodosGem(){
+  try{
+    return (typeof todosMetodos==='function' ? todosMetodos() : [])
+      .filter(m=>m && m.nome && Array.isArray(m.series) && m.series.length);
+  }catch(e){ return []; }
+}
+function acharMetodoGem(nome, lib){
+  const k=normAcc(nome); if(!k) return null;
+  return (lib||[]).find(m=>normAcc(m.nome)===k) || null;
+}
+function sugerirMetodoGem(nome, lib, n){
+  const q=tokensGem(nome); if(!q.length) return [];
+  return (lib||[]).map(m=>({m, s:pontuarGem(q, tokensGem(m.nome))})).filter(x=>x.s>=0.3)
+    .sort((a,b)=>b.s-a.s).slice(0,n||3).map(x=>x.m);
+}
+function buscarMetodoGem(txt, lib){
+  const q=normAcc(txt).split(/\s+/).filter(Boolean);
+  return (lib||[]).filter(m=>{ const k=normAcc(m.nome+' '+(m.fam||'')); return q.every(w=>k.indexOf(w)>=0); }).slice(0,30);
+}
+/* séries iguais (mesmas repetições, sem cluster): aceitam séries/reps/descanso
+   da Gem. Pirâmide, degrau e afins variam por série: vale o modelo do método. */
+function metodoHomogeneoGem(m){
+  const ss=(m&&m.series)||[];
+  return ss.length>0 && ss.every(s=>s.reps===ss[0].reps && !(s.blocos&&s.blocos.length));
+}
+function ajustarMetodoGem(m, o){
+  const c=JSON.parse(JSON.stringify(m));
+  delete c.fam;   // igual ao aplicarTemplate do exercício: família é só organização
+  if(!metodoHomogeneoGem(c)) return c;
+  const n=o&&o.n, reps=o&&o.reps, desc=o&&o.descanso;
+  if(n && n!==c.series.length){
+    // a última série fica por último: é nela que costuma estar o drop
+    const ss=c.series, ult=ss[ss.length-1], corpo=ss.slice(0,-1), out=[];
+    if(n===1) out.push(ult);
+    else{
+      for(let i=0;i<n-1;i++) out.push(corpo[i] ? corpo[i] : JSON.parse(JSON.stringify(corpo[corpo.length-1]||ult)));
+      out.push(ult);
+    }
+    c.series=out;
+  }
+  if(reps) c.series=c.series.map(s=>({...s, reps}));
+  if(desc) c.series=c.series.map(s=>({...s, descanso:descMetodoGem(desc)}));
+  return c;
+}
+function rotSeriesGem(n, reps, met, iso){
+  if(met && met.series && met.series.length){
+    const k=met.series.length;
+    return k+' × '+(metodoHomogeneoGem(met) ? (met.series[0].reps||'') : 'varia');
+  }
+  // igual à montagem tradicional: isometria SUBSTITUI a repetição
+  if(iso) return (n||1)+' × '+rotIso(iso);
+  return (n && reps) ? (n+' × '+reps) : (n ? String(n) : (reps||''));
+}
+
+function montarTreinosGem(j, catalogo, nomesExistentes, lib){
+  const porId={}, porNome={};
+  (catalogo||[]).forEach(c=>{
+    if(!c || c.id==null || c.arquivado) return;
+    porId[String(c.id)]=c;
+    const k=normAcc(c.nome); if(k && !(k in porNome)) porNome[k]=c;
+  });
+  const existentes=(nomesExistentes||[]).map(n=>normAcc(n));
+  const avisos=[], previa=[];
+  (j.treinos||[]).forEach((t,ti)=>{
+    const nomeT=String((t&&t.nome)||('Treino '+String.fromCharCode(65+ti))).trim();
+    if(existentes.indexOf(normAcc(nomeT))>=0) avisos.push(nomeT+' já existe nesta fase. Vai entrar outro com o mesmo nome.');
+    const lista=((t&&t.exercicios)||[]).filter(e=>e && String(e.nome||'').trim())
+      .slice().sort((a,b)=>(Number(a.ordem)||0)-(Number(b.ordem)||0));
+    const itens=lista.map(e=>{
+      const nome=String(e.nome).trim();
+      let cat=null;
+      if(e.cardapio_id!=null && porId[String(e.cardapio_id)]) cat=porId[String(e.cardapio_id)];
+      if(!cat) cat=porNome[normAcc(nome)]||null;
+      const sr=seriesGem(e);
+      const metNome=String(e.metodo||'').trim(), tec=String(e.tecnica||'').trim();
+      const met=acharMetodoGem(metNome||tec, lib);
+      const obsBase=String(e.observacao||'').trim();
+      // bloco antigo: técnica que não virou método continua como texto na observação
+      const obs=(!metNome && tec && !met) ? [tec,obsBase].filter(Boolean).join(' · ') : obsBase;
+      const rot=e.biset?String(e.biset).trim():'';
+      return {nomeGem:nome, cat, n:sr.n, reps:sr.reps, descanso:normDescansoGem(e.descanso),
+        obs, metodo:met, metodoGem:(!met && metNome) ? metNome : '', iso:null,
+        grupo:rot?{id:'gem:'+ti+':'+rot, tipo:'combo'}:null,
+        status:e.status==='mantido'?'mantido':'novo', biset:rot};
+    });
+    // bi-set só funciona com os membros em sequência
+    const vistos={};
+    itens.forEach((it,k)=>{
+      if(!it.biset) return;
+      if(vistos[it.biset]!=null && vistos[it.biset]!==k-1)
+        avisos.push('Bi-set '+it.biset+' em '+nomeT+' não está em sequência: vai ficar separado.');
+      vistos[it.biset]=k;
+    });
+    previa.push({nome:nomeT, itens});
+  });
+  return {previa, avisos, treinos:aplicarVinculosGem(previa, {}, {})};
+}
+/* estado final de um item: vínculo (vinc) + ajustes da prévia (aj: n, reps,
+   metodo, obs, obsOn). O que o treinador não tocou fica como a Gem mandou. */
+function finalItemGem(it, ch, vinc, aj){
+  const cat=(vinc && (ch in vinc)) ? vinc[ch] : it.cat;
+  const a=(aj && aj[ch]) || {};
+  const n=(a.n!=null) ? a.n : it.n, reps=(a.reps!=null) ? a.reps : it.reps;
+  const desc=(a.desc!=null) ? a.desc : it.descanso;
+  const metBase=('metodo' in a) ? a.metodo : it.metodo;
+  const met=metBase ? ajustarMetodoGem(metBase, {n, reps, descanso:desc}) : null;
+  // método manda mais: com método, a isometria não vai (como no ExerciseSheet)
+  const iso=met ? null : (('iso' in a) ? a.iso : it.iso);
+  const obs=('obs' in a) ? a.obs : it.obs;
+  const obsOn=('obsOn' in a) ? a.obsOn : true;
+  return {cat, n, reps, desc, met, iso, obs:String(obs||'').trim(), obsOn,
+    metPendente:(!('metodo' in a) && !it.metodo && !!it.metodoGem)};
+}
+function aplicarVinculosGem(previa, vinc, aj){
+  return previa.map((t,ti)=>({nome:t.nome, ehCardio:false, exercises:t.itens.map((it,k)=>{
+    const f=finalItemGem(it, ti+':'+k, vinc, aj);
+    return {name:f.cat?f.cat.nome:it.nomeGem, series:rotSeriesGem(f.n, f.reps, f.met, f.iso),
+      exerciseId:f.cat?f.cat.id:null, descanso:f.desc, filmar:false,
+      observacao:f.obsOn ? f.obs : '', metodo:f.met, cardio:null, isometria:f.iso||null, aviso:null,
+      grupo:it.grupo};
+  })}));
+}
+const GEM_CHIP={display:'inline-block',margin:'6px 6px 0 0',padding:'7px 11px',borderRadius:999,
+  border:'1px solid var(--line)',background:'var(--bg)',color:'var(--text)',fontSize:12.5,
+  fontFamily:'inherit',textAlign:'left',cursor:'pointer'};
+const GEM_INPUT={padding:'10px 12px',background:'var(--bg)',color:'var(--text)',
+  border:'1px solid var(--line)',borderRadius:10,fontSize:14,fontFamily:'inherit'};
+const GEM_TOQUE={background:'none',border:'none',padding:0,font:'inherit',color:'var(--text)',
+  textDecoration:'underline dotted',textUnderlineOffset:3,cursor:'pointer',textAlign:'left'};
+
+/* um exercício da prévia. `editor` = qual edição está aberta neste item */
+function ItemGem({it, num, f, editor, abrir, fechar, ligar, ajustar, indice, lib}){
+  const [busca,setBusca]=useState('');
+  const [manual,setManual]=useState(null);   // 's' | 'r' | 'd': qual stepper está no teclado
+  const [oTxt,setOTxt]=useState('');
+  const cat=f.cat, met=f.met;
+  const repsLivre=!met || metodoHomogeneoGem(met);
+  const sug=(!cat || editor==='vinc') ? sugerirCatalogo(it.nomeGem, indice, 3)
+    .filter(c=>!cat || String(c.id)!==String(cat.id)) : [];
+  const achados=(editor==='vinc' && busca.trim()) ? buscarCatalogoGem(busca, indice, 20) : [];
+  const sugMet=(f.metPendente || editor==='metodo') ? sugerirMetodoGem(it.metodoGem || (met&&met.nome) || '', lib, 3)
+    .filter(m=>!met || m.nome!==met.nome) : [];
+  const achMet=(editor==='metodo' && busca.trim()) ? buscarMetodoGem(busca, lib) : [];
+  const outroNome=cat && normAcc(cat.nome)!==normAcc(it.nomeGem);
+  const abrirSeries=()=>{ setManual(null); abrir('series'); };
+  const nAtual=String(met ? met.series.length : (f.n||''));
+  const rAtual=met ? (met.series[0].reps||'') : (f.reps||'');
+  const abrirObs=()=>{ setOTxt(f.obs); abrir('obs'); };
+  const abrirBusca=(tipo)=>{ setBusca(''); abrir(tipo); };
+  const tituloSeries=rotSeriesGem(f.n, f.reps, met, f.iso) || 'séries e repetições';
+  const iso=f.iso;
+  return (<div className="selitem"
+    style={{cursor:'default',marginBottom:6,alignItems:'flex-start',
+            borderColor:(cat && !f.metPendente)?undefined:'rgba(255,92,108,.55)'}}>
+    <div className="selcorpo">
+      <div className="selnome" style={{whiteSpace:'normal'}}>{num}. {cat?cat.nome:it.nomeGem}</div>
+      {outroNome && <div className="selsub">Gem escreveu: {it.nomeGem}</div>}
+      <div className="selsub">
+        {it.status==='mantido'?'🔁 mantido':'🆕 novo'}{' · '}
+        <button type="button" style={GEM_TOQUE} onClick={abrirSeries}>{tituloSeries}</button>
+        {iso ? (ehAlong(iso) ? ' · 🧘 alongamento' : ' · ⏳ isometria') : ''}
+        {' · '}<button type="button" style={GEM_TOQUE} onClick={abrirSeries}>{f.desc!=='' ? rotDescansoGem(f.desc) : 'descanso'}</button>
+        {it.biset?' · bi-set '+it.biset:''}
+        {cat?' · 🔗 Cardápio':' · ⚠️ sem vínculo'}
+      </div>
+      {editor==='series' && <div style={{marginTop:10}}>
+        {!repsLivre && <div className="selsub" style={{marginBottom:8}}>Este método varia por série: vale o modelo dele. Ajuste fino depois, no exercício.</div>}
+        {repsLivre && <React.Fragment>
+        <div className="field" style={{marginBottom:10}}><label>Séries</label>
+          {manual==='s'
+            ? <input defaultValue={nAtual} inputMode="numeric" autoFocus placeholder="Nº de séries"
+                onBlur={e=>{ const n=parseInt(e.target.value,10); if(n>0&&n<=20) ajustar({n}); setManual(null); }}/>
+            : <div className="pickgrid s6">
+                {[1,2,3,4,5,6].map(n=>(
+                  <button type="button" key={n} className={'pcell'+(String(n)===nAtual?' sel':'')} onClick={()=>ajustar({n})}>{n}</button>
+                ))}
+                <button type="button" className="pcell more" onClick={()=>setManual('s')}>⌨</button>
+              </div>}
+        </div>
+        <div className="field" style={{marginBottom:10}}><label>Repetições</label>
+          {!iso && (manual==='r'
+            ? <input defaultValue={rAtual} autoFocus placeholder="Ex: 8 a 12"
+                onBlur={e=>{ const r=normRepsGem(e.target.value); if(r) ajustar({reps:r}); setManual(null); }}/>
+            : <div className="pickgrid s3">
+                {REP_OPTS.map(r=>(
+                  <button type="button" key={r} className={'pcell'+(r===rAtual?' sel':'')} onClick={()=>ajustar({reps:r})}>{r}</button>
+                ))}
+                <button type="button" className="pcell more" onClick={()=>setManual('r')}>⌨ digitar</button>
+              </div>)}
+          {/* Isometria e Alongamento: os mesmos botões da montagem tradicional.
+              Mesmo jsonb, um exclui o outro; trocar de um pro outro mantém a faixa.
+              Com método escolhido não aparecem (lá também não). */}
+          {!met && <div className="isotgls">
+            <button type="button" className={'filmtoggle isotgl'+(iso&&!ehAlong(iso)?' on':'')}
+              onClick={()=>ajustar({iso:(iso&&!ehAlong(iso))?null:{min:(iso?iso.min:ISO_FAIXAS[2].min),max:(iso?iso.max:ISO_FAIXAS[2].max)}})}>
+              <span className="ftbox">{iso&&!ehAlong(iso)?<Ic n="check"/>:''}</span>
+              <span className="fttxt">
+                <span className="ftlab"><Ic n="hourglass"/> Isometria</span>
+                <span className="fthint">{iso&&!ehAlong(iso) ? ('Segurar '+rotIso(iso)+' por série') : 'Tempo de sustentação'}</span>
+              </span>
+            </button>
+            <button type="button" className={'filmtoggle isotgl'+(ehAlong(iso)?' on':'')}
+              onClick={()=>ajustar({iso:ehAlong(iso)?null:{min:(iso?iso.min:ISO_FAIXAS[2].min),max:(iso?iso.max:ISO_FAIXAS[2].max),modo:'alongamento'}})}>
+              <span className="ftbox">{ehAlong(iso)?<Ic n="check"/>:''}</span>
+              <span className="fttxt">
+                <span className="ftlab">🧘 Alongamento</span>
+                <span className="fthint">{ehAlong(iso) ? ('Alongar '+rotIso(iso)+' por série') : 'Tempo de alongamento'}</span>
+              </span>
+            </button>
+          </div>}
+          {!met && iso && <div className="pickgrid s3 isogrid">
+            {ISO_FAIXAS.map(fx=>{
+              const k=fx.min+'_'+fx.max, sel=(iso.min===fx.min && iso.max===fx.max);
+              return (<button type="button" key={k} className={'pcell'+(sel?' sel':'')}
+                onClick={()=>ajustar({iso:ehAlong(iso)?{min:fx.min,max:fx.max,modo:'alongamento'}:{min:fx.min,max:fx.max}})}>{fx.min}-{fx.max}"</button>);
+            })}
+          </div>}
+        </div>
+        <div className="field" style={{marginBottom:10}}><label>Descanso (segundos)</label>
+          {manual==='d'
+            ? <input defaultValue={f.desc} autoFocus placeholder="Ex: 45~60 ou 60"
+                onBlur={e=>{ const d=normDescansoGem(e.target.value); if(d!=='') ajustar({desc:d}); setManual(null); }}/>
+            : <div className="pickgrid s3">
+                {DESC_OPTS.map(d=>(
+                  <button type="button" key={d} className={'pcell'+(d===f.desc?' sel':'')} onClick={()=>ajustar({desc:d})}>{d.replace('~','\u2013')}</button>
+                ))}
+                <button type="button" className="pcell more" onClick={()=>setManual('d')}>⌨ digitar</button>
+              </div>}
+        </div>
+        </React.Fragment>}
+        <button type="button" style={{...GEM_CHIP,margin:0}} onClick={fechar}>Pronto</button>
+      </div>}
+      <div className="selsub" style={{marginTop:4}}>
+        {met
+          ? <React.Fragment>🔺 <button type="button" style={GEM_TOQUE} onClick={()=>abrirBusca('metodo')}>{met.nome}</button></React.Fragment>
+          : f.metPendente
+            ? <React.Fragment>⚠️ Método "{it.metodoGem}" não está no App. <button type="button" style={GEM_TOQUE} onClick={()=>abrirBusca('metodo')}>escolher</button></React.Fragment>
+            : <button type="button" style={GEM_TOQUE} onClick={()=>abrirBusca('metodo')}>+ método</button>}
+      </div>
+      {sugMet.length>0 && <div>
+        {sugMet.map(m=><button key={m.nome} type="button" style={GEM_CHIP}
+          onClick={()=>{ ajustar({metodo:m}); fechar(); }}>🔺 {m.nome}</button>)}
+      </div>}
+      {editor==='metodo' && <div style={{marginTop:8}}>
+        <input value={busca} autoFocus placeholder="Buscar método (drop, pirâmide, cluster...)"
+          onChange={e=>setBusca(e.target.value)} style={{...GEM_INPUT,width:'100%'}}/>
+        {achMet.map(m=><button key={m.nome} type="button" onClick={()=>{ ajustar({metodo:m}); fechar(); }}
+          style={{...GEM_CHIP,display:'block',width:'100%',borderRadius:10}}>
+          {m.nome}{m.fam?<span style={{color:'var(--muted)'}}> · {m.fam}</span>:null}</button>)}
+        {busca.trim() && !achMet.length && <div className="selsub" style={{marginTop:6}}>Nada encontrado.</div>}
+        <div>
+          {(met || f.metPendente) && <button type="button" style={GEM_CHIP} onClick={()=>{ ajustar({metodo:null}); fechar(); }}>Sem método</button>}
+          <button type="button" style={GEM_CHIP} onClick={fechar}>Fechar</button>
+        </div>
+      </div>}
+      {(f.obs || editor==='obs') && <div className="selsub" style={{display:'flex',gap:8,alignItems:'flex-start',marginTop:6}}>
+        <input type="checkbox" checked={f.obsOn} aria-label="Importar observação"
+          onChange={e=>ajustar({obsOn:e.target.checked})}
+          style={{marginTop:2,width:18,height:18,accentColor:'var(--cyan)',flex:'none'}}/>
+        {editor==='obs'
+          ? <div style={{flex:1}}>
+              <textarea rows={3} value={oTxt} autoFocus onChange={e=>setOTxt(e.target.value)}
+                style={{...GEM_INPUT,width:'100%',fontSize:13}}/>
+              <button type="button" style={GEM_CHIP} onClick={()=>{ ajustar({obs:oTxt, obsOn:!!oTxt.trim()}); fechar(); }}>OK</button>
+              <button type="button" style={GEM_CHIP} onClick={fechar}>Cancelar</button>
+            </div>
+          : <button type="button" onClick={abrirObs}
+              style={{...GEM_TOQUE,color:f.obsOn?'var(--text)':'var(--muted)',textDecoration:f.obsOn?'underline dotted':'line-through'}}>
+              {f.obs}</button>}
+      </div>}
+      {!f.obs && editor!=='obs' && <div className="selsub" style={{marginTop:4}}>
+        <button type="button" style={{...GEM_TOQUE,color:'var(--muted)'}} onClick={abrirObs}>+ observação</button></div>}
+      {sug.length>0 && <div style={{marginTop:4}}>
+        {!cat && <div className="selsub">Quis dizer:</div>}
+        {sug.map(c=><button key={c.id} type="button" style={GEM_CHIP}
+          onClick={()=>{ ligar(c); fechar(); }}>↪ {c.nome}</button>)}
+      </div>}
+      {editor==='vinc' && <div style={{marginTop:10}}>
+        <input value={busca} autoFocus placeholder="Buscar no Cardápio"
+          onChange={e=>setBusca(e.target.value)} style={{...GEM_INPUT,width:'100%'}}/>
+        {achados.map(c=><button key={c.id} type="button" onClick={()=>{ ligar(c); fechar(); }}
+          style={{...GEM_CHIP,display:'block',width:'100%',borderRadius:10}}>
+          {c.nome}{c.grupo?<span style={{color:'var(--muted)'}}> · {c.grupo}</span>:null}</button>)}
+        {busca.trim() && !achados.length && <div className="selsub" style={{marginTop:6}}>Nada encontrado.</div>}
+        <div>
+          {cat && <button type="button" style={GEM_CHIP} onClick={()=>{ ligar(null); fechar(); }}>Deixar sem vínculo</button>}
+          <button type="button" style={GEM_CHIP} onClick={fechar}>Fechar</button>
+        </div>
+      </div>}
+    </div>
+    {editor!=='vinc' && <button type="button" className="seltroca"
+      onClick={()=>abrirBusca('vinc')}>{cat?'trocar':'buscar'}</button>}
+  </div>);
+}
+
+function ColarGemSheet({faseNome, nomesExistentes, onConfirmar, onFechar}){
+  const [txt,setTxt]=useState('');
+  const [erro,setErro]=useState('');
+  const [res,setRes]=useState(null);
+  const [vinc,setVinc]=useState({});
+  const [aj,setAj]=useState({});            // 'ti:k' -> {n, reps, metodo, obs, obsOn}
+  const [aberto,setAberto]=useState(null);  // {ch, tipo}: só uma edição aberta por vez
+  const catalogo=React.useMemo(()=>loadCatalogo(),[]);
+  const indice=React.useMemo(()=>indiceCatalogoGem(catalogo),[catalogo]);
+  const lib=React.useMemo(()=>bibliotecaMetodosGem(),[]);
+  const ler=(valor)=>{
+    setErro(''); setVinc({}); setAj({}); setAberto(null);
+    try{ setRes(montarTreinosGem(lerBlocoGem(valor), catalogo, nomesExistentes, lib)); }
+    catch(e){ setRes(null); setErro(e.message||'Não consegui ler o bloco.'); }
+  };
+  const colar=async()=>{
+    try{
+      const v=await navigator.clipboard.readText();
+      setTxt(v||''); if(v) ler(v);
+    }catch(e){ setErro('Não deu pra ler a área de transferência. Cole no campo abaixo.'); }
+  };
+  const ajustar=(ch,patch)=>setAj(a=>({...a,[ch]:{...(a[ch]||{}),...patch}}));
+  const itens=res ? res.previa.flatMap((t,ti)=>t.itens.map((it,k)=>({it, ti, k, ch:ti+':'+k,
+    f:finalItemGem(it, ti+':'+k, vinc, aj)}))) : [];
+  const nSessoes=res?res.previa.length:0;
+  const nEx=itens.length;
+  const nSem=itens.filter(x=>!x.f.cat).length;
+  const nMetPend=itens.filter(x=>x.f.metPendente).length;
+  const comObs=itens.filter(x=>x.f.obs);
+  const todasObs=comObs.length>0 && comObs.every(x=>x.f.obsOn);
+  const marcarObs=(on)=>setAj(a=>{ const o={...a}; comObs.forEach(x=>{ o[x.ch]={...(o[x.ch]||{}), obsOn:on}; }); return o; });
+  const pend=[];
+  if(nSem) pend.push(nSem+(nSem===1?' exercício sem vínculo':' exercícios sem vínculo'));
+  if(nMetPend) pend.push(nMetPend+(nMetPend===1?' método não encontrado':' métodos não encontrados'));
+  return (<div className="backdrop selbd" onClick={onFechar}>
+    <div className="sheet" onClick={e=>e.stopPropagation()}>
+      <h2>Colar treino da Gem</h2>
+      <div className="h2sub">Entra em {faseNome}. Nada é salvo antes de você confirmar.</div>
+      {!res && <React.Fragment>
+        <button className="btn" style={{width:'100%',marginBottom:12}} onClick={colar}>📋 Colar o que copiei</button>
+        <div className="field"><label>Ou cole aqui o bloco</label>
+          <textarea rows={8} value={txt} placeholder="#IDEALIS_INICIO ... #IDEALIS_FIM"
+            style={{fontFamily:'monospace',fontSize:12}}
+            onChange={e=>setTxt(e.target.value)}/></div>
+        {erro && <div className="loginerro">{erro}</div>}
+        <div className="sheetactions">
+          <button className="btn ghost" onClick={onFechar}>Cancelar</button>
+          <button className="btn" disabled={!txt.trim()} onClick={()=>ler(txt)}>Ler bloco</button>
+        </div>
+      </React.Fragment>}
+      {res && <React.Fragment>
+        <div className="h2sub" style={{marginTop:-6}}>
+          {nSessoes} {nSessoes===1?'sessão':'sessões'} · {nEx} {nEx===1?'exercício':'exercícios'} · toque no que estiver sublinhado pra editar</div>
+        {pend.length>0
+          ? <div className="loginerro">⚠️ {pend.join(' · ')}. Toque numa sugestão ou escolha na lista.</div>
+          : <div className="selsub" style={{marginBottom:12}}>🔗 Tudo ligado ao Cardápio e aos métodos do App.</div>}
+        {res.avisos.map((a,i)=><div key={i} className="loginerro">⚠️ {a}</div>)}
+        {comObs.length>0 && <label className="selsub" style={{display:'flex',gap:8,alignItems:'center',margin:'0 0 12px',cursor:'pointer'}}>
+          <input type="checkbox" checked={todasObs} onChange={e=>marcarObs(e.target.checked)}
+            style={{width:18,height:18,accentColor:'var(--cyan)'}}/>
+          Importar as observações da Gem ({comObs.filter(x=>x.f.obsOn).length} de {comObs.length})
+        </label>}
+        {res.previa.map((t,ti)=><div key={ti} style={{marginBottom:14}}>
+          <div className="secaotit">{t.nome}</div>
+          {itens.filter(x=>x.ti===ti).map(x=><ItemGem key={x.ch} it={x.it} num={x.k+1} f={x.f}
+            editor={aberto && aberto.ch===x.ch ? aberto.tipo : null}
+            abrir={(tipo)=>setAberto({ch:x.ch, tipo})} fechar={()=>setAberto(null)}
+            ligar={(c)=>setVinc(v=>({...v,[x.ch]:c}))} ajustar={(p)=>ajustar(x.ch,p)}
+            indice={indice} lib={lib}/>)}
+        </div>)}
+        <div className="sheetactions">
+          <button className="btn ghost" onClick={()=>setRes(null)}>Voltar</button>
+          <button className="btn" onClick={()=>onConfirmar({treinos:aplicarVinculosGem(res.previa, vinc, aj), limparObs:false})}>
+            {pend.length ? 'Importar assim' : ('Importar '+nSessoes+' '+(nSessoes===1?'sessão':'sessões'))}</button>
+        </div>
+      </React.Fragment>}
+    </div></div>);
+}
+
+/* ===== LOTE_PACOTE · pacote pra Gem =====
+   Um toque junta o que antes pedia 3 monitores: fase anterior + atual, alertas
+   por exercício (MESMA regra do ⚠️ da montagem: historico.js), dores, relatos,
+   anamnese e o Cardápio com #id. A Gem v3 escolhe só do catálogo e devolve o
+   #id no bloco, e o vínculo já chega certo no "Colar treino da Gem".
+   Só leitura. Sai sem o nome do aluno (dado de saúde): o nome também é trocado
+   por "aluno(a)" nos textos livres (anamnese e relatos). */
+function fmtDataPac(iso){ if(!iso) return ''; const p=String(iso).slice(0,10).split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0].slice(2) : String(iso); }
+function linhaPac(t){ return String(t||'').replace(/\s*\n+\s*/g,' / ').trim(); }
+function anonPac(txt, nomeAluno){
+  let s=String(txt||'');
+  const cheio=String(nomeAluno||'').trim(), pn=primeiroNome(cheio);
+  [cheio, pn].filter(n=>n && n.length>=3).forEach(n=>{
+    const esc=n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    s=s.replace(new RegExp('(^|[^\\p{L}])'+esc+'(?![\\p{L}])','giu'), '$1aluno(a)');
+  });
+  return s;
+}
+function fasesComTreinoPac(aluno){
+  const ts=(aluno&&aluno.treinos)||[];
+  return ((aluno&&aluno.fases)||[])
+    .map(f=>({f, ts:ts.filter(t=>t.faseId===f.id && !t.ehCardio)}))
+    .filter(x=>x.ts.length)
+    .sort((a,b)=>String(b.f.inicio||'').localeCompare(String(a.f.inicio||'')));
+}
+function linhasFasePac(rotulo, x){
+  if(!x) return ['## '+rotulo+': nenhuma', ''];
+  const f=x.f, out=['## '+rotulo+' · '+f.nome+' ('+fmtDataPac(f.inicio)+' a '+fmtDataPac(f.fim)+')'];
+  if(f.objetivo) out.push('Objetivo: '+linhaPac(f.objetivo));
+  x.ts.forEach(t=>{
+    out.push('### '+t.nome);
+    const exs=t.exercises||[], rot={}; let g=0;
+    blocosDoTreino(exs).forEach(bl=>{
+      if(!bl.grupo) return; g++;
+      bl.itens.forEach(it=>{ rot[it.ex.id]=rotuloGrupo(bl.itens.length)+' '+g; });
+    });
+    exs.forEach((ex,i)=>{
+      const p=[(i+1)+'. '+ex.name+(ex.exerciseId!=null?' [#'+ex.exerciseId+']':'')];
+      if(ex.series) p.push(ex.series);
+      if(ex.descanso) p.push('descanso '+ex.descanso);
+      if(ex.metodo && ex.metodo.nome){ const r=resumoMetodo(ex.metodo); p.push('método '+ex.metodo.nome+(r?' ('+r+')':'')); }
+      if(ex.isometria) p.push(ex.isometria.modo==='alongamento'?'alongamento':'isometria');
+      if(rot[ex.id]) p.push(rot[ex.id]);
+      if(ex.observacao) p.push('obs: '+linhaPac(ex.observacao));
+      if(ex.aviso && ex.aviso.texto) p.push('aviso: '+linhaPac(ex.aviso.texto));
+      out.push(p.join(' · '));
+    });
+  });
+  out.push('');
+  return out;
+}
+function alertasPac(rows, exercicios){
+  const H=window.HistoricoExercicio;
+  if(!H || !rows) return null;
+  const vistos={}, out=[];
+  exercicios.forEach(ex=>{
+    const k=ex.cardapioId!=null ? 'id:'+ex.cardapioId : 'n:'+normAcc(ex.nome);
+    if(vistos[k]) return; vistos[k]=1;
+    const h=H.juntar(rows, ex), al=h && H.alerta(h);
+    if(!al || al.nivel!=='ativo') return;
+    const mot=al.motivos.filter(m=>m.ativo).map(m=>linhaPac(H.textoMotivo(m))).filter(Boolean);
+    out.push('- '+ex.nome+(ex.cardapioId!=null?' [#'+ex.cardapioId+']':'')+': '+mot.join(' | '));
+  });
+  return out;
+}
+function linhasDoresPac(aluno){
+  const N=(window.AvaliacaoDor && window.AvaliacaoDor.NOME) || {};
+  const ds=(aluno&&aluno.dores)||[];
+  if(!ds.length) return [];
+  return ['## DORES ACOMPANHADAS (regiões)'].concat(ds.map(d=>
+    '- '+(N[d.regiao]||d.apelido||d.regiao)+' ('+(d.vista||'frente')+')'+
+    (d.apelido && N[d.regiao] ? ' · "'+linhaPac(d.apelido)+'"' : ''))).concat(['']);
+}
+function linhasRelatosPac(xs, nomeAluno){
+  const rel=[];
+  xs.forEach(x=>x.ts.forEach(t=>(t.relatos||[]).forEach(r=>{
+    if(!String(r.texto||'').trim()) return;
+    const ex=(t.exercises||[]).find(e=>e.id===r.exercicioId);
+    rel.push({data:r.data, onde:ex?ex.name:t.nome, texto:r.texto});
+  })));
+  if(!rel.length) return [];
+  rel.sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+  return ['## RELATOS DO ALUNO (mais recentes primeiro)']
+    .concat(rel.slice(0,20).map(r=>'- '+fmtDataPac(r.data)+' · '+r.onde+': '+anonPac(linhaPac(r.texto), nomeAluno)))
+    .concat(['']);
+}
+async function buscarAnamnesePac(alunoId){
+  if(!sb) return {ok:false, erro:'sem conexão com o servidor'};
+  if(!navigator.onLine) return {ok:false, erro:'você está offline'};
+  try{
+    const r=await sb.from('vw_anamnese_entradas')
+      .select('secao,secao_ordem,ordem,texto,data,data_texto,exercicio,tipo,regiao,escala')
+      .eq('aluno_id',alunoId).eq('arquivada',false).order('secao_ordem').order('ordem');
+    if(r.error) return {ok:false, erro:r.error.message};
+    if((r.data||[]).length) return {ok:true, entradas:r.data};
+    // sem entradas por seção: cai no texto colado (formato antigo)
+    const t=await sb.from('vw_anamnese_atual').select('texto').eq('aluno_id',alunoId).limit(1);
+    if(t.error) return {ok:false, erro:t.error.message};
+    return {ok:true, entradas:[], texto:((t.data||[])[0]||{}).texto||''};
+  }catch(e){ return {ok:false, erro:String((e&&e.message)||e)}; }
+}
+function linhasAnamnesePac(a, nomeAluno){
+  if(!a || !a.ok) return ['## ANAMNESE', '(não carregou: '+((a&&a.erro)||'erro')+'. Peça pro Matheus colar.)', ''];
+  const N=(window.AvaliacaoDor && window.AvaliacaoDor.NOME) || {};
+  if(a.entradas.length){
+    const out=['## ANAMNESE']; let sec=null;
+    a.entradas.forEach(e=>{
+      if(e.secao!==sec){ sec=e.secao; out.push('### '+(sec||'Outros')); }
+      const p=[];
+      if(e.exercicio) p.push('['+e.exercicio+']');
+      if(e.tipo) p.push('('+e.tipo+')');
+      if(e.regiao) p.push('região '+(N[e.regiao]||e.regiao)+':');
+      p.push(anonPac(linhaPac(e.texto), nomeAluno));
+      if(e.escala) p.push('· '+e.escala);
+      const q=e.data ? fmtDataPac(e.data) : (e.data_texto||'');
+      if(q) p.push('('+q+')');
+      out.push('- '+p.join(' '));
+    });
+    out.push('');
+    return out;
+  }
+  if(String(a.texto||'').trim()) return ['## ANAMNESE', anonPac(String(a.texto).trim(), nomeAluno), ''];
+  return ['## ANAMNESE', '(sem anamnese cadastrada)', ''];
+}
+function catalogoPac(catalogo, rows, hoje){
+  const H=window.HistoricoExercicio, porId={};
+  (rows||[]).forEach(r=>{ if(r.cardapio_id!=null) (porId[String(r.cardapio_id)]=porId[String(r.cardapio_id)]||[]).push(r); });
+  let nAl=0;
+  const linhas=(catalogo||[]).filter(c=>c && c.id!=null && c.nome && !c.arquivado)
+    .slice().sort((a,b)=>String(a.grupo||'').localeCompare(String(b.grupo||''),'pt')
+                       || String(a.nome).localeCompare(String(b.nome),'pt'))
+    .map(c=>{
+      let marca='';
+      const rs=porId[String(c.id)];
+      if(H && rs){
+        const h=H.juntar(rs,{cardapioId:c.id, nome:c.nome}), al=h && H.alerta(h);
+        if(al && al.nivel==='ativo'){ marca+=' ⚠️'; nAl++; }
+        if(h && h.ultimo_feito) marca+=' · feito '+H.tempoRelativo(h.ultimo_feito, hoje);
+      }
+      return '#'+c.id+' · '+c.nome+(c.grupo?' · '+c.grupo:'')+marca;
+    });
+  return {linhas, nAl};
+}
+function montarPacoteGem(o){
+  const {aluno, atual, anterior, rows, anamnese, catalogo, hoje, metodos}=o;
+  const nome=aluno&&aluno.name;
+  const fases=[anterior, atual].filter(Boolean);
+  const exs=[];
+  fases.forEach(x=>x.ts.forEach(t=>(t.exercises||[]).forEach(e=>exs.push({cardapioId:e.exerciseId, nome:e.name}))));
+  const al=alertasPac(rows, exs);
+  const cat=catalogoPac(catalogo, rows, hoje);
+  const L=['#PACOTE_IDEALIS v1',
+    'Gerado em '+fmtDataPac(hoje)+'. Sem identificação do aluno.',
+    'Use só o CATÁLOGO pra sugerir. [#id] e #id = id do Cardápio. ⚠️ = dor ou dificuldade relatada por este aluno.',
+    ''];
+  if(!fases.length){
+    // aluno em migração: os treinos ainda estão no sistema antigo
+    L.push('## TREINOS: NÃO ESTÃO NO APP (aluno em migração)',
+      'Peça ao Matheus o treino anterior e o atual antes do Passo 2.', '');
+  }else{
+    L.push(...linhasFasePac('FASE ANTERIOR', anterior));
+    L.push(...linhasFasePac('FASE ATUAL', atual));
+    L.push('## ALERTAS NOS EXERCÍCIOS DAS FASES ACIMA');
+    if(al===null) L.push('(histórico não carregou)');
+    else if(!al.length) L.push('(nenhum alerta ativo)');
+    else L.push(...al);
+    L.push('');
+  }
+  L.push(...linhasDoresPac(aluno));
+  L.push(...linhasRelatosPac(fases, nome));
+  L.push(...linhasAnamnesePac(anamnese, nome));
+  // LOTE_METODO: a Gem escolhe a técnica por estes nomes, e o import liga no método do App
+  if((metodos||[]).length){
+    L.push('## MÉTODOS DO APP (na técnica, use o nome exato)');
+    let famAt=null;
+    metodos.forEach(m=>{
+      const fam=m.fam||'Outros';
+      if(fam!==famAt){ famAt=fam; L.push('### '+fam); }
+      const r=resumoMetodo(m); L.push('- '+m.nome+(r?' · '+r:''));
+    });
+    L.push('');
+  }
+  L.push('## CATÁLOGO (#id · nome · grupo · marcas)');
+  L.push(...cat.linhas);
+  L.push('#FIM_PACOTE');
+  const texto=L.join('\n');
+  return {texto, stats:{
+    sessoes:fases.reduce((n,x)=>n+x.ts.length,0), exercicios:exs.length,
+    alertas:al?al.length:null, catalogo:cat.linhas.length, catalogoAlertas:cat.nAl,
+    anamnese:(anamnese&&anamnese.ok)?(anamnese.entradas.length||(String(anamnese.texto||'').trim()?1:0)):null,
+    metodos:(metodos||[]).length, caracteres:texto.length}};
+}
+const PAC_SELECT={width:'100%',padding:'12px',background:'var(--bg)',color:'var(--text)',
+  border:'1px solid var(--line)',borderRadius:12,fontSize:14,fontFamily:'inherit'};
+function PacoteGemSheet({aluno, flash, onFechar}){
+  const opcoes=React.useMemo(()=>fasesComTreinoPac(aluno),[aluno]);
+  const [idAtual,setIdAtual]=useState(opcoes[0]?opcoes[0].f.id:'');
+  const [idAnt,setIdAnt]=useState(opcoes[1]?opcoes[1].f.id:'');
+  const [anam,setAnam]=useState(null);       // null = carregando
+  const [rows,setRows]=useState(undefined);  // undefined = carregando · null = falhou
+  const [copiado,setCopiado]=useState(false);
+  const [mostrar,setMostrar]=useState(false);
+  const catalogo=React.useMemo(()=>loadCatalogo(),[]);
+  const metPac=React.useMemo(()=>bibliotecaMetodosGem(),[]);   // LOTE_METODO
+  useEffect(()=>{
+    let vivo=true;
+    buscarAnamnesePac(aluno.id).then(a=>{ if(vivo) setAnam(a); });
+    const c=HIST_CACHE[aluno.id];
+    if(c && c.rows && !c.erro && (Date.now()-c.em)<HIST_TTL) setRows(c.rows);
+    else if(histOk()) buscarHistorico(aluno.id).then(r=>{ if(vivo) setRows(r||null); });
+    else setRows(null);
+    return ()=>{ vivo=false; };
+  },[aluno.id]);
+  const carregando = anam===null || rows===undefined;
+  const achar=(id)=>opcoes.find(x=>x.f.id===id)||null;
+  const pacote=React.useMemo(()=>carregando ? null : montarPacoteGem({
+    aluno, atual:achar(idAtual), anterior:(idAnt && idAnt!==idAtual)?achar(idAnt):null,
+    rows, anamnese:anam, catalogo, hoje:todayISO(), metodos:metPac}), [carregando, idAtual, idAnt, anam, rows, catalogo, metPac]);
+  const copiar=async()=>{
+    if(!pacote) return;
+    try{ await navigator.clipboard.writeText(pacote.texto); setCopiado(true); if(flash) flash('Pacote copiado ✓ Cole na Gem'); }
+    catch(e){ setMostrar(true); }
+  };
+  const st=pacote && pacote.stats;
+  return (<div className="backdrop selbd" onClick={onFechar}>
+    <div className="sheet" onClick={e=>e.stopPropagation()}>
+      <h2>Pacote pra Gem</h2>
+      <div className="h2sub">Junta as 2 fases, alertas, relatos, anamnese e o Cardápio com IDs. Sai sem o nome do aluno.</div>
+      {!opcoes.length && <div className="selsub" style={{marginBottom:12,lineHeight:1.5}}>
+        📦 Este aluno ainda não tem treinos no App. O pacote vai com anamnese, dores e Cardápio,
+        e a Gem pede pra você colar o treino anterior e o atual do sistema antigo.</div>}
+      <React.Fragment>
+        {opcoes.length>0 && <React.Fragment>
+        <div className="field"><label>Fase atual</label>
+          <select value={idAtual} style={PAC_SELECT} onChange={e=>{ setIdAtual(e.target.value); setCopiado(false); }}>
+            {opcoes.map(x=><option key={x.f.id} value={x.f.id}>{x.f.nome} · {fmtDataPac(x.f.inicio)}</option>)}
+          </select></div>
+        <div className="field"><label>Fase anterior</label>
+          <select value={idAnt} style={PAC_SELECT} onChange={e=>{ setIdAnt(e.target.value); setCopiado(false); }}>
+            <option value="">Nenhuma</option>
+            {opcoes.filter(x=>x.f.id!==idAtual).map(x=><option key={x.f.id} value={x.f.id}>{x.f.nome} · {fmtDataPac(x.f.inicio)}</option>)}
+          </select></div>
+        </React.Fragment>}
+        {carregando && <div className="selsub" style={{marginBottom:12}}>Carregando anamnese e histórico…</div>}
+        {anam && !anam.ok && <div className="loginerro">⚠️ Anamnese não carregou ({anam.erro}). O pacote vai sem ela.</div>}
+        {rows===null && <div className="loginerro">⚠️ Histórico de dor não carregou. O pacote vai sem os alertas.</div>}
+        {st && <div className="selsub" style={{marginBottom:12,lineHeight:1.5}}>
+          {st.sessoes ? (st.sessoes+' sessões · '+st.exercicios+' exercícios') : 'sem treinos no App'}
+          {(st.sessoes && st.alertas!=null) ? ' · '+st.alertas+(st.alertas===1?' alerta':' alertas') : ''}
+          {st.anamnese!=null ? ' · anamnese '+st.anamnese+(st.anamnese===1?' item':' itens') : ''}
+          {' · catálogo '+st.catalogo+(st.catalogoAlertas?' ('+st.catalogoAlertas+' ⚠️)':'')}
+          {st.metodos ? ' · '+st.metodos+' métodos' : ''}
+          {' · '+Math.round(st.caracteres/1000)+' mil caracteres'}
+        </div>}
+        {!catalogo.length && <div className="loginerro">⚠️ Catálogo vazio neste aparelho. Abra o app com internet e tente de novo.</div>}
+        {mostrar && pacote && <div className="field"><label>Não deu pra copiar sozinho. Selecione e copie:</label>
+          <textarea rows={8} readOnly value={pacote.texto} style={{fontFamily:'monospace',fontSize:11}}
+            onFocus={e=>e.target.select()}/></div>}
+      </React.Fragment>
+      <div className="sheetactions">
+        <button className="btn ghost" onClick={onFechar}>Fechar</button>
+        {<button className="btn" disabled={!pacote} onClick={copiar}>
+          {copiado?'Copiado ✓ copiar de novo':'📋 Copiar pacote'}</button>}
+      </div>
+    </div></div>);
 }
 
 /* ===== SELETOR DE SESSÕES =====
@@ -8225,6 +9027,8 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
   const [faseSel,setFaseSel]=useState(null);      // fase aberta na lista
   const [editandoFase,setEditandoFase]=useState(null); // 'nova' | objeto
   const [importando,setImportando]=useState(false);    // seletor de sessões aberto
+  const [colandoGem,setColandoGem]=useState(false);    // GEM_IMPORT · colar treino da Gem
+  const [pacoteGem,setPacoteGem]=useState(false);      // LOTE_PACOTE · copiar pacote pra Gem
   const [resumoHist,setResumoHist]=useState(false);    // LOTE_HISTORICO: resumo da fase aberto
   const [trAberto,setTrAberto]=useState(null);    // treino com a aba aberta (aluno)
   const [novoCardio,setNovoCardio]=useState(false); // toggle na folha "Novo treino"
@@ -8309,6 +9113,10 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
       setEditandoFase(null); flash('Fase atualizada ✓'); return;
     }
     const nova={id:uid(), nome:dados.nome, objetivo:dados.objetivo||'', inicio:dados.inicio, fim:dados.fim};
+    // LOTE_FILA: a fase entra na fila ANTES das sessões copiadas (treinos.fase_id tem FK)
+    enqueueOp({tipo:'insert',tabela:'fases',dados:{
+      id:nova.id, aluno_id:studentId, nome:nova.nome,
+      objetivo:nova.objetivo||null, inicio:nova.inicio, fim:nova.fim}});
     /* A origem pode ser qualquer fase de qualquer aluno — o FaseSheet já
        devolve os treinos escolhidos prontos. Toda a regra de cópia vive em
        copiarTreinos(), a mesma usada pela importação. */
@@ -8319,9 +9127,6 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
           limparObs:!!org.limparObs})
       : [];
     updStudent({fases:[...(s.fases||[]),nova], treinos:[...treinos,...novosTreinos]});
-    enqueueOp({tipo:'insert',tabela:'fases',dados:{
-      id:nova.id, aluno_id:studentId, nome:nova.nome,
-      objetivo:nova.objetivo||null, inicio:nova.inicio, fim:nova.fim}});
     setEditandoFase(null); setFaseSel(nova);
     flash(novosTreinos.length
       ? ('Fase criada com '+novosTreinos.length+(novosTreinos.length===1?' sessão ✓':' sessões ✓'))
@@ -8540,6 +9345,12 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
         {faseEmFoco && !ehAluno &&
           <button className="agbtn" onClick={()=>setImportando(true)}>
             📥 Importar sessões para {faseEmFoco.nome}</button>}
+        {!ehAluno &&
+          <button className="agbtn" onClick={()=>setPacoteGem(true)}>
+            📤 Copiar pacote pra Gem</button>}
+        {faseEmFoco && !ehAluno &&
+          <button className="agbtn" onClick={()=>setColandoGem(true)}>
+            🤖 Colar treino da Gem em {faseEmFoco.nome}</button>}
         {faseEmFoco && !ehAluno && histOk() &&
           <button className="agbtn" onClick={()=>setResumoHist(true)}>
             🧾 Novos e retornos de {faseEmFoco.nome}</button>}
@@ -8687,6 +9498,13 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
       subtitulo={'De qual aluno vem a sessão que entra em '+faseEmFoco.nome+'?'}
       rotuloAcao="Importar"
       onConfirmar={importarSessoes} onFechar={()=>setImportando(false)}/>}
+    {colandoGem && !ehAluno && faseEmFoco && <ColarGemSheet
+      faseNome={faseEmFoco.nome}
+      nomesExistentes={treinos.filter(t=>t.faseId===faseEmFoco.id).map(t=>t.nome)}
+      onConfirmar={(r)=>{ importarSessoes(r); setColandoGem(false); }}
+      onFechar={()=>setColandoGem(false)}/>}
+    {pacoteGem && !ehAluno && <PacoteGemSheet aluno={{...s, id:studentId}} flash={flash}
+      onFechar={()=>setPacoteGem(false)}/>}
     {resumoHist && !ehAluno && faseEmFoco && <ResumoFaseSheet aluno={s} fase={faseEmFoco}
       onClose={()=>setResumoHist(false)} flash={flash}/>}
     {adding && !ehAluno && <div className="backdrop" onClick={()=>setAdding(false)}>
@@ -9228,7 +10046,7 @@ function ExerciseSheet({initial,onSave,onClose,flash,hist}){
   const [exerciseId,setExerciseId]=useState(initial&&initial.exerciseId!=null?initial.exerciseId:null);
   const [showAuto,setShowAuto]=useState(false);
   const catalogo=React.useMemo(()=>loadCatalogo(),[]);
-  const repOpts=['4 a 6','6 a 8','6 a 10','8 a 10','8 a 12','10 a 12','10 a 15','12 a 15','15 a 20'];
+  const repOpts=REP_OPTS;   // LOTE_STEPPER: mesma lista da prévia do Colar treino da Gem
   const parseInit=()=>{
     const s=(initial&&initial.series)?String(initial.series):'';
     const m=s.match(/^\s*(\d+)\s*[x×]\s*(.+)$/i);
@@ -9241,7 +10059,7 @@ function ExerciseSheet({initial,onSave,onClose,flash,hist}){
   const [setsManual,setSetsManual]=useState(false);
   const [repsManual,setRepsManual]=useState(false);
   // descanso: guardado como "45~60" (range) ou "60" (único)
-  const descOpts=['30','30~45','45~60','50~70','60~75','60~90','75~90','90~120','120~180'];
+  const descOpts=DESC_OPTS;   // LOTE_STEPPER: inclui "0" (sem descanso)
   const [descanso,setDescanso]=useState(initial&&initial.descanso?initial.descanso:'');
   const [descManual,setDescManual]=useState(false);
   const [filmar,setFilmar]=useState(initial?!!initial.filmar:false);
