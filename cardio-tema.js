@@ -631,7 +631,9 @@ function camBike(){const SEG=BK.SEG,N=QUAL==='A'?BK.N:90,cz=(QUAL==='C'?DISTV:DI
   const Xb=new Float64Array(NB),Hb=new Float64Array(NB),Yb=new Float64Array(NB),Cb=new Float64Array(NB),Sb=new Float64Array(NB);
   for(let n=0;n<NB;n++){const r=rd(b+n);Cb[n]=r.c;Sb[n]=r.s;if(n){Xb[n]=Xb[n-1]+Hb[n-1]+Cb[n-1]/2;Hb[n]=Hb[n-1]+Cb[n-1];Yb[n]=Yb[n-1]+Sb[n-1]*SEG;}}
   const Xc=Cb[0]*fr*fr/2,Hc=Cb[0]*fr,Yc=Sb[0]*SEG*fr;
-  const ev=u=>{let n=Math.floor(u)-b;if(n<0)n=0;if(n>NB-2){const m=NB-2,t=u-(b+m);return [Xb[m]+Hb[m]*t-Xc-Hc*(u-uc),Yb[m]+Sb[m]*SEG*t-Yc];}
+  /* além do último trecho desenhado o chão fica plano: antes a inclinação era esticada até o destino (lá longe) e ele
+     aparecia flutuando acima do horizonte, principalmente na esteira com inclinação e nas estradas com morro */
+  const ev=u=>{let n=Math.floor(u)-b;if(n<0)n=0;if(n>NB-2){const m=NB-2,t=u-(b+m);return [Xb[m]+Hb[m]*t-Xc-Hc*(u-uc),Yb[m]+Sb[m]*SEG*Math.min(t,1)-Yc];}
     const t=u-(b+n);return [Xb[n]+Hb[n]*t+Cb[n]*t*t/2-Xc-Hc*(u-uc),Yb[n]+Sb[n]*SEG*t-Yc];};
   const pD=ev(uc+BK.D/SEG),sh=pD[0]/BK.D,camY=pD[1]+BK.H;
   const evz=zc=>{const q=ev(uc+zc/SEG);return [q[0]-sh*zc,q[1]];};
@@ -1214,9 +1216,11 @@ function destBaliza(o){if(!DREAL)return o;const bb=o.g.getBBox(),topo=-bb.y;novo
 const fora=(lado,X,k,w,min)=>lado*Math.max(Math.abs(X),(min==null?24:min)+k*w);
 const DESTE={
   parque:{s0:.08,s1:.4,svg:()=>SPRE.coreto()+'<g transform="translate(-170 0)">'+SPRB.arvore('#4e8a3e',3)+'</g><g transform="translate(170 0)">'+SPRB.ipe(5)+'</g>'},
-  orla:{s0:.07,s1:.36,svg:()=>'<circle cx="-120" cy="-150" r="70" fill="#ffb35c" opacity=".55"/><circle cx="-120" cy="-150" r="36" fill="#ffc56e"/>'+SPRE.farolE()},
+  /* sem sol próprio: o sol do céu já faz o pôr do sol (e some na chuva); um sol aqui ficava na frente dos prédios do fundo */
+  orla:{s0:.07,s1:.36,svg:()=>SPRE.farolE()},
   serra:{s0:.07,s1:.36,svg:()=>'<path d="M-640 40L-220 -280L-40 -200L240 -360L660 40Z" fill="#7d8f9e"/><path d="M240 -360L200 -300L250 -310L290 -290Z" fill="#9aa5ae"/>'+'<g transform="translate(0 6)">'+SPRE.refugio()+'</g>'},
-  cidade:{s0:.07,s1:.34,svg:()=>'<circle cx="0" cy="-600" r="300" fill="url(#luz)"/>'+SPRB.ponte()}};
+  /* sem o halo de luz em volta da ponte: ele ficava na frente dos prédios do fundo, como um raio de sol */
+  cidade:{s0:.07,s1:.34,svg:()=>SPRB.ponte()}};
 function criaDestinoEst(){const d=DESTE[CESC];return destBaliza(novo(d.svg(),0,0,LTOTE+300,{dest:1,limX:1,sfn:destSfn(d,LTOTE)}));}
 
 /* ---------- partículas leves: desenhadas dentro da cena, no mesmo quadro (2 caminhos no total).
@@ -1468,7 +1472,8 @@ const EVSL={
 const DESTL={
   neve:{s0:.08,s1:.38,svg:()=>'<path d="M-560 40L-160 -240L0 -180L220 -300L620 40Z" fill="#dfe8f2"/><path d="M220 -300L180 -250L230 -258L270 -240Z" fill="#ffffff"/>'+SPRL.cabana(1)+'<g transform="translate(120 0)">'+SPRL.bandeira()+'</g>'},
   aurora:{s0:.08,s1:.38,svg:()=>SPRL.iglu()+'<g transform="translate(130 0)">'+SPRL.fogueira()+'</g>'},
-  dunas:{s0:.07,s1:.34,svg:()=>'<path d="M-700 40Q-300 -150 0 -160Q300 -150 700 40Z" fill="#f6efe0"/><path d="M0 -160Q300 -150 700 40Q300 -40 60 -140Z" fill="#e4d4b6"/>'+'<g transform="translate(0 -150)">'+SPRB.placaEv('MIRANTE')+'</g>'}};
+  /* duna um tom mais escura que o céu do horizonte: de longe a placa do mirante parecia solta no ar */
+  dunas:{s0:.07,s1:.34,svg:()=>'<path d="M-700 40Q-300 -150 0 -160Q300 -150 700 40Z" fill="#eadcbe"/><path d="M0 -160Q300 -150 700 40Q300 -40 60 -140Z" fill="#d6c099"/>'+'<g transform="translate(0 -150)">'+SPRB.placaEv('MIRANTE')+'</g>'}};
 function criaDestinoEli(){const d=DESTL[CESC];return destBaliza(novo(d.svg(),0,0,LTOTEL+300,{dest:1,limX:1,sfn:destSfn(d,LTOTEL),
   upd:o=>{const ch=o.ch||(o.ch=o.g.querySelector('.chama')||1);if(ch!==1)ch.setAttribute('transform','scale(1 '+f(.85+.2*Math.sin(o.t*13))+')');const tm=o.tm||(o.tm=o.g.querySelector('.tremula')||1);if(tm!==1)tm.setAttribute('transform','skewY('+f(Math.sin(o.t*5)*4)+')');}}));}
 
