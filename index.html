@@ -339,6 +339,15 @@
   .stbtn.pri{border:none;background:#ddff00;color:#0b0f10}
   .stbtn:disabled{opacity:.45}
   .stbtn:active{transform:scale(.97)}
+  /* toggle Nesse treino / Fase toda (acima da prévia) */
+  .sttog{display:flex;gap:4px;padding:4px;width:min(340px,100%);border-radius:999px;
+    background:rgba(255,255,255,.06);border:1px solid #394245}
+  .sttog button{flex:1;padding:10px 12px;border-radius:999px;border:0;background:transparent;
+    color:#9fb3b8;font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
+  .sttog button[aria-pressed="true"]{background:#ddff00;color:#0b0f10}
+  .sttog button:focus-visible{outline:2px solid #00c9cc;outline-offset:2px}
+  .stback.tog .stprev{width:min(340px,calc((100vh - 266px) * .5625),100%);
+    width:min(340px,calc((100dvh - 266px) * .5625),100%)}
   .stfechar{position:absolute;top:calc(14px + env(safe-area-inset-top));right:14px;width:40px;
     height:40px;border-radius:50%;color:#eef7f8;background:rgba(255,255,255,.08);font-size:16px}
   .stbtn:focus-visible,.stfechar:focus-visible{outline:2px solid #00c9cc;outline-offset:2px}
@@ -3184,7 +3193,7 @@ function Progresso({db,nav,studentId,ehAluno}){
       </div>
       {p.volume>0 && <button className="pgshare"
         onClick={()=>setStory(dadosStoryFase(s,fase,p.volume))}>📸 Compartilhar nos Stories</button>}
-      {story && <StoryModal dados={story} onFechar={()=>setStory(null)}/>}
+      {story && <StoryModal dados={story} s={s} onFechar={()=>setStory(null)}/>}
       {/* indicador de progressão — LIVRE, sem XP. Se o app sabe que ele pode
           subir carga, esconder isso o faria treinar abaixo do potencial. */}
       {p.podem.length>0 && <React.Fragment>
@@ -7388,95 +7397,133 @@ function stLogo(){
     }catch(e){ res(null); }
   });
 }
+/* ===== CARD DOS STORIES · "cartão premium" (nov/2026) =====
+   Moldura grossa em degradê, foto saindo do topo do cartão, blocos sólidos em
+   vez de linhas finas. Tudo que importa fica entre y=230 e y=1660: no Instagram
+   o topo tem a barra de progresso e o rodapé (~250px) a barra de resposta. */
+function stMarca(ctx,logo,cx,yTopo,tLogo,tNome){
+  ctx.font='800 '+tNome+'px '+ST_FAM; const wN=ctx.measureText('Idealis').width;
+  const tPor=Math.round(tNome*.62); ctx.font='500 '+tPor+'px '+ST_FAM; const wP=ctx.measureText('por Matheus Ferreira').width;
+  const g1=logo?tLogo*.28:0, g2=tNome*.5, tot=(logo?tLogo:0)+g1+wN+g2+wP;
+  let px=cx-tot/2; const base=yTopo+tLogo/2+tNome*.36;
+  if(logo){ ctx.drawImage(logo,px,yTopo,tLogo,tLogo); px+=tLogo+g1; }
+  ctx.textAlign='left'; ctx.fillStyle='#ffffff'; ctx.font='800 '+tNome+'px '+ST_FAM; ctx.fillText('Idealis',px,base); px+=wN+g2;
+  ctx.fillStyle='#9fb3b8'; ctx.font='500 '+tPor+'px '+ST_FAM; ctx.fillText('por Matheus Ferreira',px,base);
+}
+function stPilula(ctx,txt,cx,y,tam,fundo,cor){
+  ctx.font='800 '+tam+'px '+ST_FAM;
+  const cs=Array.from(txt), esp=tam*.16, w=cs.reduce((s,c)=>s+ctx.measureText(c).width,0)+esp*(cs.length-1);
+  const ph=tam*2.1, pw=w+tam*1.6, px=cx-pw/2;
+  stRR(ctx,px,y,pw,ph,ph/2); ctx.fillStyle=fundo; ctx.fill();
+  ctx.fillStyle=cor; stTrack(ctx,txt,px+tam*.8,y+ph/2+tam*.36,esp,'left');
+}
+// emoji(s) da comparação: até 8 repete, acima vira 1 emoji + ×n (mesma regra do card do app)
+function stEmojis(ctx,eq,cx,base,big,maxW){
+  const emo='"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+  const n=eq.n, rep=n<=8, k=rep?n:1;
+  let tam= n<=3 ? big : (n<=5 ? Math.round(big*.79) : (rep ? Math.floor(maxW/n) : big));
+  ctx.font=tam+'px '+emo; let wg=ctx.measureText(eq.ico).width, gap=tam*.22;
+  // o emoji costuma ser mais largo que o tamanho da fonte: se a fileira passar da largura, encolhe
+  if(rep && k*wg+(k-1)*gap>maxW){ tam=Math.floor(tam*maxW/(k*wg+(k-1)*gap)); ctx.font=tam+'px '+emo; wg=ctx.measureText(eq.ico).width; gap=tam*.22; }
+  let tot=k*wg+(k-1)*gap; const suf= rep ? '' : '×'+n.toLocaleString('pt-BR');
+  if(suf){ ctx.font='800 72px '+ST_FAM; tot+=18+ctx.measureText(suf).width; }
+  let x=cx-tot/2; ctx.textAlign='left'; ctx.font=tam+'px '+emo; ctx.fillStyle='#ffffff';
+  for(let i=0;i<k;i++){ ctx.fillText(eq.ico,x,base); x+=wg+gap; }
+  if(suf){ ctx.fillStyle='#ddff00'; ctx.font='800 72px '+ST_FAM; ctx.fillText(suf,x-gap+18,base-tam*.1); }
+}
+/* espaçamentos do bloco volume -> linha -> emoji -> texto -> ganho. Se sobra
+   espaço no cartão, abre um pouco os vãos; se falta (recorde), aperta. */
+function stLayoutComparacao(by,temEq,temGanho,limite){
+  let g={linha:50, emoji:150, texto:95, ganho:58};
+  const fim=()=> temEq ? by+g.linha+g.emoji+g.texto+(temGanho?g.ganho:0) : by+(temGanho?70:0);
+  const sobra=limite-fim();
+  if(temEq && sobra>0){ const f=Math.min(sobra,140)*.3; g.linha+=f; g.emoji+=f; }
+  if(temEq && sobra<0){ const k=Math.max(.75, 1+sobra/(g.linha+g.emoji+g.texto+(temGanho?g.ganho:0)));
+    g={linha:Math.max(44,g.linha*k), emoji:g.emoji*k, texto:g.texto*k, ganho:g.ganho*k}; }
+  return g;
+}
 function stPintar(ctx,d,foto,logo){
-  const W=1080, H=1920, CX=540;
+  const W=1080, H=1920, CX=540, FUNDO='#080b0c', CARTAO='#111718';
   ctx.textBaseline='alphabetic'; ctx.textAlign='left';
-  // fundo: escuro + luz ciano (alto-esquerda) + luz lime (baixo-direita) + grade
-  ctx.fillStyle='#0a0f10'; ctx.fillRect(0,0,W,H);
+  // fundo escuro com duas luzes suaves (a grade antiga saiu: dava cara de rascunho)
+  ctx.fillStyle=FUNDO; ctx.fillRect(0,0,W,H);
   const luz=(x,y,r,cor)=>{ const rg=ctx.createRadialGradient(x,y,0,x,y,r);
     rg.addColorStop(0,cor); rg.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); };
-  luz(260,460,860,'rgba(0,201,204,.26)'); luz(900,1600,860,'rgba(170,200,0,.22)');
-  ctx.strokeStyle='rgba(0,201,204,.06)'; ctx.lineWidth=1.5; ctx.beginPath();
-  for(let x=0;x<=W;x+=60){ ctx.moveTo(x+.5,0); ctx.lineTo(x+.5,H); }
-  for(let y=0;y<=H;y+=60){ ctx.moveTo(0,y+.5); ctx.lineTo(W,y+.5); }
-  ctx.stroke();
-  // pílula da marca: <logo> Idealis - por: Matheus Ferreira (grupo centralizado)
-  stRR(ctx,140,230,800,130,65); ctx.fillStyle='rgba(18,24,26,.92)'; ctx.fill();
-  ctx.strokeStyle='rgba(0,201,204,.45)'; ctx.lineWidth=3; ctx.stroke();
-  const tLogo=logo?76:0, gap1=logo?20:0, gap2=18;
-  ctx.font='800 46px '+ST_FAM; const wMarca=ctx.measureText('Idealis').width;
-  ctx.font='500 30px '+ST_FAM; const wPor=ctx.measureText('- por: Matheus Ferreira').width;
-  let px=CX-(tLogo+gap1+wMarca+gap2+wPor)/2;
-  if(logo){ ctx.drawImage(logo,px,257,76,76); px+=tLogo+gap1; }
-  ctx.fillStyle='#ffffff'; ctx.font='800 46px '+ST_FAM; ctx.fillText('Idealis',px,312); px+=wMarca+gap2;
-  ctx.fillStyle='#9fb3b8'; ctx.font='500 30px '+ST_FAM; ctx.fillText('- por: Matheus Ferreira',px,310);
-  // foto com anel ciano
-  const fx=CX, fy=600, r=140;
+  luz(200,360,800,'rgba(0,201,204,.18)'); luz(920,1650,800,'rgba(190,230,0,.14)');
+  // marca numa pílula sólida (sem contorno fino)
+  stRR(ctx,150,230,780,112,56); ctx.fillStyle='#161d1f'; ctx.fill();
+  stMarca(ctx,logo,CX,250,72,42);
+  // cartão: moldura de 10px em lime sólido (a cor da borda do card original)
+  const cx=90, cy=560, cw=900, ch=1100, cr=72;
+  stRR(ctx,cx,cy,cw,ch,cr); ctx.fillStyle='rgba(200,230,0,.6)'; ctx.fill();
+  stRR(ctx,cx+10,cy+10,cw-20,ch-20,cr-10); ctx.fillStyle=CARTAO; ctx.fill();
+  // foto saindo do topo do cartão, com o anel ciano e o brilho do card original
+  const r=140;
+  ctx.beginPath(); ctx.arc(CX,cy,r+26,0,Math.PI*2); ctx.fillStyle=FUNDO; ctx.fill();
   ctx.save(); ctx.shadowColor='rgba(0,201,204,.65)'; ctx.shadowBlur=55;
-  ctx.beginPath(); ctx.arc(fx,fy,r+16,0,Math.PI*2); ctx.fillStyle='#00c9cc'; ctx.fill(); ctx.restore();
-  ctx.beginPath(); ctx.arc(fx,fy,r+3,0,Math.PI*2); ctx.fillStyle='#0a0f10'; ctx.fill();
-  ctx.save(); ctx.beginPath(); ctx.arc(fx,fy,r,0,Math.PI*2); ctx.clip();
+  ctx.beginPath(); ctx.arc(CX,cy,r+16,0,Math.PI*2); ctx.fillStyle='#00c9cc'; ctx.fill(); ctx.restore();
+  ctx.beginPath(); ctx.arc(CX,cy,r+3,0,Math.PI*2); ctx.fillStyle=FUNDO; ctx.fill();
+  ctx.save(); ctx.beginPath(); ctx.arc(CX,cy,r,0,Math.PI*2); ctx.clip();
   if(foto){
     const k=Math.max(2*r/foto.width, 2*r/foto.height), w=foto.width*k, h=foto.height*k;
-    ctx.drawImage(foto, fx-w/2, fy-h/2, w, h);
+    ctx.drawImage(foto, CX-w/2, cy-h/2, w, h);
   }else{
-    ctx.fillStyle='#182023'; ctx.fillRect(fx-r,fy-r,2*r,2*r);
-    ctx.fillStyle='#71fcff'; ctx.font='800 130px '+ST_FAM; ctx.textAlign='center';
-    ctx.fillText((d.nome||'?').charAt(0).toUpperCase(),fx,fy+45);
+    ctx.fillStyle='#182023'; ctx.fillRect(CX-r,cy-r,2*r,2*r);
+    ctx.fillStyle='#71fcff'; ctx.font='800 124px '+ST_FAM; ctx.textAlign='center';
+    ctx.fillText((d.nome||'?').charAt(0).toUpperCase(),CX,cy+44);
   }
   ctx.restore();
-  // selo (o nome agora vive DENTRO do card, na frase de parabéns)
-  ctx.textAlign='center'; ctx.fillStyle='#48eef2'; ctx.font='800 30px '+ST_FAM;
-  stTrack(ctx, d.recorde?'NOVO RECORDE PESSOAL':'CONQUISTA DE FORÇA & VOLUME', CX, 822, 8);
-  // card central
-  stRR(ctx,100,880,880,760,56); ctx.fillStyle='#111617'; ctx.fill();
-  ctx.strokeStyle='rgba(200,230,0,.6)'; ctx.lineWidth=3; ctx.stroke();
-  // parabéns em 2 linhas: numa só, nome longo encolheria tudo
-  ctx.fillStyle='#ffffff';
-  ctx.fillText(stFit(ctx,'Parabéns, '+(d.nome||'')+'!',780,56,'800'),CX,972);
-  ctx.fillStyle='#e3f1f3';
-  ctx.fillText(stFit(ctx, d.tipo==='fase'?'Nessa fase você já levantou:':'Nesse treino você levantou:',780,44,'700'),CX,1034);
-  // valor: número grande, unidade menor, um degradê só atravessando os dois
+  // medidas do número
   const kg=d.volume||0;
   const num= kg>=1000 ? (kg/1000).toFixed(1).replace('.',',') : String(kg);
-  const uni= kg>=1000 ? 'Toneladas' : 'kg';
-  let tn=118, tu=74, wn, wu;
+  const uni= kg>=1000 ? 'toneladas' : 'kg';
+  // com recorde entra a pílula e a linha do ganho: o número encolhe um pouco para caber
+  let tn=d.recorde?160:180, tu, wn, wu;
   const medir=()=>{ ctx.font='800 '+tn+'px '+ST_FAM; wn=ctx.measureText(num).width;
-    ctx.font='800 '+tu+'px '+ST_FAM; wu=ctx.measureText(uni).width; };
-  medir(); while(wn+20+wu>780 && tn>70){ tn-=4; tu=Math.round(tn*.63); medir(); }
-  const x0=CX-(wn+20+wu)/2;
-  const gv=ctx.createLinearGradient(x0,0,x0+wn+20+wu,0);
-  gv.addColorStop(0,'#1fd3d6'); gv.addColorStop(.45,'#71fcff'); gv.addColorStop(1,'#c8ff3a');
-  ctx.textAlign='left'; ctx.fillStyle=gv;
-  ctx.font='800 '+tn+'px '+ST_FAM; ctx.fillText(num,x0,1160);
-  ctx.font='800 '+tu+'px '+ST_FAM; ctx.fillText(uni,x0+wn+20,1160);
-  ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=2; ctx.beginPath();
-  ctx.moveTo(200,1212); ctx.lineTo(880,1212); ctx.stroke();
-  // equivalência divertida — a MESMA do card de volume do app, agora em destaque
+    tu=Math.round(tn*.4); ctx.font='800 '+tu+'px '+ST_FAM; wu=ctx.measureText(uni).width; };
+  medir(); while(wn+24+wu>760 && tn>110){ tn-=6; medir(); }
+  // comparação: a que está na tela do app (favorita) ou a 1ª das 3 do treino
   const eq=(window.EQ_ATUAL && window.EQ_ATUAL.kg===Math.round(kg)) ? window.EQ_ATUAL.eq
-    : ((typeof equivalencias==='function') ? (equivalencias(kg)[0]||null) : null);
+    : ((typeof equivalencias==='function') ? (equivalencias(kg, d.semente)[0]||null) : null);
+  const ganho=d.recorde && d.ganhoPct>0;
+  const chipY=cy+ch-164;
+  // a frase fica logo abaixo da foto; a sobra de espaço vai para os vãos de baixo
+  let y=cy+r+95;
+  ctx.textAlign='center';
+  if(d.recorde){ stPilula(ctx,'NOVO RECORDE PESSOAL',CX,y-48,24,'#ddff00','#0b1012'); y+=80; }
+  ctx.textAlign='center'; ctx.fillStyle='#ffffff';
+  ctx.fillText(stFit(ctx,'Parabéns, '+(d.nome||'')+'!',760,64,'800'),CX,y);
+  ctx.fillStyle='#b9cacd';
+  ctx.fillText(stFit(ctx, d.tipo==='fase'?'Nessa fase você já levantou':'Nesse treino você levantou',760,40,'600'),CX,y+60);
+  // número + unidade com UM degradê ciano -> lime atravessando os dois (cores do card original)
+  const by=y+60+24+tn*.86, x0=CX-(wn+24+wu)/2;
+  const gv=ctx.createLinearGradient(x0,0,x0+wn+24+wu,0);
+  gv.addColorStop(0,'#1fd3d6'); gv.addColorStop(.45,'#71fcff'); gv.addColorStop(1,'#c8ff3a');
+  ctx.textAlign='left'; ctx.fillStyle=gv; ctx.font='800 '+tn+'px '+ST_FAM; ctx.fillText(num,x0,by);
+  ctx.font='800 '+tu+'px '+ST_FAM; ctx.fillText(uni,x0+wn+24,by);
+  const g=stLayoutComparacao(by,!!eq,ganho,chipY-26);
+  let yy=by;
   if(eq){
-    const emo='"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
-    const n=eq.n, rep=n<=8, k=rep?n:1;
-    const tam= n<=3 ? 150 : (n<=5 ? 118 : (rep ? Math.floor(680/n) : 150));
-    ctx.font=tam+'px '+emo; const wg=ctx.measureText(eq.ico).width, gap=tam*.25;
-    let tot=k*wg+(k-1)*gap; const suf= rep ? '' : '×'+n.toLocaleString('pt-BR');
-    if(suf){ ctx.font='800 72px '+ST_FAM; tot+=18+ctx.measureText(suf).width; }
-    let x=CX-tot/2; ctx.textAlign='left'; ctx.font=tam+'px '+emo;
-    for(let i=0;i<k;i++){ ctx.fillText(eq.ico,x,1375); x+=wg+gap; }
-    if(suf){ ctx.fillStyle='#ddff00'; ctx.font='800 72px '+ST_FAM; ctx.fillText(suf,x-gap+18,1360); }
+    // linha apagada entre o volume e a comparação (a mesma do card original)
+    const ly=by+g.linha;
+    ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=2; ctx.beginPath();
+    ctx.moveTo(200,ly); ctx.lineTo(880,ly); ctx.stroke();
+    stEmojis(ctx,eq,CX,ly+g.emoji,130,680);
     ctx.textAlign='center'; ctx.fillStyle='#ddff00';
-    ctx.fillText(stFit(ctx,String(eq.texto||''),780,56,'700'),CX,1466);
+    yy=ly+g.emoji+g.texto;
+    ctx.fillText(stFit(ctx,String(eq.texto||''),760,54,'800'),CX,yy);
   }
   // prova do recorde: quanto passou da melhor sessão anterior do mesmo treino
-  if(d.recorde && d.ganhoPct>0){
+  if(ganho){
     ctx.textAlign='center'; ctx.fillStyle='#71fcff';
-    ctx.fillText(stFit(ctx,'↑ '+d.ganhoPct+'% acima da sua melhor sessão desse treino',780,30,'600'),CX,1532);
+    ctx.fillText(stFit(ctx,'↑ '+d.ganhoPct+'% acima da sua melhor sessão desse treino',760,30,'700'),CX,eq?yy+g.ganho:by+70);
   }
-  ctx.textAlign='center'; ctx.fillStyle='#9fb3b8'; ctx.font='500 26px '+ST_FAM;
-  ctx.fillText('Volume calculado por: carga × repetições × séries',CX,1602);
-  // rodapé: só o @
-  ctx.fillStyle='#cfe0e3'; ctx.font='700 34px '+ST_FAM; ctx.fillText('@matferreiratrainer',CX,1745);
+  // fórmula numa etiqueta sólida + @ dentro do cartão (fora da barra de resposta)
+  ctx.font='600 26px '+ST_FAM; const ft='carga × repetições × séries', fw=ctx.measureText(ft).width+60;
+  stRR(ctx,CX-fw/2,chipY,fw,64,32); ctx.fillStyle='#1c2426'; ctx.fill();
+  ctx.fillStyle='#9fb3b8'; ctx.textAlign='center'; ctx.fillText(ft,CX,chipY+42);
+  ctx.fillStyle='#e6f1f2'; ctx.font='700 36px '+ST_FAM; ctx.fillText('@matferreiratrainer',CX,cy+ch-50);
+  ctx.textAlign='left';
 }
 async function desenharStory(d){
   try{ await Promise.race([
@@ -7501,34 +7548,73 @@ function CelIco({t}){
   if(t==='barras') return <svg {...p}><path d="M6 20v-5"/><path d="M12 20V9"/><path d="M18 20V4"/></svg>;
   return <svg {...p}><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>;
 }
-function StoryModal({dados,onFechar}){
-  const [url,setUrl]=useState(null);
-  const [erro,setErro]=useState('');
-  const blobRef=React.useRef(null);
+/* opções do card: o aluno escolhe no modal se compartilha o TREINO ou a FASE.
+   Abre na que ele tocou; a outra é montada aqui. Sem aluno (s), fica só uma. */
+function ultimoTreinoStory(s){
+  let melhor=null;
+  ((s&&s.treinos)||[]).forEach(t=>{
+    const porDia={};
+    (t.exercises||[]).forEach(ex=>(ex.logs||[]).forEach(l=>{
+      const v=volLogStory(l); if(v && l.date) porDia[l.date]=(porDia[l.date]||0)+v; }));
+    Object.keys(porDia).forEach(dt=>{
+      if(!melhor || dt>melhor.data || (dt===melhor.data && porDia[dt]>melhor.v)) melhor={t, data:dt, v:porDia[dt]}; });
+  });
+  return melhor;
+}
+function opcoesStory(s, dados){
+  const op={treino:null, fase:null};
+  if(dados && dados.tipo==='fase') op.fase=dados; else if(dados) op.treino=dados;
+  if(s){
+    if(!op.fase){ const f=faseVigente(s); if(f){ const v=calcProgresso(s,f).volume; if(v>0) op.fase=dadosStoryFase(s,f,v); } }
+    if(!op.treino){ const u=ultimoTreinoStory(s); if(u){ const d=dadosStorySessao(s,u.t,u.data); if(d.volume>0) op.treino=d; } }
+    // semente das comparações: a mesma do card de volume, então a 1ª comparação
+    // bate com a do app e não muda quando o aluno alterna as abas
+    ['treino','fase'].forEach(k=>{ if(op[k] && op[k].semente==null && typeof sementeComparacoes==='function')
+      op[k]={...op[k], semente:sementeComparacoes(s, op[k].volume)}; });
+  }
+  return op;
+}
+function StoryModal({dados,s,onFechar}){
+  const op=React.useMemo(()=>opcoesStory(s,dados),[]);
+  const [aba,setAba]=useState(dados && dados.tipo==='fase' ? 'fase' : 'treino');
+  const [imgs,setImgs]=useState({});        // aba -> {url, blob} | {erro}
+  const urlsRef=React.useRef([]);
+  const vivoRef=React.useRef(true);
+  useEffect(()=>()=>{ vivoRef.current=false; urlsRef.current.forEach(u=>URL.revokeObjectURL(u)); },[]);
   useEffect(()=>{
-    let vivo=true, u=null;
-    desenharStory(dados).then(b=>{ if(!vivo) return;
-      blobRef.current=b; u=URL.createObjectURL(b); setUrl(u); })
-    .catch(e=>{ console.warn('[stories]', e&&e.message); if(vivo) setErro('Não consegui gerar a imagem. Feche e tente de novo.'); });
-    return ()=>{ vivo=false; if(u) URL.revokeObjectURL(u); };
-  },[]);
+    if(imgs[aba] || !op[aba]) return;
+    desenharStory(op[aba]).then(b=>{ if(!vivoRef.current) return;
+      const u=URL.createObjectURL(b); urlsRef.current.push(u);
+      setImgs(m=>({...m,[aba]:{url:u, blob:b}})); })
+    .catch(e=>{ console.warn('[stories]', e&&e.message);
+      if(vivoRef.current) setImgs(m=>({...m,[aba]:{erro:'Não consegui gerar a imagem. Feche e tente de novo.'}})); });
+  },[aba]);
+  const atual=imgs[aba]||{};
+  const url=atual.url||null;
+  const d=op[aba]||dados;
+  const duas=!!(op.treino && op.fase);
+  const rotTreino=(op.treino && op.treino.data===todayISO()) ? 'Nesse treino' : 'Último treino';
   const podeShare=React.useMemo(()=>{
     try{ return !!(navigator.canShare && navigator.canShare({files:[new File([new Blob(['x'])],'x.png',{type:'image/png'})]})); }
     catch(e){ return false; }
   },[]);
-  const nomeArq='idealis-'+(dados.tipo==='fase'?'fase':'treino')+'-'+dados.data+'.png';
+  const nomeArq='idealis-'+(d.tipo==='fase'?'fase':'treino')+'-'+d.data+'.png';
   const baixar=()=>{ if(!url) return; const a=document.createElement('a');
     a.href=url; a.download=nomeArq; document.body.appendChild(a); a.click(); a.remove(); };
   const compartilhar=async()=>{
-    const b=blobRef.current; if(!b) return;
+    const b=atual.blob; if(!b) return;
     try{ await navigator.share({files:[new File([b],nomeArq,{type:'image/png'})]}); }
     catch(e){ if(!e || e.name!=='AbortError') baixar(); }   // cancelou: não faz nada
   };
-  return (<div className="stback" onClick={onFechar}>
+  return (<div className={'stback'+(duas?' tog':'')} onClick={onFechar}>
     <button className="stfechar" onClick={onFechar} aria-label="Fechar">✕</button>
+    {duas && <div className="sttog" role="group" aria-label="O que compartilhar" onClick={e=>e.stopPropagation()}>
+      <button aria-pressed={aba==='treino'} onClick={()=>setAba('treino')}>{rotTreino}</button>
+      <button aria-pressed={aba==='fase'} onClick={()=>setAba('fase')}>Fase toda</button>
+    </div>}
     <div className="stprev" onClick={e=>e.stopPropagation()}>
       {url ? <img src={url} alt="Prévia do card para os Stories"/>
-           : <div className="stload">{erro||'Gerando imagem…'}</div>}
+           : <div className="stload">{atual.erro||'Gerando imagem…'}</div>}
     </div>
     <div className="stacts" onClick={e=>e.stopPropagation()}>
       {podeShare && <button className="stbtn pri" disabled={!url} onClick={compartilhar}>Compartilhar</button>}
@@ -12127,7 +12213,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,foco,flash,ehAluno,a
         return v>0 ? (()=>setStory(dadosStoryFase(s,f,v))) : null; })()}
       onProgresso={()=>{ setCelebrando(false); nav({name:'progresso',studentId}); }}
       onHome={fecharCelebracao}/>}
-    {story && <StoryModal dados={story} onFechar={()=>setStory(null)}/>}
+    {story && <StoryModal dados={story} s={s} onFechar={()=>setStory(null)}/>}
     <div className="screen">
       {/* ajuste rapido sem perder o lugar: desliga so a visao, a tela continua
           nesta mesma sessao, agora com os campos de edicao. */}
