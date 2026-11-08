@@ -6675,9 +6675,9 @@ function App({auth}){
   else if(view.name==='plano') screen=<PlanoFases db={db} nav={nav} studentId={view.studentId}/>;
   else if(view.name==='progresso') screen=<Progresso db={db} nav={nav} studentId={view.studentId} ehAluno={visaoAluno}/>;
   else if(view.name==='agenda') screen=<Agenda db={db} nav={nav} studentId={view.studentId} ehAluno={visaoAluno}/>;
-  else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} faseId={view.faseId||null} flash={flash} ehAluno={visaoAluno} souAluno={ehAluno} acompanhando={verComoAluno} onSair={auth?auth.sair:null} cardio={cardio}/>;
-  else if(view.name==='correcoes') screen=<Correcoes db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} flash={flash} ehAluno={visaoAluno}/>;
-  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} flash={flash} ehAluno={visaoAluno} acompanhando={verComoAluno} onEditarTreino={()=>setVerComoAluno(false)} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio} iso={iso}/>;
+  else if(view.name==='student') screen=<StudentDetail db={db} setDb={setDb} nav={nav} studentId={view.studentId} faseId={view.faseId||null} foco={view.foco||null} flash={flash} ehAluno={visaoAluno} souAluno={ehAluno} acompanhando={verComoAluno} onSair={auth?auth.sair:null} cardio={cardio}/>;
+  else if(view.name==='correcoes') screen=<Correcoes db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} foco={view.foco||null} flash={flash} ehAluno={visaoAluno}/>;
+  else if(view.name==='treino') screen=<TreinoView db={db} setDb={setDb} nav={nav} studentId={view.studentId} treinoId={view.treinoId} deFase={view.deFase||null} foco={view.foco||null} flash={flash} ehAluno={visaoAluno} acompanhando={verComoAluno} onEditarTreino={()=>setVerComoAluno(false)} timer={timer} seriesFeitas={seriesFeitas} setSeriesFeitas={setSeriesFeitas} catalogoVer={catalogoVer} cardio={cardio} iso={iso}/>;
   else if(view.name==='evolution') screen=<Evolution db={db} setDb={setDb} nav={nav} studentId={view.studentId} exName={view.exName} exId={view.exId} back={view.back} flash={flash} ehAluno={visaoAluno}/>;
   // FCmáx do aluno cuja tela está aberta (o cardio roda por cima de qualquer view)
   const fcMaxDoAlunoEmFoco = (()=>{
@@ -6688,8 +6688,8 @@ function App({auth}){
   // mesma ação do ‹ da .topbar de cada tela — a barra de descanso a cobre,
   // então ela precisa oferecer o mesmo caminho de volta
   const voltarDaTela = (
-    view.name==='treino'    ? ()=>nav({name:'student',studentId:view.studentId,faseId:view.deFase||null}) :
-    view.name==='correcoes' ? ()=>nav({name:'student',studentId:view.studentId,faseId:view.deFase||null}) :
+    view.name==='treino'    ? ()=>nav({name:'student',studentId:view.studentId,faseId:view.deFase||null,foco:view.foco||null}) :
+    view.name==='correcoes' ? ()=>nav({name:'student',studentId:view.studentId,faseId:view.deFase||null,foco:view.foco||null}) :
     view.name==='evolution' ? ()=>nav(view.back||{name:'student',studentId:view.studentId}) :
     view.name==='agenda'    ? ()=>nav({name:'student',studentId:view.studentId}) :
     view.name==='avaliacao' ? ()=>nav({name:'dor',studentId:view.studentId}) :
@@ -7571,7 +7571,7 @@ function CorrecaoSheet({exNome,inicial,onSalvar,onClose,flash}){
    ALUNO: lê, e o simples fato de abrir marca como vista.
    TREINADOR: mesma lista com status, editar, reenviar e arquivar. Escrever é
    no card do exercício, dentro do treino — lá o contexto já está na tela. */
-function Correcoes({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno}){
+function Correcoes({db,setDb,nav,studentId,treinoId,deFase,foco,flash,ehAluno}){
   const s=db.students.find(x=>x.id===studentId);
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
   const [editando,setEditando]=useState(null);
@@ -7591,7 +7591,7 @@ function Correcoes({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno}){
   },[ehAluno,pendentes,studentId]);
   // hooks acima de qualquer saída antecipada — hook depois de return faz o
   // React executar quantidades diferentes entre renders (erro #310)
-  const voltar=()=>nav({name:'student',studentId,faseId:deFase||null});
+  const voltar=()=>nav({name:'student',studentId,faseId:deFase||null,foco:foco||null});
   if(!s || !t) return (<React.Fragment>
     <TopBar title="Correções" onBack={voltar}/>
     <div className="screen"><div className="empty"><div className="big">🔍</div>
@@ -9014,7 +9014,7 @@ function InstalarCard({flash}){
     {guia && <InstalarGuia pl={pl} flash={flash} onClose={()=>setGuia(false)}/>}
   </React.Fragment>);
 }
-function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,acompanhando,onSair,cardio}){
+function StudentDetail({db,setDb,nav,studentId,faseId,foco,flash,ehAluno,souAluno,acompanhando,onSair,cardio}){
   const s=db.students.find(x=>x.id===studentId);
   /* LOTE_TOUR: só o próprio aluno (nunca o "ver como aluno" do treinador) */
   React.useEffect(()=>{ if(souAluno && !faseId && s) verificarTour(studentId, s.name); },[souAluno,faseId,studentId,!!s]);
@@ -9022,15 +9022,32 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
   const [nome,setNome]=useState('');
   const [menu,setMenu]=useState(null); // treino em edição
   const [subindoFoto,setSubindoFoto]=useState(false);
-  const [abaFase,setAbaFase]=useState('atual');   // anteriores | atual | futuros
+  /* LOTE_VOLTA_SESSAO: voltando da sessão, o treinador reabre na MESMA aba e
+     fase em que estava (antes nascia sempre em "Atuais", sem fase, no topo). */
+  const [abaFase,setAbaFase]=useState(()=>(!ehAluno && foco && foco.aba) || 'atual');   // anteriores | atual | futuros
   const [retro,setRetro]=useState(false);
-  const [faseSel,setFaseSel]=useState(null);      // fase aberta na lista
+  const [faseSel,setFaseSel]=useState(()=>{      // fase aberta na lista
+    if(ehAluno || !foco || !foco.faseId || !s) return null;
+    return (s.fases||[]).find(f=>f.id===foco.faseId) || null;
+  });
   const [editandoFase,setEditandoFase]=useState(null); // 'nova' | objeto
   const [importando,setImportando]=useState(false);    // seletor de sessões aberto
   const [colandoGem,setColandoGem]=useState(false);    // GEM_IMPORT · colar treino da Gem
   const [pacoteGem,setPacoteGem]=useState(false);      // LOTE_PACOTE · copiar pacote pra Gem
   const [resumoHist,setResumoHist]=useState(false);    // LOTE_HISTORICO: resumo da fase aberto
   const [trAberto,setTrAberto]=useState(null);    // treino com a aba aberta (aluno)
+  /* LOTE_VOLTA_SESSAO: na volta, leva a rolagem até a sessão que estava aberta.
+     Sem isto a tela abria no topo, nas fases, e as sessões ficavam fora da vista. */
+  useEffect(()=>{
+    if(ehAluno || !foco || !foco.treinoId) return;
+    const t=setTimeout(()=>{
+      try{
+        const el=document.querySelector('[data-treino="'+foco.treinoId+'"]');
+        if(el && el.scrollIntoView) el.scrollIntoView({behavior:'auto',block:'center'});
+      }catch(e){ console.warn('[volta-sessao] nao rolou ate a sessao', e); }
+    },60);
+    return ()=>clearTimeout(t);
+  },[]);
   const [novoCardio,setNovoCardio]=useState(false); // toggle na folha "Novo treino"
   /* RETROSPECTIVA: 1x por fase, a partir de 7 dias do fim.
      Mínimo de 6 sessões — abaixo disso a tela sairia constrangedora justo
@@ -9374,12 +9391,15 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
         const ultimaSessao=(t)=>(t.sessoes||[])
           .filter(x=>ehAluno ? x.origem!=='inferido' : true)
           .reduce((m,x)=>(!m||x.data>m)?x.data:m, null);
+        /* LOTE_VOLTA_SESSAO: onde o treinador estava (aba, fase, sessão) */
+        const focoDe=(t)=>ehAluno ? null
+          : {aba:abaFase, faseId:(faseEmFoco?faseEmFoco.id:null), treinoId:t.id};
         const ctx=(t)=>{
           const corrs=corrDoTreino(s,t);
           return {
             corrs, novas:corrNaoVistas(corrs),
-            abrirTreino:()=>nav({name:'treino',studentId,treinoId:t.id,deFase:(faseId||null)}),
-            abrirCorr:()=>nav({name:'correcoes',studentId,treinoId:t.id,deFase:(faseId||null)}),
+            abrirTreino:()=>nav({name:'treino',studentId,treinoId:t.id,deFase:(faseId||null),foco:focoDe(t)}),
+            abrirCorr:()=>nav({name:'correcoes',studentId,treinoId:t.id,deFase:(faseId||null),foco:focoDe(t)}),
             aberto: ehAluno && trAberto===t.id,
           };
         };
@@ -9423,7 +9443,7 @@ function StudentDetail({db,setDb,nav,studentId,faseId,flash,ehAluno,souAluno,aco
              ("Acessar treino" / "Ver correções") é o que garante que a correção
              nunca fica escondida, mesmo com o 🔧 desligado lá dentro.
              TREINADOR: continua indo direto — ele monta treino o dia inteiro. */
-          const card=(<div key={t.id} className={'treino'+(prox?' proximo':'')}
+          const card=(<div key={t.id} data-treino={t.id} className={'treino'+(prox?' proximo':'')}
             onClick={()=>{ if(ehAluno) setTrAberto(c.aberto?null:t.id); else c.abrirTreino(); }}>
             <div className="tag">{letra}</div>
             <div className="meta"><div className="name">{t.nome}{prox && <span className="tprox">Próximo</span>}</div>
@@ -11097,7 +11117,7 @@ function TrilhaSeries({ex,aluno,feitas,etapaSt,onAvancar,onEtapa,onDesfazer}){
       </div>}
   </div>);
 }
-function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompanhando,onEditarTreino,timer,seriesFeitas,setSeriesFeitas,catalogoVer,cardio,iso}){
+function TreinoView({db,setDb,nav,studentId,treinoId,deFase,foco,flash,ehAluno,acompanhando,onEditarTreino,timer,seriesFeitas,setSeriesFeitas,catalogoVer,cardio,iso}){
   const s=db.students.find(x=>x.id===studentId);
   const t=s?(s.treinos||[]).find(x=>x.id===treinoId):null;
   const [editingEx,setEditingEx]=useState(null);
@@ -11254,7 +11274,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
   // tela preta era isto: `return null` sem nada renderizado. Se o treino
   // sumiu (fase apagada, sync ainda em curso), mostre e ofereça a saída.
   if(!t) return (<React.Fragment>
-    <TopBar title="Treino" sub={s?s.name:''} onBack={()=>nav({name:'student',studentId,faseId:deFase||null})}/>
+    <TopBar title="Treino" sub={s?s.name:''} onBack={()=>nav({name:'student',studentId,faseId:deFase||null,foco:foco||null})}/>
     <div className="screen"><div className="empty"><div className="big"><Ic n="search" c/></div>
       <p>Este treino não está mais disponível.<br/>Pode ter sido movido ou removido.</p>
       <button className="btn" style={{marginTop:14}}
@@ -11743,7 +11763,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
     const m={}; loadCatalogo().forEach(c=>{ if(c.grupo) m[String(c.id)]=c.grupo; }); return m;
   },[catalogoVer]);
   return (<React.Fragment>
-    <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId,faseId:deFase||null})}
+    <TopBar title={t.nome} sub={s.name} onBack={()=>nav({name:'student',studentId,faseId:deFase||null,foco:foco||null})}
       right={<CronoBadge inicio={inicio} onZerar={zerarRelogio}/>}/>
     {celebrando && <Celebracao nome={t.nome}
       onCompartilhar={(()=>{ const d=dadosStorySessao(s,t,todayISO());
@@ -11991,7 +12011,7 @@ function TreinoView({db,setDb,nav,studentId,treinoId,deFase,flash,ehAluno,acompa
           })()}
           <div className="exactions">
             <button className="reg" onClick={()=>setRegistering(ex)}>Registrar Carga</button>
-            <button className="evo" onClick={()=>nav({name:'evolution',studentId,exName:ex.name,exId:ex.exerciseId,back:{name:'treino',studentId,treinoId}})}>Evolução</button>
+            <button className="evo" onClick={()=>nav({name:'evolution',studentId,exName:ex.name,exId:ex.exerciseId,back:{name:'treino',studentId,treinoId,deFase:deFase||null,foco:foco||null}})}>Evolução</button>
             {ehAluno && (()=>{ const r=relatoDoEx(ex.id); return (
               <button className={'mini rel'+(r?' on':'')} title="Anotar algo sobre este exercício"
                 onClick={()=>setRelatando({exId:ex.id, exNome:ex.name, atual:r})} aria-label="Anotar"><Ic n="note" r="aluno"/></button>); })()}
