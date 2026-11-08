@@ -158,6 +158,14 @@
     background:var(--bg);border:1px solid var(--line);color:var(--text);
     font-family:inherit;font-size:12.5px;font-weight:600}
   .fasedt input:focus{outline:none;border-color:var(--cyan)}
+  /* LOTE_FASES_RPC: data editada no card só vale ao tocar em Salvar */
+  .fasedt input.mudou{border-color:var(--cyan)}
+  .fasedtacoes{display:flex;gap:8px;margin-top:8px}
+  .fasedtacoes button{flex:1;padding:9px 10px;border-radius:10px;font-family:inherit;
+    font-size:12.5px;font-weight:800;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--text)}
+  .fasedtacoes button.ok{background:var(--cyan);border-color:var(--cyan);color:#0b0f10}
+  .fasedtacoes button:disabled{opacity:.55}
   .fasetag{font-size:10px;font-weight:800;border-radius:999px;padding:2px 8px;margin-left:7px;
     text-transform:uppercase;letter-spacing:.03em}
   .fasetag.ativa{color:var(--on-cyan);background:var(--cyan)}
@@ -4631,6 +4639,41 @@ function faseVigente(s){
   if(cobre) return cobre;
   const passadas=fs.filter(f=>f.inicio<=hoje).sort((a,b)=>b.inicio.localeCompare(a.inicio));
   return passadas[0]||null;
+}
+/* LOTE_FASES_RPC: mudar datas de uma fase passa SEMPRE pela função do banco.
+   É ela que empurra as fases seguintes que colidirem (mesma duração) e que
+   recusa um início dentro da fase anterior. A regra mora no banco, aqui só
+   chamamos. Exige conexão: uma escrita offline recusada pelo banco ficaria
+   presa na fila. */
+async function reprogramarFaseRPC(faseId, inicio, fim){
+  const semRede='Sem internet. Mudar datas de fase precisa de conexão.';
+  if(!sb) return {ok:false, erro:'Sem conexão com o servidor.'};
+  if(!navigator.onLine) return {ok:false, erro:semRede};
+  try{
+    // o que ainda está na fila (ex.: a fase acabou de ser criada) sobe antes
+    if(loadOpQueue().length) await flushOpQueue();
+    const {data,error}=await sb.rpc('reprogramar_fase',
+      {p_fase_id:faseId, p_inicio:inicio, p_fim:fim});
+    if(window.__flushOps) window.__flushOps();
+    if(error){
+      const c=String(error.code||'');
+      if(c==='P0001') return {ok:false, erro:String(error.message||'Recusado pelo banco.')};
+      if(c==='23P01') return {ok:false, erro:'Essa data cai em cima de outra fase do aluno.'};
+      if(c==='42883'||c==='PGRST202') return {ok:false, erro:'Função reprogramar_fase não encontrada no banco.'};
+      console.warn('[fases] reprogramar_fase', error);
+      return {ok:false, erro:'Não deu para salvar: '+String(error.message||c).slice(0,90)};
+    }
+    return {ok:true, fases:(data||[])};
+  }catch(e){
+    console.warn('[fases] reprogramar_fase', e);
+    return {ok:false, erro: erroDeRede(e) ? semRede
+      : 'Não deu para salvar: '+String((e&&e.message)||e).slice(0,90)};
+  }
+}
+/* a fase nova cai em cima de alguma que já existe? (o banco também barra,
+   mas aí o erro só apareceria depois, na fila) */
+function faseColidindo(fases, inicio, fim, ignorarId){
+  return (fases||[]).find(f=>f.id!==ignorarId && f.inicio<=fim && inicio<=(f.fim||f.inicio))||null;
 }
 const MSG_FASE_VENCIDA='Fim de ciclo por aqui! 💪🏼 Vou te chamar pra conversar sobre como foi e montar a próxima fase.';
 const TEMA_KEY = 'idealis_tema_v1';
@@ -9470,6 +9513,10 @@ function StudentDetail({db,setDb,nav,studentId,faseId,foco,flash,ehAluno,souAlun
     return (s.fases||[]).find(f=>f.id===foco.faseId) || null;
   });
   const [editandoFase,setEditandoFase]=useState(null); // 'nova' | objeto
+  /* LOTE_FASES_RPC: rascunho das datas do card ({faseId:{inicio,fim}}) e a
+     fase que está sendo enviada agora */
+  const [rascDatas,setRascDatas]=useState({});
+  const [salvandoDatas,setSalvandoDatas]=useState(null);
   const [importando,setImportando]=useState(false);    // seletor de sessões aberto
   const [colandoGem,setColandoGem]=useState(false);    // GEM_IMPORT · colar treino da Gem
   const [pacoteGem,setPacoteGem]=useState(false);      // LOTE_PACOTE · copiar pacote pra Gem
@@ -9563,10 +9610,23 @@ function StudentDetail({db,setDb,nav,studentId,faseId,foco,flash,ehAluno,souAlun
   const salvarFase=(dados)=>{
     if(editandoFase && editandoFase!=='nova'){
       const id=editandoFase.id;
-      updStudent({fases:(s.fases||[]).map(f=>f.id===id?{...f,...dados}:f)});
+      /* LOTE_FASES_RPC: nome e objetivo seguem pela fila; datas vão pela
+         função do banco, que empurra as seguintes se precisar */
+      const mudouData = dados.inicio!==editandoFase.inicio || dados.fim!==editandoFase.fim;
+      updStudent({fases:(s.fases||[]).map(f=>f.id===id
+        ?{...f, nome:dados.nome, objetivo:dados.objetivo}:f)});
       enqueueOp({tipo:'update',tabela:'fases',id,dados:{
-        nome:dados.nome, objetivo:dados.objetivo, inicio:dados.inicio, fim:dados.fim}});
-      setEditandoFase(null); flash('Fase atualizada ✓'); return;
+        nome:dados.nome, objetivo:dados.objetivo}});
+      const orig=editandoFase;
+      setEditandoFase(null);
+      if(mudouData) aplicarDatasFase(orig, dados.inicio, dados.fim);
+      else flash('Fase atualizada ✓');
+      return;
+    }
+    const bate=faseColidindo(s.fases, dados.inicio, dados.fim, null);
+    if(bate){
+      flash('Cai em cima da '+bate.nome+' ('+fmtDate(bate.inicio)+' a '+fmtDate(bate.fim)+'). Ajuste as datas.');
+      return;
     }
     const nova={id:uid(), nome:dados.nome, objetivo:dados.objetivo||'', inicio:dados.inicio, fim:dados.fim};
     // LOTE_FILA: a fase entra na fila ANTES das sessões copiadas (treinos.fase_id tem FK)
@@ -9605,12 +9665,48 @@ function StudentDetail({db,setDb,nav,studentId,faseId,foco,flash,ehAluno,souAlun
     updStudent({fases:(s.fases||[]).map(x=>x.id===f.id?{...x,nome:valor}:x)});
     if(valor.trim()) enqueueOp({tipo:'update',tabela:'fases',id:f.id,dados:{nome:valor.trim()}});
   };
+  /* LOTE_FASES_RPC: o input só mexe no rascunho; vale ao tocar em Salvar.
+     Gravar a cada onChange mandaria várias reprogramações seguidas: o
+     seletor de data do iPhone dispara a cada giro da roda, e digitar o ano
+     passa por 0002, 0020, 0202... */
   const mudarDataFase=(f,campo,valor)=>{
-    if(campo==='inicio' && f.fim && valor>f.fim){ flash('Início não pode ser depois do fim'); return; }
-    if(campo==='fim' && valor<f.inicio){ flash('Fim não pode ser antes do início'); return; }
-    updStudent({fases:(s.fases||[]).map(x=>x.id===f.id?{...x,[campo]:valor}:x)});
-    enqueueOp({tipo:'update',tabela:'fases',id:f.id,dados:{[campo]:valor}});
-    flash('Data atualizada ✓');
+    setRascDatas(r=>{
+      const atual=r[f.id]||{inicio:f.inicio, fim:f.fim};
+      return {...r, [f.id]:{...atual, [campo]:valor}};
+    });
+  };
+  const descartarDatas=(f)=>setRascDatas(r=>{ const n={...r}; delete n[f.id]; return n; });
+  const aplicarDatasFase=async (f,ini,fim)=>{
+    if(!ini || !fim){ flash('Preencha início e fim'); return; }
+    if(fim<ini){ flash('Fim não pode ser antes do início'); return; }
+    if(salvandoDatas) return;
+    setSalvandoDatas(f.id);
+    const r=await reprogramarFaseRPC(f.id, ini, fim);
+    setSalvandoDatas(null);
+    if(!r.ok){ flash(r.erro); return; }
+    const novas={};
+    r.fases.forEach(x=>{ novas[x.id]={inicio:String(x.inicio).slice(0,10), fim:String(x.fim).slice(0,10)}; });
+    const antes=(s.fases||[]);
+    const empurradas=antes.filter(x=>x.id!==f.id && novas[x.id] && novas[x.id].inicio!==x.inicio);
+    // forma funcional: durante o await o db pode ter mudado (fila, recarga)
+    setDb(d=>({...d, students:d.students.map(x=>{
+      if(x.id!==studentId) return x;
+      const fases=(x.fases||[]).map(y=>novas[y.id]?{...y, ...novas[y.id]}:y);
+      const pl=x.planejamento;
+      // situação e dias restantes vêm calculados da view: zerados, a tela
+      // do planejamento recalcula pelas datas novas
+      const planejamento = (pl && pl.fases) ? {...pl, fases:pl.fases.map(p=>novas[p.faseId]
+        ? {...p, ...novas[p.faseId], situacao:'', diasRestantes:null} : p)} : pl;
+      return {...x, fases, planejamento};
+    })}));
+    descartarDatas(f);
+    if(!empurradas.length){ flash('Datas salvas ✓'); return; }
+    const dif=(a,b)=>Math.round((Date.parse(a+'T00:00:00')-Date.parse(b+'T00:00:00'))/864e5);
+    const ds=empurradas.map(x=>dif(novas[x.id].inicio, x.inicio));
+    const mesma=ds.every(v=>v===ds[0]);
+    const n=empurradas.length;
+    flash('Datas salvas ✓ · '+n+(n===1?' fase seguinte empurrada':' fases seguintes empurradas')
+      +(mesma?(' '+ds[0]+(ds[0]===1?' dia':' dias')):''));
   };
   const apagarFase=(f)=>{
     updStudent({fases:(s.fases||[]).filter(x=>x.id!==f.id),
@@ -9773,18 +9869,33 @@ function StudentDetail({db,setDb,nav,studentId,faseId,foco,flash,ehAluno,souAlun
                 {f.objetivo && <div className="faseobj">{f.objetivo}</div>}
                 {/* datas editáveis direto no card: ajustar prazo é a operação
                     mais frequente aqui e não deveria exigir abrir a folha */}
-                <div className="fasedt" onClick={e=>e.stopPropagation()}>
-                  <label>Início
-                    <input type="date" value={f.inicio}
-                      onFocus={abrirCalendario} onClick={abrirCalendario}
-                      onChange={e=>e.target.value && mudarDataFase(f,'inicio',e.target.value)}/>
-                  </label>
-                  <label>Fim
-                    <input type="date" min={f.inicio} value={f.fim}
-                      onFocus={abrirCalendario} onClick={abrirCalendario}
-                      onChange={e=>e.target.value && mudarDataFase(f,'fim',e.target.value)}/>
-                  </label>
-                </div>
+                {/* LOTE_FASES_RPC: o input edita um rascunho; Salvar manda pro banco */}
+                {(()=>{
+                  const rd=rascDatas[f.id];
+                  const vi=rd?rd.inicio:f.inicio, vf=rd?rd.fim:f.fim;
+                  const mudou=!!rd && (rd.inicio!==f.inicio || rd.fim!==f.fim);
+                  return (<React.Fragment>
+                    <div className="fasedt" onClick={e=>e.stopPropagation()}>
+                      <label>Início
+                        <input type="date" value={vi} className={vi!==f.inicio?'mudou':''}
+                          onFocus={abrirCalendario} onClick={abrirCalendario}
+                          onChange={e=>e.target.value && mudarDataFase(f,'inicio',e.target.value)}/>
+                      </label>
+                      <label>Fim
+                        <input type="date" min={vi} value={vf} className={vf!==f.fim?'mudou':''}
+                          onFocus={abrirCalendario} onClick={abrirCalendario}
+                          onChange={e=>e.target.value && mudarDataFase(f,'fim',e.target.value)}/>
+                      </label>
+                    </div>
+                    {mudou && <div className="fasedtacoes" onClick={e=>e.stopPropagation()}>
+                      <button type="button" disabled={salvandoDatas===f.id}
+                        onClick={()=>descartarDatas(f)}>Cancelar</button>
+                      <button type="button" className="ok" disabled={!!salvandoDatas}
+                        onClick={()=>aplicarDatasFase(f, vi, vf)}>
+                        {salvandoDatas===f.id?'Salvando…':'Salvar datas'}</button>
+                    </div>}
+                  </React.Fragment>);
+                })()}
                 <div className="faseper">
                   {n} {n===1?'treino':'treinos'}
                   {sit==='ativa' && dias!=null && ' · faltam '+dias+' dias'}
