@@ -3061,7 +3061,10 @@ function PlanoFases({db,nav,studentId}){
       <p>Seu planejamento está em produção e em breve aparecerá aqui.</p>
     </div></div>
   </React.Fragment>);
-  const fases=fasesOk.slice().sort((a,b)=>(a.posicao||0)-(b.posicao||0));
+  /* LOTE_PLN_BLOCOS: igual ao documento do Dashboard, um bloco por fase I,
+     com a II junto (agruparBlocos). Durante a II o bloco vira "Fase 2 · II";
+     contagem e progresso são da fase que está rodando. */
+  const blocos=agruparBlocos(fasesOk);
   // situação vem da view; se vier vazia, deduz pelas datas
   const sit=(f)=>{
     if(f.situacao==='ativa'||f.situacao==='encerrada'||f.situacao==='futura') return f.situacao;
@@ -3069,9 +3072,25 @@ function PlanoFases({db,nav,studentId}){
     if(f.inicio && f.inicio>hoje) return 'futura';
     return (f.inicio && f.fim) ? 'ativa' : 'futura';
   };
-  let idxAlvo=fases.findIndex(f=>sit(f)==='ativa');
+  const sitBloco=(b)=>{
+    const a=sit(b.cab), z=b.ii?sit(b.ii):null;
+    if(a==='ativa' || z==='ativa') return 'ativa';
+    if((z||a)==='encerrada') return 'encerrada';
+    if(a==='futura') return 'futura';
+    return 'ativa';   // I encerrada e a II ainda não começou: o bloco segue em curso
+  };
+  /* aviso da II na tela do aluno: sem a data (aqui não aparece data de fase
+     atual nem futura) e some quando a II já começou. O texto guardado no
+     banco não muda: é ele que o Dashboard reconhece. */
+  const obsAluno=(b)=>{
+    const o=String(b.cab.observacao||'');
+    if(!RX_OBS_II.test(o)) return o;
+    if(b.ii && b.ii.inicio && b.ii.inicio<=hoje) return o.replace(RX_OBS_II,'').trim();
+    return o.replace(RX_OBS_II, m=>m.replace(/\s-\s\d{2}\/\d{2}\/\d{2}\)$/, ')'));
+  };
+  let idxAlvo=blocos.findIndex(b=>sitBloco(b)==='ativa');
   const semAtiva=idxAlvo<0;
-  if(semAtiva) idxAlvo=fases.findIndex(f=>sit(f)==='futura');   // intervalo entre fases
+  if(semAtiva) idxAlvo=blocos.findIndex(b=>sitBloco(b)==='futura');   // intervalo entre blocos
   return (<React.Fragment>
     <TopBar title="Seu Planejamento de Treinos" onBack={voltar}/>
     <div className="screen">
@@ -3087,23 +3106,29 @@ function PlanoFases({db,nav,studentId}){
         <p className="pjmsg">{PLN_MSG}</p>
       </div>
       <ol className="pjlinha">
-        {fases.map((f,i)=>{
-          const st=sit(f);
+        {blocos.map((b,i)=>{
+          const f=b.cab;                       // fase I: nome, objetivo, métodos, observação
+          const st=sitBloco(b);
+          const naII=!!b.ii && sit(b.ii)==='ativa';
+          const atual=naII?b.ii:f;             // a fase que está rodando agora
+          const ultima=b.ii||f;                // onde o bloco termina
           const cls= st==='ativa'?'ativa':(st==='encerrada'?'fim':'fut');
           const prox= semAtiva && i===idxAlvo;
-          const num=f.posicao||(i+1);
+          const num=i+1;                       // número do bloco, não a posicao
           const chave=f.faseId||('p'+num);
           const aberta=!!abertas[chave];
           const obj=linhas(f.objetivo), met=linhas(f.metodos);
+          const obs=obsAluno(b);
           const foco=obj.length?semMarcador(obj[0]):'';
-          const temDet=obj.length>0||met.length>0||!!f.observacao||!!f.categoria;
-          let restam=f.diasRestantes;
-          if(restam==null && f.fim) restam=dia(f.fim)-dia(hoje);
-          const diasTxt= restam==null ? '' : (restam<=0?'Último dia':(restam===1?'Falta 1 dia':'Faltam '+restam+' dias'));
+          const temDet=obj.length>0||met.length>0||!!obs||!!f.categoria;
+          const rodando=sit(atual)==='ativa';
+          let restam=atual.diasRestantes;
+          if(restam==null && atual.fim) restam=dia(atual.fim)-dia(hoje);
+          const diasTxt= (!rodando || restam==null) ? '' : (restam<=0?'Último dia':(restam===1?'Falta 1 dia':'Faltam '+restam+' dias'));
           let pct=null;
-          if(st==='ativa' && f.inicio && f.fim){
-            const total=dia(f.fim)-dia(f.inicio)+1;
-            const feitos=Math.min(total,Math.max(0,dia(hoje)-dia(f.inicio)+1));
+          if(rodando && atual.inicio && atual.fim){
+            const total=dia(atual.fim)-dia(atual.inicio)+1;
+            const feitos=Math.min(total,Math.max(0,dia(hoje)-dia(atual.inicio)+1));
             pct=total>0?Math.round(feitos/total*100):null;
           }
           return (<li key={chave} ref={i===idxAlvo?alvoRef:null}
@@ -3113,23 +3138,24 @@ function PlanoFases({db,nav,studentId}){
                 st==='encerrada' ? <PlnIco tipo="check"/>
               : (st==='ativa'||prox) ? num
               : <PlnIco tipo="cadeado"/>}</span>
-              {i<fases.length-1 && <span className="pjcon"></span>}
+              {i<blocos.length-1 && <span className="pjcon"></span>}
             </div>
             <div className="pjcard">
               <div className="pjtopo">
-                <span className="pjeyebrow">Fase {num}</span>
+                <span className="pjeyebrow">Fase {num}{naII?' · II':''}</span>
                 {st==='ativa' && <span className="pjchip aqui"><PlnIco tipo="brilho" size={13}/>Você está aqui</span>}
                 {prox && <span className="pjchip prox">Próxima fase</span>}
                 {st==='futura' && !prox && <span className="pjchip breve">Em breve</span>}
                 {st==='encerrada' && <span className="pjchip feito">Concluída</span>}
               </div>
-              <div className="pjnome">{f.nome||('Fase '+num)}</div>
+              <div className="pjnome">{atual.nome||f.nome||('Fase '+num)}</div>
               {/* sem datas na ativa (só quanto falta) e na futura (só a duração).
                   A encerrada mantém o período: é histórico, não planejamento. */}
               {(()=>{
-                const durTxt=durFase(f);
+                // duração e período cobrem o bloco inteiro (I + II)
+                const durTxt=durFase({inicio:f.inicio, fim:ultima.fim});
                 const cont = st==='encerrada'
-                  ? <span className="pjper">{fmtBR(f.inicio)}<i>→</i>{fmtBR(f.fim)}</span>
+                  ? <span className="pjper">{fmtBR(f.inicio)}<i>→</i>{fmtBR(ultima.fim)}</span>
                   : st==='ativa'
                   ? (diasTxt ? <span className="pjfalta">{diasTxt}</span> : null)
                   : (durTxt ? <span className="pjper">Duração: {durTxt}</span> : null);
@@ -3155,7 +3181,7 @@ function PlanoFases({db,nav,studentId}){
                   <div className="plnlab">Métodos</div>
                   {met.map((l,k)=><div key={k} className="plnli">{l}</div>)}
                 </div>}
-                {f.observacao && <div className="plnobs">{f.observacao}</div>}
+                {obs && <div className="plnobs">{obs}</div>}
               </div></Revela>
               {temDet && st!=='futura' && <button className="pjver" aria-expanded={aberta}
                 onClick={()=>setAbertas(m=>({...m,[chave]:!m[chave]}))}>
@@ -4675,6 +4701,68 @@ async function reprogramarFaseRPC(faseId, inicio, fim){
 function faseColidindo(fases, inicio, fim, ignorarId){
   return (fases||[]).find(f=>f.id!==ignorarId && f.inicio<=fim && inicio<=(f.fim||f.inicio))||null;
 }
+/* LOTE_PLN_BLOCOS · copiadas do Dashboard (brief de 08/11). A única troca é
+   `a ?? b` por `a==null ? b : a`, mesmo resultado: o App não usa `??` em
+   lugar nenhum, porque iPhone com iOS antigo não entende e a tela inteira
+   cairia. */
+/* fases de UM planejamento -> blocos [{ cab, ii }], na ordem.
+   A II é a fase logo depois da I com o mesmo template_id (e nome que não
+   termina em " I"). Sem template, vale o nome terminar em " II". */
+function agruparBlocos(fases) {
+  const ord = [...(fases || [])].sort((a, b) =>
+    ((a.posicao == null ? 1e9 : a.posicao) - (b.posicao == null ? 1e9 : b.posicao)) ||
+    String(a.inicio || "").localeCompare(String(b.inicio || "")));
+  const out = [];
+  for (const f of ord) {
+    const ult = out[out.length - 1];
+    const nome = String(f.nome || "").trim();
+    const ehII = !!ult && !ult.ii && (f.template_id
+      ? f.template_id === ult.cab.template_id && !/\sI$/.test(nome)
+      : !ult.cab.template_id && /\sII$/.test(nome));
+    if (ehII) ult.ii = f; else out.push({ cab: f, ii: null });
+  }
+  return out;
+}
+const RX_OBS_II = /\(teremos a fase "[^"]*" - \d{2}\/\d{2}\/\d{2}\)/;
+/* "Fase de Hipertrofia de Qualidade I" -> "Hipertrofia de Qualidade" */
+function nucleoFase(nome) {
+  return String(nome || "").trim()
+    .replace(/^Fase\s+(de\s+|d[ao]\s+)?/i, "")
+    .replace(/\s+(I|1)\s*$/, "")
+    .trim();
+}
+/* refaz o aviso que JÁ existe com o nome e a data atuais; sem aviso, o texto
+   fica como está (se apagaram o aviso, ele não volta sozinho).
+   iniII = 'YYYY-MM-DD'; a data sai como dd/mm/aa */
+function obsComII(obs, nome, iniII) {
+  const o = String(obs || "");
+  if (!iniII || !RX_OBS_II.test(o)) return o;
+  const n = nucleoFase(nome);
+  const [a, m, d] = iniII.slice(0, 10).split("-");
+  const data = d + "/" + m + "/" + a.slice(2);
+  if (n) return o.replace(RX_OBS_II, '(teremos a fase "' + n + ' II" - ' + data + ")");
+  return o.replace(RX_OBS_II, x => x.replace(/\d{2}\/\d{2}\/\d{2}/, data));
+}
+/* com o retorno da reprogramar_fase (todas as fases do aluno):
+   devolve [{ id, observacao }] só das fases I cujo aviso mudou */
+function obsParaAtualizar(fasesAluno) {
+  const porPlano = new Map();
+  for (const f of fasesAluno || []) {
+    if (!f || !f.planejamento_id) continue;
+    if (!porPlano.has(f.planejamento_id)) porPlano.set(f.planejamento_id, []);
+    porPlano.get(f.planejamento_id).push(f);
+  }
+  const out = [];
+  for (const lista of porPlano.values()) {
+    for (const b of agruparBlocos(lista)) {
+      if (!b.ii || !b.ii.inicio || !b.cab.id) continue;
+      const antes = String(b.cab.observacao || "");
+      const nova = obsComII(antes, b.cab.nome, b.ii.inicio);
+      if (nova !== antes) out.push({ id: b.cab.id, observacao: nova });
+    }
+  }
+  return out;
+}
 const MSG_FASE_VENCIDA='Fim de ciclo por aqui! 💪🏼 Vou te chamar pra conversar sobre como foi e montar a próxima fase.';
 const TEMA_KEY = 'idealis_tema_v1';
 const GRUPOS_KEY = 'idealis_grupos_recolhidos_v1';
@@ -5266,6 +5354,7 @@ async function fetchDbFromSupabase(){
       });
       p.fases.push({
         faseId:x.fase_id, posicao:x.posicao, nome:x.fase_nome||'',
+        template_id:x.template_id||null,   /* LOTE_PLN_BLOCOS: agruparBlocos */
         inicio:x.inicio, fim:x.fim, objetivo:x.objetivo||'', metodos:x.metodos||'',
         observacao:x.observacao||'', categoria:x.categoria||'',
         cor:x.categoria_cor||'', situacao:x.situacao||'',
@@ -9710,6 +9799,14 @@ function StudentDetail({db,setDb,nav,studentId,faseId,foco,flash,ehAluno,souAlun
     if(!r.ok){ flash(r.erro); return; }
     const novas={};
     r.fases.forEach(x=>{ novas[x.id]={inicio:String(x.inicio).slice(0,10), fim:String(x.fim).slice(0,10)}; });
+    /* LOTE_PLN_BLOCOS: o aviso "(teremos a fase ...)" na observação da I
+       acompanha a data real da II, igual ao Dashboard. Update só do campo
+       observacao, nunca com datas junto. */
+    const obsNovas={};
+    obsParaAtualizar(r.fases).forEach(o=>{
+      obsNovas[o.id]=o.observacao;
+      enqueueOp({tipo:'update',tabela:'fases',id:o.id,dados:{observacao:o.observacao}});
+    });
     const antes=(s.fases||[]);
     const empurradas=antes.filter(x=>x.id!==f.id && novas[x.id] && novas[x.id].inicio!==x.inicio);
     // forma funcional: durante o await o db pode ter mudado (fila, recarga)
@@ -9719,8 +9816,12 @@ function StudentDetail({db,setDb,nav,studentId,faseId,foco,flash,ehAluno,souAlun
       const pl=x.planejamento;
       // situação e dias restantes vêm calculados da view: zerados, a tela
       // do planejamento recalcula pelas datas novas
-      const planejamento = (pl && pl.fases) ? {...pl, fases:pl.fases.map(p=>novas[p.faseId]
-        ? {...p, ...novas[p.faseId], situacao:'', diasRestantes:null} : p)} : pl;
+      const planejamento = (pl && pl.fases) ? {...pl, fases:pl.fases.map(p=>{
+        let q=p;
+        if(novas[p.faseId]) q={...q, ...novas[p.faseId], situacao:'', diasRestantes:null};
+        if(obsNovas[p.faseId]!=null) q={...q, observacao:obsNovas[p.faseId]};
+        return q;
+      })} : pl;
       return {...x, fases, planejamento};
     })}));
     descartarDatas(f);
