@@ -3152,8 +3152,9 @@ function PlanoFases({db,nav,studentId}){
               {/* sem datas na ativa (só quanto falta) e na futura (só a duração).
                   A encerrada mantém o período: é histórico, não planejamento. */}
               {(()=>{
-                // duração e período cobrem o bloco inteiro (I + II)
-                const durTxt=durFase({inicio:f.inicio, fim:ultima.fim});
+                /* LOTE_PLN_DUR_I: o card mostra a fase I, então a duração é só a
+                   dela. O período da concluída segue cobrindo o bloco (I + II). */
+                const durTxt=durFase(f);
                 const cont = st==='encerrada'
                   ? <span className="pjper">{fmtBR(f.inicio)}<i>→</i>{fmtBR(ultima.fim)}</span>
                   : st==='ativa'
