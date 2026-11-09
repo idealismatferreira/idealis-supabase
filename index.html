@@ -7485,7 +7485,26 @@ function stLayoutComparacao(by,temEq,temGanho,limite){
     g={linha:Math.max(44,g.linha*k), emoji:g.emoji*k, texto:g.texto*k, ganho:g.ganho*k}; }
   return g;
 }
-function stPintar(ctx,d,foto,logo){
+/* textura do fundo: a MESMA do App (--tx-relevo, curvas de nível "Dunas"), lida do
+   :root, onde fica a versão de linhas claras (o card é sempre escuro, mesmo no tema
+   claro). Multitenant: o tenant que trocar ou desligar ('none') o --tx-relevo do App
+   troca ou desliga o fundo do card junto, sem configuração extra. */
+let ST_RELEVO_CACHE;
+function stRelevo(){
+  if(ST_RELEVO_CACHE!==undefined) return Promise.resolve(ST_RELEVO_CACHE);
+  return new Promise(res=>{
+    let url=null;
+    try{ const v=getComputedStyle(document.documentElement).getPropertyValue('--tx-relevo')||'';
+      // o SVG tem aspas simples dentro: tira só o url( ) e as aspas das pontas
+      const m=v.trim().match(/^url\(\s*(["']?)([\s\S]*)\1\s*\)$/); url=(m && /^data:/.test(m[2])) ? m[2] : null; }catch(e){}
+    if(!url){ ST_RELEVO_CACHE=null; return res(null); }
+    const img=new Image();
+    img.onload=()=>{ ST_RELEVO_CACHE=img; res(img); };
+    img.onerror=()=>{ console.warn('[stories] textura do fundo não carregou'); ST_RELEVO_CACHE=null; res(null); };
+    img.src=url;
+  });
+}
+function stPintar(ctx,d,foto,logo,relevo){
   const W=1080, H=1920, CX=540, FUNDO='#080b0c', CARTAO='#111718';
   ctx.textBaseline='alphabetic'; ctx.textAlign='left';
   // fundo escuro com duas luzes suaves (a grade antiga saiu: dava cara de rascunho)
@@ -7493,6 +7512,11 @@ function stPintar(ctx,d,foto,logo){
   const luz=(x,y,r,cor)=>{ const rg=ctx.createRadialGradient(x,y,0,x,y,r);
     rg.addColorStop(0,cor); rg.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); };
   luz(200,360,800,'rgba(0,201,204,.18)'); luz(920,1650,800,'rgba(190,230,0,.14)');
+  // curvas de nível na escala da tela do celular (o ladrilho de 540px do App vira
+  // ~1495px num card de 1080). Pintado 2x: a opacidade do App (3 a 5%) sumiria na
+  // compressão do Instagram.
+  if(relevo){ const T=1495;
+    for(let k=0;k<2;k++) for(let y=-200;y<H;y+=T) for(let x=-200;x<W;x+=T) ctx.drawImage(relevo,x,y,T,T); }
   // marca numa pílula sólida (sem contorno fino)
   stRR(ctx,150,230,780,112,56); ctx.fillStyle='#161d1f'; ctx.fill();
   stMarca(ctx,logo,CX,250,72,42);
@@ -7572,10 +7596,10 @@ async function desenharStory(d){
   try{ await Promise.race([
     Promise.all(['800 100px Sora','700 50px Sora','600 36px Sora','500 36px Sora'].map(f=>document.fonts.load(f))),
     new Promise(r=>setTimeout(r,1500))]); }catch(e){}
-  const [foto,logo]=await Promise.all([stFoto(d.foto), stLogo()]);
+  const [foto,logo,relevo]=await Promise.all([stFoto(d.foto), stLogo(), stRelevo()]);
   const gerar=(img)=>{
     const cv=document.createElement('canvas'); cv.width=1080; cv.height=1920;
-    stPintar(cv.getContext('2d'),d,img,logo);
+    stPintar(cv.getContext('2d'),d,img,logo,relevo);
     return new Promise((res,rej)=>{
       try{ cv.toBlob(b=>b?res(b):rej(new Error('toBlob vazio')),'image/png'); }catch(e){ rej(e); } });
   };
