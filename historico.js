@@ -21,7 +21,10 @@
       // tipos de ocorrência que acendem o ⚠️ (ids de ocorrencia_tipos)
       tiposAlerta: ['dor', 'incomodo', 'inseguranca', 'tecnica', 'equipamento', 'adaptacao', 'lesao'],
       // entrada SEM tipo: acende só nestas seções (Preferências fica de fora)
-      secoesAlertaSemTipo: ['Dor/Pat', 'Dif. Exerc']
+      secoesAlertaSemTipo: ['Dor/Pat', 'Dif. Exerc'],
+      // seções que NUNCA acendem, com ou sem tipo. 'Obj' = Objetivos: o desafio
+      // da fase escolhido no app entra lá com cardapio_id e não é sinal de dor.
+      secoesSemAlerta: ['Obj']
     }
   };
 
@@ -161,6 +164,7 @@
 
   function anamneseAcende(a, C){
     var cfg=C.anamnese||{};
+    if((cfg.secoesSemAlerta||[]).indexOf(a.secao_id)>=0) return false;
     if(a.tipo_id) return (cfg.tiposAlerta||[]).indexOf(a.tipo_id)>=0;
     return (cfg.secoesAlertaSemTipo||[]).indexOf(a.secao_id)>=0;
   }
@@ -280,7 +284,7 @@
   }
 
   g.HistoricoExercicio = {
-    versao: 1, CONFIG: CONFIG,
+    versao: 2, CONFIG: CONFIG,
     normAcc: normAcc, casa: casa, casaEx: casaEx, juntar: juntar,
     execucaoAntes: execucaoAntes, faseAnterior: faseAnterior, contexto: contexto,
     selo: selo, alerta: alerta, info: info, resumo: resumo, mensagem: mensagem,
