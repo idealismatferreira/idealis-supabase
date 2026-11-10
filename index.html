@@ -11771,7 +11771,23 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
     const cur=parseInt(at.reps,10);
     if(!isNaN(cur)) movPouso(e.currentTarget, repsInRef.current, v-cur, 'rep');
   };
+  /* LOTE_SERIE_ATIVA: a série ATIVA precisa estar completa. Antes, se ela
+     tinha só carga (reps vazio), o save descartava ela em silêncio e
+     regravava as outras séries do dia: o toast dizia "registrado" e a
+     série sumia. Acontecia sempre na última série quando a sessão
+     anterior tinha uma série a menos (reps abre vazio). */
+  const faltaNaAtiva=()=>{
+    const idx=Math.min(ativa,series.length-1);
+    const sr=series[idx]||{};
+    const c=String(sr.carga||'').trim(), r=String(sr.reps||'').trim();
+    if(c && r) return '';
+    const qual=(!isEdit && series.length>1)?(' da '+(idx+1)+'ª série'):'';
+    if(!c && !r) return 'Preencha carga e repetições'+qual+'.';
+    if(!r) return 'Faltam as repetições'+qual+'.';
+    return 'Falta a carga'+qual+'.';
+  };
   const save=(marcarSerie)=>{
+    { const falta=faltaNaAtiva(); if(falta){ setErro(falta); return; } }
     // registro independente: salva SÓ as séries completas (carga + reps).
     // As demais ficam de fora sem bloquear — a carga pré-preenchida sozinha não conta como iniciada.
     // apertar Salvar É a confirmação da série ativa: se os valores sugeridos
@@ -11964,6 +11980,8 @@ function RegisterSheet({exName,lastLog,editLog,onSave,onClose,academia,historico
       {/* LOTE_TRILHA2: "Salvar e ir" marca a série e conta o descanso como o lime */}
       {!isEdit && series.length>1 && ativa<series.length-1 &&
         <button type="button" className="btn btnprox2" onClick={()=>{
+          // LOTE_SERIE_ATIVA: não avança deixando a série atual incompleta para trás
+          { const falta=faltaNaAtiva(); if(falta){ setErro(falta); return; } }
           // avançar TAMBÉM salva: antes, quem preenchia 3 séries e depois tocava
           // em Cancelar perdia tudo. saveLog é idempotente (atualiza a série do
           // dia em vez de duplicar), então salvar a cada avanço é seguro.
