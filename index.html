@@ -602,6 +602,8 @@
   .dsinput{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);
     background:var(--bg);color:var(--text);font-family:inherit;font-size:13.5px}
   .dsinput:focus{outline:none;border-color:var(--cyan)}
+  .dsnota{margin-top:12px;padding:11px 13px;border-radius:12px;border:1px dashed var(--line);
+    font-size:12.5px;color:var(--muted);line-height:1.4}
   .dscta{margin-top:12px;width:100%}
   /* confirmação */
   .dsok{margin:0 4px;padding:16px;border-radius:14px;border:1.5px solid var(--cyan);
@@ -3392,6 +3394,8 @@ function Progresso({db,nav,studentId,ehAluno}){
    comprometido responde melhor a feedback positivo, quem está engajado aceita
    ver o que falta (Fishbach, Eyal e Finkelstein, 2010).
    Tudo que um personal pode querer ajustar mora em RETRO_CFG (multitenant). */
+/* fases cuja retrospectiva o treinador já viu no acompanhamento, nesta abertura do app */
+const RETRO_ACOMP_VISTAS=new Set();
 const RETRO_CFG={
   faixaVerde:0.75,      // média semanal ÷ treinos de musculação da fase
   faixaAmarela:0.4,
@@ -3589,7 +3593,7 @@ function RetroBoneco({acompanhadas, sel, onSel, fallback}){
 }
 
 /* escolha do desafio da próxima fase (opcional) */
-function RetroDesafio({s, faixa, analise, proxNome, proxId, onSalvar}){
+function RetroDesafio({s, faixa, analise, proxNome, proxId, onSalvar, somenteVer}){
   const [tipo,setTipo]=useState(null);
   const [alvo,setAlvo]=useState(null);
   const [ativ,setAtiv]=useState('');
@@ -3705,11 +3709,13 @@ function RetroDesafio({s, faixa, analise, proxNome, proxId, onSalvar}){
         {on && painel(t)}
       </div>); })}
     </div>
-    {tipo && <button type="button" className="btn dscta" disabled={!valido} onClick={salvar}>Topar esse desafio</button>}
+    {tipo && (somenteVer
+      ? <div className="dsnota">No acompanhamento você vê o que o aluno vê. Quem topa o desafio é ele.</div>
+      : <button type="button" className="btn dscta" disabled={!valido} onClick={salvar}>Topar esse desafio</button>)}
   </div>);
 }
 
-function Retrospectiva({s, fase, onDesafio, onFechar}){
+function Retrospectiva({s, fase, onDesafio, onFechar, somenteVer}){
   const an=useMemo(()=>retroAnalise(s, fase),[s, fase]);
   const nome=primeiroNome(s.name);
   const prox=(s.fases||[]).filter(x=>x.inicio>fase.fim).sort((a,b)=>a.inicio.localeCompare(b.inicio))[0]||null;
@@ -3731,7 +3737,7 @@ function Retrospectiva({s, fase, onDesafio, onFechar}){
   const desafio=(<React.Fragment>
     <div className="dscab">Topa algum desses desafios pra {ehII?'fase II':'próxima fase'}?</div>
     <div className="dsintro">É opcional.</div>
-    <RetroDesafio s={s} faixa={fx} analise={an} proxNome={prox?prox.nome:null} proxId={prox?prox.id:null} onSalvar={onDesafio}/>
+    <RetroDesafio s={s} faixa={fx} analise={an} proxNome={prox?prox.nome:null} proxId={prox?prox.id:null} onSalvar={onDesafio} somenteVer={somenteVer}/>
   </React.Fragment>);
 
   return (<div className="backdrop" onClick={onFechar}>
@@ -10032,11 +10038,20 @@ function StudentDetail({db,setDb,nav,studentId,faseId,foco,flash,ehAluno,souAlun
     /* `souAluno`, nao `ehAluno`: em acompanhamento a retrospectiva dispararia
        no aparelho do treinador e ainda queimaria a chave do localStorage da
        fase, tirando a tela de quem deveria ve-la. */
-    if(!souAluno || !s) return;
+    // LOTE_RETRO2: também no acompanhamento. Chave separada: a do treinador
+    // nunca encosta na do aluno, e lá o desafio é só pra ver.
+    if(!(souAluno || acompanhando) || !s) return;
     const f=faseVigente(s); if(!f) return;
     const d=diasRestantes(f);
     if(d==null || d>7 || d<0) return;
-    const chave='idealis_retro2_'+f.id;   // LOTE_RETRO2: chave nova, mostra a versão nova 1x
+    // aluno: 1x por fase no aparelho dele. Acompanhamento: 1x por fase a cada vez
+    // que o app abre (igual ao briefing do treino), sem gravar nada no aparelho.
+    if(acompanhando && !souAluno){
+      if(RETRO_ACOMP_VISTAS.has(f.id)) return;
+      const t=setTimeout(()=>{ RETRO_ACOMP_VISTAS.add(f.id); setRetro(true); }, 1200);
+      return ()=>clearTimeout(t);
+    }
+    const chave='idealis_retro2_'+f.id;
     try{ if(LS_OK && window.localStorage.getItem(chave)) return; }catch(e){}
     // LOTE_RETRO2: sem piso de treinos. A tela escolhe o que mostrar pela faixa.
     const t=setTimeout(()=>{
@@ -10556,8 +10571,8 @@ function StudentDetail({db,setDb,nav,studentId,faseId,foco,flash,ehAluno,souAlun
     {retro && ehAluno && (()=>{
       const f=faseVigente(s); if(!f) return null;
       const ants=(s.fases||[]).filter(x=>x.fim<f.inicio).sort((a,b)=>b.fim.localeCompare(a.fim));
-      return <Retrospectiva s={s} fase={f}
-        onDesafio={(d)=>enqueueOp({tipo:'insert',tabela:'desafios',dados:{
+      return <Retrospectiva s={s} fase={f} somenteVer={!souAluno}
+        onDesafio={(d)=>souAluno && enqueueOp({tipo:'insert',tabela:'desafios',dados:{
           id:uid(), aluno_id:studentId, fase_origem_id:f.id, fase_id:d.faseId,
           tipo:d.tipo, titulo:d.titulo, cardapio_id:d.cardapioId, exercicio_nome:d.exNome,
           regiao:d.regiao, vista:d.vista, atividade:d.atividade, por_semana:d.porSemana,
