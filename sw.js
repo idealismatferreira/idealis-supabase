@@ -52,7 +52,6 @@ self.addEventListener('activate', (e) => {
 });
 
 const ehSupabase = (u) => u.hostname.endsWith('supabase.co');
-const ehAppsScript = (u) => u.hostname.endsWith('script.google.com');
 const ehFonte = (u) => u.hostname.endsWith('fonts.googleapis.com') ||
                        u.hostname.endsWith('fonts.gstatic.com');
 const ehLib = (u) => u.hostname === 'unpkg.com';
@@ -64,7 +63,7 @@ self.addEventListener('fetch', (e) => {
 
   // DADOS: sempre da rede, jamais do cache. Uma resposta velha do Supabase
   // seria pior que nenhuma — o app tem o próprio espelho local para isso.
-  if (ehSupabase(url) || ehAppsScript(url)) return;
+  if (ehSupabase(url)) return;
 
   // BIBLIOTECAS: cache-first. URL versionada = conteúdo imutável.
   if (ehLib(url)) {

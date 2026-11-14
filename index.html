@@ -6206,8 +6206,8 @@ function VideoExercicio({url}){
   </div>);
 }
 
-/* ===== CATÁLOGO (Cardápio WTDN — leitura com cache offline) ===== */
-const CARDAPIO_URL = 'https://script.google.com/macros/s/AKfycbyi183noK7vugBRyh5AMMcgey2Ksz2oqQvKGAfZ8Q-ZcJU0ag4TxzuiAS6oDP0u3BI7/exec';
+/* ===== CATÁLOGO (public.cardapio, leitura com cache offline) ===== */
+/* LOTE0_SEM_APPS_SCRIPT */
 /* ---- métodos salvos pelo treinador (tabela `metodos`) ---- */
 const METODOS_KEY = 'idealis_metodos_v1';
 const FAM_MEUS = 'Meus métodos';
@@ -6359,75 +6359,6 @@ async function fetchCatalogo(){
     return {ok:false, erro:String(err)};
   }
 }
-
-/* ===== SYNC (backup só-ida para Google Sheets via Apps Script) ===== */
-const SYNC_URL = 'https://script.google.com/macros/s/AKfycbxl0TnXNC_P4rsGYGWtkICy4T-3a2TEz8KmHbDTbgh4X24WoWnJB9lFABctI1dsnxVBfA/exec';
-const QUEUE_KEY = 'idealis_presencial_fila_v1';
-const SYNCMETA_KEY = 'idealis_presencial_syncmeta_v1';
-const ESTRUTURA_DIRTY_KEY = 'idealis_presencial_estrutura_dirty_v1';
-/* snapshot de conteúdo (SEM timestamp volátil) — usado pra detectar mudança e pra enviar */
-function buildEstruturaSnapshot(db){
-  return {
-    students: (db.students||[]).map(s=>({
-      id:s.id, name:s.name,
-      treinos:(s.treinos||[]).map(t=>({
-        id:t.id, nome:t.nome,
-        exercises:(t.exercises||[]).map(ex=>({
-          id:ex.id, name:ex.name, series:ex.series,
-          filmar:!!ex.filmar, observacao:ex.observacao||'', metodo:ex.metodo||null, cardio:ex.cardio||null,
-          isometria:ex.isometria||null,
-          grupo:ex.grupo||null,
-          logs:(ex.logs||[]).map(l=>({id:l.id,date:l.date,carga:l.carga,reps:l.reps,intensidade:l.intensidade,dor:l.dor,variante:l.variante||'',serie:(l.serie!=null?l.serie:null)}))
-          // doneDate propositalmente omitido (efêmero do dia)
-        }))
-      }))
-    }))
-  };
-}
-function loadQueue(){ if(!LS_OK) return []; try{const r=window.localStorage.getItem(QUEUE_KEY);return r?JSON.parse(r):[];}catch(e){return [];} }
-function saveQueue(q){ if(!LS_OK)return; try{window.localStorage.setItem(QUEUE_KEY,JSON.stringify(q));}catch(e){} }
-function loadSyncMeta(){ if(!LS_OK) return {last:null}; try{const r=window.localStorage.getItem(SYNCMETA_KEY);return r?JSON.parse(r):{last:null};}catch(e){return {last:null};} }
-function saveSyncMeta(m){ if(!LS_OK)return; try{window.localStorage.setItem(SYNCMETA_KEY,JSON.stringify(m));}catch(e){} }
-/* monta um registro achatado (1 linha na planilha) a partir do contexto */
-function enqueueLog({log, alunoNome, treinoNome, exNome}){
-  const q=loadQueue();
-  const reg={ id:log.id, data:log.date, aluno:alunoNome, treino:treinoNome, exercicio:exNome,
-    carga:log.carga, reps:log.reps, intensidade:log.intensidade, dor:log.dor };
-  // se já existe na fila (edição), substitui pelo id; senão adiciona
-  const i=q.findIndex(r=>r.id===reg.id);
-  if(i>=0) q[i]=reg; else q.push(reg);
-  saveQueue(q);
-}
-/* envia a fila inteira; só remove o que confirmou. Retorna {ok, enviados, erro?} */
-async function flushQueue(estruturaSnapshot){
-  if(window.__idealisDemo) return {ok:true, enviados:0, vazia:true};   // LOTE_TOUR
-  const q=loadQueue();
-  const estruturaSuja = window.localStorage.getItem(ESTRUTURA_DIRTY_KEY)==='1';
-  if(!q.length && !estruturaSuja) return {ok:true, enviados:0, vazia:true};
-  if(!navigator.onLine) return {ok:false, enviados:0, offline:true};
-  try{
-    const payload={action:'registros', registros:q};
-    if(estruturaSuja && estruturaSnapshot) payload.estrutura=estruturaSnapshot;
-    const resp=await fetch(SYNC_URL,{
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'}, // evita preflight CORS
-      body:JSON.stringify(payload)
-    });
-    const out=await resp.json();
-    if(out && out.ok){
-      const atual=loadQueue();
-      const idsEnviados=new Set(q.map(r=>r.id));
-      saveQueue(atual.filter(r=>!idsEnviados.has(r.id))); // preserva itens novos que entraram durante o envio
-      if(payload.estrutura) window.localStorage.setItem(ESTRUTURA_DIRTY_KEY,'0'); // estrutura subiu, limpa flag
-      const meta=loadSyncMeta(); meta.last=new Date().toISOString(); saveSyncMeta(meta);
-      return {ok:true, enviados:q.length, estruturaEnviada:!!payload.estrutura};
-    }
-    return {ok:false, enviados:0, erro:(out&&out.erro)||'resposta_invalida'};
-  }catch(err){
-    return {ok:false, enviados:0, erro:String(err)};
-  }
-}
-
 
 /* parseia "45~60" -> {min:45,max:60}; "60" -> {min:60,max:60} */
 function parseDescanso(txt){
@@ -7780,18 +7711,6 @@ function NuvemBadge({carga,fila,onRetry,ehAluno}){
 function _hhmm(iso){
   try{ const d=new Date(iso); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
   catch(e){ return ''; }
-}
-function SyncBadge({sync,onRetry}){
-  const {state,pend}=sync;
-  if(state==='idle' && pend===0) return null; // nada pendente, não polui
-  let txt,cls;
-  if(state==='sending'){ txt='Salvando na planilha…'; cls='sending'; }
-  else if(state==='ok' && pend===0){ txt='Backup salvo ✓'; cls='ok'; }
-  else if(state==='offline'){ txt=pend+' p/ enviar (offline)'; cls='off'; }
-  else if(state==='error'){ txt=pend+' p/ enviar · tocar p/ tentar'; cls='err'; }
-  else if(pend>0){ txt=pend+' p/ enviar'; cls='off'; }
-  else return null;
-  return <button className={'syncbadge '+cls} onClick={onRetry}>{txt}</button>;
 }
 /* Logo Idealis (vetorizada, herda a cor via currentColor) */
 const LOGO_SVG = "<svg viewBox=\"0 0 1920 1920\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><g transform=\"translate(0,1920) scale(0.1,-0.1)\" fill=\"currentColor\"><path d=\"M9155 19019 c-1338 -64 -2627 -404 -3810 -1004 -1587 -805 -2919 -2044 -3831 -3565 -1023 -1705 -1477 -3667 -1308 -5655 216 -2544 1447 -4874 3434 -6500 1265 -1036 2787 -1726 4398 -1994 2550 -425 5147 204 7202 1744 1979 1482 3301 3672 3674 6085 151 979 153 1931 5 2910 -367 2424 -1692 4627 -3679 6115 -908 681 -1919 1183 -3035 1508 -957 280 -2035 405 -3050 356z m925 -1004 c968 -52 1917 -273 2810 -652 2215 -941 3936 -2797 4699 -5068 498 -1484 576 -3070 225 -4595 -638 -2770 -2650 -5045 -5324 -6020 -1155 -421 -2348 -579 -3620 -480 -357 28 -943 125 -1300 215 -1753 441 -3316 1424 -4464 2810 -557 672 -1021 1454 -1343 2265 -1021 2569 -710 5499 825 7790 832 1240 1949 2220 3282 2879 848 419 1730 685 2670 805 500 63 1002 80 1540 51z M10017 14913 c-758 -1027 -1374 -1869 -1369 -1871 7 -2 2971 945 2980 953 5 5 -223 2785 -228 2785 -3 0 -625 -840 -1383 -1867z M9365 12571 l-1480 -488 -41 -54 c-23 -30 -574 -781 -1224 -1669 -651 -888 -1188 -1618 -1194 -1622 -6 -4 891 -8 1994 -9 1103 0 2015 -4 2026 -7 19 -6 -22 -67 -404 -587 -233 -319 -1046 -1428 -1805 -2465 -758 -1037 -1390 -1895 -1404 -1907 l-24 -23 2525 0 2526 0 1123 616 c617 338 1128 621 1135 628 22 21 -552 25 -2418 19 l-1705 -6 26 34 c14 19 637 860 1384 1869 1535 2074 1467 1983 1958 2610 l364 465 -291 6 c-160 3 -1087 4 -2060 1 -1307 -4 -1768 -2 -1765 6 2 6 488 665 1079 1463 591 799 1101 1488 1133 1531 43 58 53 78 40 77 -10 0 -684 -220 -1498 -488z\"/></g></svg>";
